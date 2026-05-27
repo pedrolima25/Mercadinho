@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Relatórios{% endblock %}
+{% block content %}
+<h4 class="fw-bold mb-4"><i class="bi bi-bar-chart me-2"></i>Relatórios</h4>
+<div class="row g-3">
+  <div class="col-md-4">
+    <a href="/relatorios/vendas" class="card border-0 shadow-sm text-decoration-none hover-card">
+      <div class="card-body text-center py-4">
+        <i class="bi bi-graph-up-arrow fs-1 text-primary mb-3 d-block"></i>
+        <h5 class="fw-bold">Vendas</h5>
+        <p class="text-muted small mb-0">Relatório de vendas por período, ticket médio e formas de pagamento</p>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="/relatorios/produtos" class="card border-0 shadow-sm text-decoration-none hover-card">
+      <div class="card-body text-center py-4">
+        <i class="bi bi-box-seam fs-1 text-success mb-3 d-block"></i>
+        <h5 class="fw-bold">Produtos</h5>
+        <p class="text-muted small mb-0">Produtos mais vendidos, faturamento por item e alertas de estoque</p>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="/relatorios/financeiro" class="card border-0 shadow-sm text-decoration-none hover-card">
+      <div class="card-body text-center py-4">
+        <i class="bi bi-currency-dollar fs-1 text-warning mb-3 d-block"></i>
+        <h5 class="fw-bold">Financeiro</h5>
+        <p class="text-muted small mb-0">DRE simplificado com receitas, despesas e lucro estimado</p>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="/relatorios/estoque-baixo" class="card border-0 shadow-sm text-decoration-none hover-card">
+      <div class="card-body text-center py-4">
+        <i class="bi bi-exclamation-triangle fs-1 text-danger mb-3 d-block"></i>
+        <h5 class="fw-bold">Estoque Crítico</h5>
+        <p class="text-muted small mb-0">Produtos abaixo do estoque mínimo que precisam de reposição</p>
+      </div>
+    </a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Despesas{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <h4 class="fw-bold mb-0"><i class="bi bi-wallet2 me-2"></i>Despesas</h4>
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newModal"><i class="bi bi-plus-lg me-1"></i>Nova Despesa</button>
+</div>
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead class="table-light"><tr><th>Descrição</th><th>Categoria</th><th>Data</th><th>Valor</th><th></th></tr></thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>{{ item.description }}</td>
+          <td><span class="badge bg-secondary-subtle text-dark">{{ item.category or '—' }}</span></td>
+          <td>{{ item.date.strftime('%d/%m/%Y') }}</td>
+          <td class="fw-semibold text-danger">R$ {{ "%.2f"|format(item.amount|float) }}</td>
+          <td>
+            <form method="post" action="/financeiro/despesas/{{ item.id }}/excluir" style="display:inline" onsubmit="return confirm('Excluir?')">
+              <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-4">Nenhuma despesa registrada</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal fade" id="newModal" tabindex="-1">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">Nova Despesa</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <form method="post" action="/financeiro/despesas/novo">
+      <div class="modal-body">
+        <div class="mb-3"><label class="form-label fw-semibold">Descrição *</label><input type="text" name="description" class="form-control" required placeholder="Ex: Aluguel, Energia, Água..."></div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Categoria</label>
+          <select name="category" class="form-select">
+            <option value="">— Selecionar —</option>
+            {% for cat in ['Aluguel','Energia','Água','Internet','Salários','Frete','Marketing','Manutenção','Impostos','Outros'] %}
+            <option value="{{ cat }}">{{ cat }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="row g-2">
+          <div class="col-6"><label class="form-label fw-semibold">Valor (R$) *</label><input type="number" name="amount" class="form-control" step="0.01" min="0.01" required></div>
+          <div class="col-6"><label class="form-label fw-semibold">Data *</label><input type="date" name="date" class="form-control" required value="{{ today }}"></div>
+        </div>
+        <div class="mt-2"><label class="form-label fw-semibold">Observações</label><textarea name="notes" class="form-control" rows="2"></textarea></div>
+      </div>
+      <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary">Salvar</button></div>
+    </form>
+  </div></div>
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if user else 'Novo' }} Usuário{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-4 gap-3">
+  <a href="/usuarios" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+  <h4 class="fw-bold mb-0">{{ 'Editar Usuário' if user else 'Novo Usuário' }}</h4>
+</div>
+{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+<div class="row justify-content-center"><div class="col-md-6">
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <form method="post" action="{{ '/usuarios/' + user.id|string + '/editar' if user else '/usuarios/novo' }}">
+        <div class="mb-3"><label class="form-label fw-semibold">Nome Completo *</label><input type="text" name="full_name" class="form-control" value="{{ user.full_name if user else '' }}" required></div>
+        {% if not user %}
+        <div class="mb-3"><label class="form-label fw-semibold">Nome de Usuário *</label><input type="text" name="username" class="form-control" required pattern="[a-zA-Z0-9_]+" title="Apenas letras, números e _"></div>
+        {% endif %}
+        <div class="mb-3"><label class="form-label fw-semibold">Email</label><input type="email" name="email" class="form-control" value="{{ user.email or '' if user else '' }}"></div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Senha {% if not user %}*{% else %}(deixe em branco para manter){% endif %}</label>
+          <input type="password" name="password" class="form-control" {% if not user %}required{% endif %} minlength="6" placeholder="Mínimo 6 caracteres">
+        </div>
+        {% if current_user.role.value == 'admin' %}
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Perfil de Acesso *</label>
+          <select name="role" class="form-select" required>
+            {% for role in roles %}
+            <option value="{{ role.value }}" {% if user and user.role == role %}selected{% endif %}>
+              {{ {'admin':'Administrador','gerente':'Gerente','caixa':'Operador de Caixa','estoquista':'Estoquista','financeiro':'Financeiro'}[role.value] }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-4">
+          <div class="form-check form-switch">
+            <input type="checkbox" name="is_active" class="form-check-input" id="is_active" {% if not user or user.is_active %}checked{% endif %}>
+            <label class="form-check-label fw-semibold" for="is_active">Usuário Ativo</label>
+          </div>
+        </div>
+        {% endif %}
+        <button type="submit" class="btn btn-primary w-100"><i class="bi bi-check-lg me-1"></i>Salvar</button>
+      </form>
+    </div>
+  </div>
+</div></div>
+{% endblock %}

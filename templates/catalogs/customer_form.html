@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if item else 'Novo' }} Cliente{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-4 gap-3">
+  <a href="/clientes" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+  <h4 class="fw-bold mb-0">{{ 'Editar Cliente' if item else 'Novo Cliente' }}</h4>
+</div>
+<div class="row justify-content-center"><div class="col-md-7">
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <form method="post" action="{{ '/clientes/' + item.id|string + '/editar' if item else '/clientes/novo' }}">
+        <div class="row g-3">
+          <div class="col-md-8"><label class="form-label fw-semibold">Nome *</label><input type="text" name="name" class="form-control" value="{{ item.name if item else '' }}" required></div>
+          <div class="col-md-4"><label class="form-label fw-semibold">CPF</label><input type="text" name="cpf" class="form-control" value="{{ item.cpf or '' if item else '' }}" placeholder="000.000.000-00"></div>
+          <div class="col-md-6"><label class="form-label fw-semibold">Email</label><input type="email" name="email" class="form-control" value="{{ item.email or '' if item else '' }}"></div>
+          <div class="col-md-6"><label class="form-label fw-semibold">Telefone</label><input type="text" name="phone" class="form-control" value="{{ item.phone or '' if item else '' }}"></div>
+          <div class="col-md-6"><label class="form-label fw-semibold">Limite de Crédito (R$)</label><input type="number" name="credit_limit" class="form-control" step="0.01" min="0" value="{{ item.credit_limit if item else '0.00' }}"></div>
+          {% if item %}
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Status</label>
+            <div class="form-check form-switch mt-2"><input type="checkbox" name="is_active" class="form-check-input" id="is_active" {% if item.is_active %}checked{% endif %} value="on"><label class="form-check-label" for="is_active">Ativo</label></div>
+          </div>
+          {% endif %}
+          <div class="col-12"><label class="form-label fw-semibold">Endereço</label><textarea name="address" class="form-control" rows="2">{{ item.address or '' if item else '' }}</textarea></div>
+        </div>
+        <div class="mt-4"><button type="submit" class="btn btn-primary w-100 fw-semibold"><i class="bi bi-check-lg me-1"></i>Salvar</button></div>
+      </form>
+    </div>
+  </div>
+</div></div>
+{% endblock %}

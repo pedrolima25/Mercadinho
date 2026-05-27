@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% block title %}Empresa - {{ request.app.state.market_name }}{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h4 class="fw-bold mb-1"><i class="bi bi-building-gear me-2"></i>Cadastro da Empresa</h4>
+    <div class="text-muted small">Dados usados no sistema, PDV e cupom de venda.</div>
+  </div>
+  <a href="/" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Voltar</a>
+</div>
+
+{% if success %}
+<div class="alert alert-success d-flex align-items-center gap-2">
+  <i class="bi bi-check-circle-fill"></i>
+  <span>Dados da empresa salvos com sucesso.</span>
+</div>
+{% endif %}
+
+<form method="post" action="/empresa" enctype="multipart/form-data">
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-0">
+          <h6 class="fw-bold mb-0">Identificacao</h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Nome fantasia <span class="text-danger">*</span></label>
+              <input type="text" name="trade_name" class="form-control" required value="{{ company.trade_name or '' }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Razao social</label>
+              <input type="text" name="legal_name" class="form-control" value="{{ company.legal_name or '' }}">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">CNPJ</label>
+              <input type="text" name="cnpj" class="form-control" value="{{ company.cnpj or '' }}" placeholder="00.000.000/0000-00">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Inscricao estadual</label>
+              <input type="text" name="state_registration" class="form-control" value="{{ company.state_registration or '' }}">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Inscricao municipal</label>
+              <input type="text" name="municipal_registration" class="form-control" value="{{ company.municipal_registration or '' }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Regime tributario</label>
+              <input type="text" name="tax_regime" class="form-control" value="{{ company.tax_regime or '' }}" placeholder="Simples Nacional, MEI, Lucro Presumido...">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">CNAE</label>
+              <input type="text" name="cnae" class="form-control" value="{{ company.cnae or '' }}">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-0">
+          <h6 class="fw-bold mb-0">Endereco</h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">CEP</label>
+              <input type="text" name="zip_code" class="form-control" value="{{ company.zip_code or '' }}" placeholder="00000-000">
+            </div>
+            <div class="col-md-7">
+              <label class="form-label fw-semibold">Logradouro</label>
+              <input type="text" name="street" class="form-control" value="{{ company.street or '' }}">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label fw-semibold">Numero</label>
+              <input type="text" name="number" class="form-control" value="{{ company.number or '' }}">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Complemento</label>
+              <input type="text" name="complement" class="form-control" value="{{ company.complement or '' }}">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Bairro</label>
+              <input type="text" name="neighborhood" class="form-control" value="{{ company.neighborhood or '' }}">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">Cidade</label>
+              <input type="text" name="city" class="form-control" value="{{ company.city or '' }}">
+            </div>
+            <div class="col-md-1">
+              <label class="form-label fw-semibold">UF</label>
+              <input type="text" name="state" class="form-control text-uppercase" maxlength="2" value="{{ company.state or '' }}">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Pais</label>
+              <input type="text" name="country" class="form-control" value="{{ company.country or 'Brasil' }}">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0">
+          <h6 class="fw-bold mb-0">Responsavel</h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Nome</label>
+              <input type="text" name="responsible_name" class="form-control" value="{{ company.responsible_name or '' }}">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">CPF</label>
+              <input type="text" name="responsible_cpf" class="form-control" value="{{ company.responsible_cpf or '' }}">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">Telefone</label>
+              <input type="text" name="responsible_phone" class="form-control" value="{{ company.responsible_phone or '' }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">E-mail</label>
+              <input type="email" name="responsible_email" class="form-control" value="{{ company.responsible_email or '' }}">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-0">
+          <h6 class="fw-bold mb-0">Logo</h6>
+        </div>
+        <div class="card-body">
+          <div class="text-center mb-3">
+            <img src="{{ company.logo_url or '/static/img/logo.svg' }}" alt="Logo da empresa"
+                 style="width:120px;height:120px;object-fit:contain;border:1px solid #e2e8f0;border-radius:14px;background:#fff;padding:10px;">
+          </div>
+          <input type="file" name="logo" class="form-control" accept=".png,.jpg,.jpeg,.webp,.svg,image/*">
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-0">
+          <h6 class="fw-bold mb-0">Contato</h6>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">E-mail</label>
+            <input type="email" name="email" class="form-control" value="{{ company.email or '' }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Telefone</label>
+            <input type="text" name="phone" class="form-control" value="{{ company.phone or '' }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">WhatsApp</label>
+            <input type="text" name="whatsapp" class="form-control" value="{{ company.whatsapp or '' }}">
+          </div>
+          <div>
+            <label class="form-label fw-semibold">Site</label>
+            <input type="text" name="website" class="form-control" value="{{ company.website or '' }}">
+          </div>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-0">
+          <h6 class="fw-bold mb-0">Cupom</h6>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Slogan</label>
+            <input type="text" name="slogan" class="form-control" value="{{ company.slogan or '' }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Mensagem no rodape do cupom</label>
+            <input type="text" name="receipt_footer" class="form-control" value="{{ company.receipt_footer or '' }}" placeholder="Obrigado pela preferencia">
+          </div>
+          <div>
+            <label class="form-label fw-semibold">Observacoes</label>
+            <textarea name="notes" class="form-control" rows="3">{{ company.notes or '' }}</textarea>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100 fw-bold py-2">
+        <i class="bi bi-check-lg me-1"></i>Salvar Empresa
+      </button>
+    </div>
+  </div>
+</form>
+{% endblock %}

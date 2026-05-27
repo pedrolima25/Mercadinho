@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Movimentação de Estoque{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-4 gap-3">
+  <a href="/estoque" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+  <h4 class="fw-bold mb-0">Nova Movimentação de Estoque</h4>
+</div>
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <form method="post" action="/estoque/movimentacao">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Produto <span class="text-danger">*</span></label>
+            <select name="product_id" class="form-select" required>
+              <option value="">— Selecionar produto —</option>
+              {% for p in products %}<option value="{{ p.id }}">{{ p.name }} (Atual: {{ p.stock_quantity }} {{ p.unit }})</option>{% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Tipo de Movimentação <span class="text-danger">*</span></label>
+            <div class="d-flex gap-2">
+              <div class="form-check flex-fill border rounded p-3 text-center">
+                <input type="radio" name="type" value="entrada" class="form-check-input" id="t-entrada" required>
+                <label class="form-check-label d-block" for="t-entrada"><i class="bi bi-arrow-down-circle-fill text-success fs-3 d-block"></i>Entrada</label>
+              </div>
+              <div class="form-check flex-fill border rounded p-3 text-center">
+                <input type="radio" name="type" value="saida" class="form-check-input" id="t-saida">
+                <label class="form-check-label d-block" for="t-saida"><i class="bi bi-arrow-up-circle-fill text-danger fs-3 d-block"></i>Saída</label>
+              </div>
+              <div class="form-check flex-fill border rounded p-3 text-center">
+                <input type="radio" name="type" value="ajuste" class="form-check-input" id="t-ajuste">
+                <label class="form-check-label d-block" for="t-ajuste"><i class="bi bi-arrow-left-right text-warning fs-3 d-block"></i>Ajuste</label>
+              </div>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Quantidade <span class="text-danger">*</span></label>
+            <input type="number" name="quantity" class="form-control" step="0.001" min="0.001" required placeholder="0">
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Motivo / Observação</label>
+            <input type="text" name="reason" class="form-control" placeholder="Ex: Reposição, Quebra, Inventário...">
+          </div>
+          <button type="submit" class="btn btn-primary w-100 fw-semibold">
+            <i class="bi bi-check-lg me-1"></i>Registrar Movimentação
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

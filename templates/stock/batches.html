@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Lotes e Validade — SuperMarket Pro{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div class="d-flex align-items-center gap-3">
+    <a href="/estoque" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+    <h4 class="fw-bold mb-0">Lotes e Validade</h4>
+  </div>
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newBatchModal"><i class="bi bi-plus-lg me-1"></i>Novo Lote</button>
+</div>
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead class="table-light"><tr><th>Produto</th><th>Lote</th><th>Quantidade</th><th>Vencimento</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for b in batches %}
+        {% set today = namespace(d=none) %}
+        <tr class="{% if b.expiry_date and b.expiry_date.isoformat() < now_date %}table-danger{% elif b.expiry_date and (b.expiry_date.isoformat() <= near_date) %}table-warning{% endif %}">
+          <td>{{ b.product.name if b.product else '—' }}</td>
+          <td><code>{{ b.batch_number or '—' }}</code></td>
+          <td>{{ b.quantity }}</td>
+          <td>{% if b.expiry_date %}{{ b.expiry_date.strftime('%d/%m/%Y') }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+          <td>
+            {% if not b.expiry_date %}<span class="badge bg-secondary">Sem validade</span>
+            {% elif b.expiry_date.isoformat() < now_date %}<span class="badge bg-danger">Vencido</span>
+            {% elif b.expiry_date.isoformat() <= near_date %}<span class="badge bg-warning text-dark">Vencendo em breve</span>
+            {% else %}<span class="badge bg-success">OK</span>{% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-4">Nenhum lote cadastrado</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal fade" id="newBatchModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Novo Lote</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form method="post" action="/estoque/lotes/novo">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Produto</label>
+            <select name="product_id" class="form-select" required>
+              <option value="">— Selecionar —</option>
+              {% for p in products %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="mb-3"><label class="form-label fw-semibold">Número do Lote</label><input type="text" name="batch_number" class="form-control" placeholder="Ex: LOT-2024-001"></div>
+          <div class="mb-3"><label class="form-label fw-semibold">Quantidade</label><input type="number" name="quantity" class="form-control" step="0.001" min="0" required value="0"></div>
+          <div class="mb-3"><label class="form-label fw-semibold">Data de Vencimento</label><input type="date" name="expiry_date" class="form-control"></div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary">Salvar Lote</button></div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Estoque Crítico{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center gap-3 mb-4">
+  <a href="/relatorios" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+  <h4 class="fw-bold mb-0 text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Produtos com Estoque Crítico</h4>
+</div>
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead class="table-light"><tr><th>Produto</th><th>Código</th><th>Categoria</th><th>Estoque Atual</th><th>Estoque Mínimo</th><th>Diferença</th><th></th></tr></thead>
+      <tbody>
+        {% for p in products %}
+        <tr>
+          <td class="fw-semibold">{{ p.name }}</td>
+          <td><code class="small">{{ p.barcode or '—' }}</code></td>
+          <td><span class="badge bg-secondary-subtle text-dark">{{ p.category.name if p.category else '—' }}</span></td>
+          <td class="text-danger fw-bold">{{ p.stock_quantity }} {{ p.unit }}</td>
+          <td class="text-muted">{{ p.min_stock }} {{ p.unit }}</td>
+          <td class="text-danger">{{ (p.stock_quantity - p.min_stock)|round(3) }} {{ p.unit }}</td>
+          <td>
+            <a href="/estoque/movimentacao" class="btn btn-sm btn-success"><i class="bi bi-plus me-1"></i>Entrada</a>
+            <a href="/compras/novo" class="btn btn-sm btn-outline-primary ms-1"><i class="bi bi-truck me-1"></i>Comprar</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="text-center text-success py-5 fw-bold"><i class="bi bi-check-circle fs-3 d-block mb-2"></i>Todos os produtos com estoque acima do mínimo!</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

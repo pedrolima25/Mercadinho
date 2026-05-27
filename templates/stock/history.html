@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Histórico de Estoque{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div class="d-flex align-items-center gap-3">
+    <a href="/estoque" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+    <h4 class="fw-bold mb-0">Histórico de Movimentações</h4>
+  </div>
+</div>
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <select name="product_id" class="form-select form-select-sm">
+          <option value="">Todos os produtos</option>
+          {% for p in products %}<option value="{{ p.id }}" {% if product_id == p.id %}selected{% endif %}>{{ p.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <select name="type" class="form-select form-select-sm">
+          <option value="">Todos os tipos</option>
+          <option value="entrada" {% if type == 'entrada' %}selected{% endif %}>Entrada</option>
+          <option value="saida" {% if type == 'saida' %}selected{% endif %}>Saída</option>
+          <option value="ajuste" {% if type == 'ajuste' %}selected{% endif %}>Ajuste</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-outline-primary btn-sm"><i class="bi bi-search"></i> Filtrar</button>
+        <a href="/estoque/historico" class="btn btn-outline-secondary btn-sm ms-1">Limpar</a>
+      </div>
+    </form>
+  </div>
+</div>
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead class="table-light"><tr><th>#</th><th>Produto</th><th>Tipo</th><th>Quantidade</th><th>Motivo</th><th>Usuário</th><th>Data</th></tr></thead>
+      <tbody>
+        {% for mv in movements %}
+        <tr>
+          <td class="text-muted">{{ mv.id }}</td>
+          <td>{{ mv.product.name if mv.product else '—' }}</td>
+          <td>
+            {% if mv.type.value == 'entrada' %}<span class="badge bg-success">Entrada</span>
+            {% elif mv.type.value == 'saida' %}<span class="badge bg-danger">Saída</span>
+            {% else %}<span class="badge bg-warning text-dark">Ajuste</span>{% endif %}
+          </td>
+          <td class="fw-semibold">{{ mv.quantity }}</td>
+          <td class="text-muted small">{{ mv.reason or '—' }}</td>
+          <td class="small">{{ mv.user.full_name if mv.user else '—' }}</td>
+          <td class="text-muted small">{{ mv.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="text-center text-muted py-4">Nenhuma movimentação encontrada</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

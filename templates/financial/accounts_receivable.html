@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Contas a Receber{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <h4 class="fw-bold mb-0"><i class="bi bi-arrow-down-circle me-2"></i>Contas a Receber</h4>
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newModal"><i class="bi bi-plus-lg me-1"></i>Nova Conta</button>
+</div>
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead class="table-light"><tr><th>Descrição</th><th>Cliente</th><th>Vencimento</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>{{ item.description }}</td>
+          <td class="small text-muted">{{ item.customer.name if item.customer else '—' }}</td>
+          <td>{{ item.due_date.strftime('%d/%m/%Y') }}</td>
+          <td class="fw-semibold">R$ {{ "%.2f"|format(item.amount|float) }}</td>
+          <td>
+            {% if item.status.value == 'pago' %}<span class="badge bg-success">Recebido</span>
+            {% elif item.status.value == 'pendente' %}<span class="badge bg-warning text-dark">Pendente</span>
+            {% else %}<span class="badge bg-secondary">Cancelado</span>{% endif %}
+          </td>
+          <td>
+            {% if item.status.value == 'pendente' %}
+            <button class="btn btn-sm btn-success" onclick="receiveItem({{ item.id }}, {{ item.amount }})"><i class="bi bi-check-lg"></i> Receber</button>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-center text-muted py-4">Nenhuma conta encontrada</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal fade" id="newModal" tabindex="-1">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">Nova Conta a Receber</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <form method="post" action="/financeiro/contas-receber/novo">
+      <div class="modal-body">
+        <div class="mb-3"><label class="form-label fw-semibold">Descrição *</label><input type="text" name="description" class="form-control" required></div>
+        <div class="mb-3"><label class="form-label fw-semibold">Cliente</label><select name="customer_id" class="form-select"><option value="">— Selecionar —</option>{% for c in customers %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div>
+        <div class="row g-2">
+          <div class="col-6"><label class="form-label fw-semibold">Valor (R$) *</label><input type="number" name="amount" class="form-control" step="0.01" min="0.01" required></div>
+          <div class="col-6"><label class="form-label fw-semibold">Vencimento *</label><input type="date" name="due_date" class="form-control" required></div>
+        </div>
+      </div>
+      <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary">Salvar</button></div>
+    </form>
+  </div></div>
+</div>
+
+<div class="modal fade" id="recModal" tabindex="-1">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">Confirmar Recebimento</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <form method="post" id="rec-form">
+      <div class="modal-body">
+        <div class="mb-3"><label class="form-label">Data do Recebimento</label><input type="date" name="paid_date" class="form-control" value="{{ today }}"></div>
+        <div class="mb-3"><label class="form-label">Valor Recebido (R$)</label><input type="number" name="paid_amount" id="rec-amount" class="form-control" step="0.01" required></div>
+      </div>
+      <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-success">Confirmar</button></div>
+    </form>
+  </div></div>
+</div>
+<script>
+function receiveItem(id, amount) {
+  document.getElementById('rec-form').action = `/financeiro/contas-receber/${id}/receber`;
+  document.getElementById('rec-amount').value = amount;
+  new bootstrap.Modal(document.getElementById('recModal')).show();
+}
+</script>
+{% endblock %}

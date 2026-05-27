@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — SuperMarket Pro{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h4 class="fw-bold mb-1">Dashboard</h4>
+    <p class="text-muted mb-0">Bem-vindo, {{ current_user.full_name }}!</p>
+  </div>
+  <a href="/pdv" target="_blank" class="btn btn-primary"><i class="bi bi-cart3 me-2"></i>Abrir PDV</a>
+</div>
+
+<!-- Cards de resumo -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <p class="text-muted small mb-1">Vendas Hoje</p>
+            <h4 class="fw-bold text-success mb-0">R$ {{ "%.2f"|format(stats.total_sales_today|float) }}</h4>
+            <small class="text-muted">{{ stats.total_orders_today }} pedidos</small>
+          </div>
+          <div class="stat-icon bg-success-subtle"><i class="bi bi-graph-up text-success fs-3"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <p class="text-muted small mb-1">Vendas no Mês</p>
+            <h4 class="fw-bold text-primary mb-0">R$ {{ "%.2f"|format(stats.total_sales_month|float) }}</h4>
+            <small class="text-muted">mês atual</small>
+          </div>
+          <div class="stat-icon bg-primary-subtle"><i class="bi bi-calendar-check text-primary fs-3"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <p class="text-muted small mb-1">Estoque Baixo</p>
+            <h4 class="fw-bold text-warning mb-0">{{ stats.low_stock_count }}</h4>
+            <small class="text-muted">produtos críticos</small>
+          </div>
+          <div class="stat-icon bg-warning-subtle"><i class="bi bi-exclamation-triangle text-warning fs-3"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <p class="text-muted small mb-1">Contas a Pagar</p>
+            <h4 class="fw-bold text-danger mb-0">R$ {{ "%.2f"|format(stats.open_accounts_payable|float) }}</h4>
+            <small class="text-muted">em aberto</small>
+          </div>
+          <div class="stat-icon bg-danger-subtle"><i class="bi bi-arrow-up-circle text-danger fs-3"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- Últimas vendas -->
+  <div class="col-md-7">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0">Últimas Vendas</h6>
+        <a href="/vendas" class="btn btn-sm btn-outline-primary">Ver todas</a>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light"><tr><th>#</th><th>Cliente</th><th>Total</th><th>Status</th><th>Hora</th></tr></thead>
+            <tbody>
+              {% for sale in recent_sales %}
+              <tr>
+                <td><a href="/vendas/{{ sale.id }}" class="text-decoration-none">#{{ sale.id }}</a></td>
+                <td>{{ sale.customer.name if sale.customer else 'Consumidor' }}</td>
+                <td class="fw-semibold">R$ {{ "%.2f"|format(sale.total|float) }}</td>
+                <td>
+                  {% if sale.status.value == 'finalizada' %}<span class="badge bg-success">Finalizada</span>
+                  {% elif sale.status.value == 'cancelada' %}<span class="badge bg-danger">Cancelada</span>
+                  {% else %}<span class="badge bg-warning">Aberta</span>{% endif %}
+                </td>
+                <td class="text-muted small">{{ sale.created_at.strftime('%H:%M') }}</td>
+              </tr>
+              {% else %}
+              <tr><td colspan="5" class="text-center text-muted py-3">Nenhuma venda hoje</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estoque baixo e atalhos -->
+  <div class="col-md-5">
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0 text-warning"><i class="bi bi-exclamation-triangle me-1"></i>Estoque Baixo</h6>
+        <a href="/relatorios/estoque-baixo" class="btn btn-sm btn-outline-warning">Ver todos</a>
+      </div>
+      <div class="card-body p-0">
+        <ul class="list-group list-group-flush">
+          {% for p in low_stock %}
+          <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+            <span class="small">{{ p.name[:30] }}</span>
+            <span class="badge bg-danger">{{ p.stock_quantity }} {{ p.unit }}</span>
+          </li>
+          {% else %}
+          <li class="list-group-item text-center text-muted py-3 small">Todos os produtos com estoque ok!</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-0"><h6 class="fw-bold mb-0">Atalhos Rápidos</h6></div>
+      <div class="card-body">
+        <div class="row g-2">
+          <div class="col-6"><a href="/pdv" target="_blank" class="btn btn-outline-primary w-100 btn-sm"><i class="bi bi-cart3 me-1"></i>PDV</a></div>
+          <div class="col-6"><a href="/produtos/novo" class="btn btn-outline-secondary w-100 btn-sm"><i class="bi bi-plus-circle me-1"></i>Produto</a></div>
+          <div class="col-6"><a href="/compras/novo" class="btn btn-outline-info w-100 btn-sm"><i class="bi bi-truck me-1"></i>Compra</a></div>
+          <div class="col-6"><a href="/estoque/movimentacao" class="btn btn-outline-success w-100 btn-sm"><i class="bi bi-arrow-left-right me-1"></i>Estoque</a></div>
+          <div class="col-6"><a href="/financeiro/contas-pagar" class="btn btn-outline-danger w-100 btn-sm"><i class="bi bi-arrow-up-circle me-1"></i>A Pagar</a></div>
+          <div class="col-6"><a href="/relatorios/vendas" class="btn btn-outline-dark w-100 btn-sm"><i class="bi bi-bar-chart me-1"></i>Relatórios</a></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

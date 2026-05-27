@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Caixa #{{ register.id }}{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center gap-3 mb-4">
+  <a href="/caixa" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+  <h4 class="fw-bold mb-0">Caixa #{{ register.id }}</h4>
+  {% if register.status.value == 'aberto' %}<span class="badge bg-success fs-6">Aberto</span>{% else %}<span class="badge bg-secondary fs-6">Fechado</span>{% endif %}
+</div>
+<div class="row g-3 mb-4">
+  <div class="col-md-2"><div class="card border-0 shadow-sm text-center py-3"><h5 class="fw-bold text-success mb-0">R$ {{ "%.2f"|format(sales_total|float) }}</h5><small class="text-muted">Total Vendas</small></div></div>
+  <div class="col-md-2"><div class="card border-0 shadow-sm text-center py-3"><h5 class="fw-bold text-primary mb-0">{{ register.sales|selectattr('status.value', 'eq', 'finalizada')|list|length }}</h5><small class="text-muted">Pedidos</small></div></div>
+  <div class="col-md-2"><div class="card border-0 shadow-sm text-center py-3"><h5 class="fw-bold text-info mb-0">R$ {{ "%.2f"|format(register.opening_balance|float) }}</h5><small class="text-muted">Fundo Inicial</small></div></div>
+  <div class="col-md-2"><div class="card border-0 shadow-sm text-center py-3"><h5 class="fw-bold text-success mb-0">R$ {{ "%.2f"|format(cash_in|float) }}</h5><small class="text-muted">Suprimentos</small></div></div>
+  <div class="col-md-2"><div class="card border-0 shadow-sm text-center py-3"><h5 class="fw-bold text-danger mb-0">R$ {{ "%.2f"|format(cash_out|float) }}</h5><small class="text-muted">Sangrias</small></div></div>
+  <div class="col-md-2"><div class="card border-0 shadow-sm text-center py-3"><h5 class="fw-bold mb-0">{% if register.closing_balance %}R$ {{ "%.2f"|format(register.closing_balance|float) }}{% else %}—{% endif %}</h5><small class="text-muted">Fechamento</small></div></div>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-7">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-0"><h6 class="fw-bold mb-0">Vendas do Caixa</h6></div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <thead class="table-light"><tr><th>#</th><th>Cliente</th><th>Total</th><th>Status</th><th>Hora</th></tr></thead>
+          <tbody>
+            {% for s in register.sales %}
+            <tr>
+              <td><a href="/vendas/{{ s.id }}" class="text-decoration-none">#{{ s.id }}</a></td>
+              <td class="small">{{ s.customer.name if s.customer else 'Consumidor' }}</td>
+              <td class="fw-semibold">R$ {{ "%.2f"|format(s.total|float) }}</td>
+              <td>{% if s.status.value == 'finalizada' %}<span class="badge bg-success">OK</span>{% elif s.status.value == 'cancelada' %}<span class="badge bg-danger">Cancelada</span>{% else %}<span class="badge bg-warning">Aberta</span>{% endif %}</td>
+              <td class="text-muted small">{{ s.created_at.strftime('%H:%M') }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="text-center text-muted py-3">Nenhuma venda neste caixa</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-5">
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-white border-0"><h6 class="fw-bold mb-0">Por Forma de Pagamento</h6></div>
+      <div class="card-body">
+        {% set labels = {'dinheiro':'Dinheiro','pix':'PIX','debito':'Débito','credito':'Crédito','fiado':'Fiado'} %}
+        {% for method, val in by_method.items() %}
+        <div class="d-flex justify-content-between mb-2">
+          <span>{{ labels.get(method, method) }}</span>
+          <span class="fw-bold">R$ {{ "%.2f"|format(val|float) }}</span>
+        </div>
+        {% else %}<p class="text-muted text-center small">Sem pagamentos</p>{% endfor %}
+      </div>
+    </div>
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-0"><h6 class="fw-bold mb-0">Movimentações</h6></div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <thead class="table-light"><tr><th>Tipo</th><th>Valor</th><th>Motivo</th></tr></thead>
+          <tbody>
+            {% for mv in register.cash_movements %}
+            <tr>
+              <td>{% if mv.type.value == 'sangria' %}<span class="badge bg-danger">Sangria</span>{% else %}<span class="badge bg-success">Suprimento</span>{% endif %}</td>
+              <td>R$ {{ "%.2f"|format(mv.amount|float) }}</td>
+              <td class="small text-muted">{{ mv.reason or '—' }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" class="text-center text-muted py-2 small">Nenhuma movimentação</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

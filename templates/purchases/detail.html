@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Compra #{{ purchase.id }}{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-4 gap-3">
+  <a href="/compras" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+  <h4 class="fw-bold mb-0">Compra #{{ purchase.id }}</h4>
+  {% if purchase.status.value == 'pendente' %}<span class="badge bg-warning text-dark fs-6">Pendente</span>
+  {% elif purchase.status.value == 'recebida' %}<span class="badge bg-success fs-6">Recebida</span>
+  {% else %}<span class="badge bg-secondary fs-6">Cancelada</span>{% endif %}
+  <div class="ms-auto d-flex gap-2">
+    {% if purchase.status.value == 'pendente' %}
+    <form method="post" action="/compras/{{ purchase.id }}/receber" onsubmit="return confirm('Confirmar recebimento? O estoque será atualizado.')">
+      <button class="btn btn-success"><i class="bi bi-check-circle me-1"></i>Confirmar Recebimento</button>
+    </form>
+    <form method="post" action="/compras/{{ purchase.id }}/cancelar" onsubmit="return confirm('Cancelar pedido?')">
+      <button class="btn btn-outline-danger"><i class="bi bi-x-circle me-1"></i>Cancelar</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+<div class="row g-3">
+  <div class="col-md-8">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-0"><h6 class="fw-bold mb-0">Itens do Pedido</h6></div>
+      <div class="card-body p-0">
+        <table class="table mb-0">
+          <thead class="table-light"><tr><th>Produto</th><th>Qtd</th><th>Custo Unit.</th><th>Total</th></tr></thead>
+          <tbody>
+            {% for item in purchase.items %}
+            <tr>
+              <td>{{ item.product.name if item.product else '—' }}</td>
+              <td>{{ item.quantity }}</td>
+              <td>R$ {{ "%.2f"|format(item.unit_cost|float) }}</td>
+              <td class="fw-semibold">R$ {{ "%.2f"|format(item.total|float) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot class="table-light">
+            <tr><td colspan="3" class="text-end fw-bold">TOTAL</td><td class="fw-bold fs-5">R$ {{ "%.2f"|format(purchase.total|float) }}</td></tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-0"><h6 class="fw-bold mb-0">Informações</h6></div>
+      <div class="card-body">
+        <dl class="row small mb-0">
+          <dt class="col-5 text-muted">Fornecedor</dt><dd class="col-7">{{ purchase.supplier.name if purchase.supplier else '—' }}</dd>
+          <dt class="col-5 text-muted">Nota Fiscal</dt><dd class="col-7">{{ purchase.invoice_number or '—' }}</dd>
+          <dt class="col-5 text-muted">Previsão</dt><dd class="col-7">{% if purchase.expected_date %}{{ purchase.expected_date.strftime('%d/%m/%Y') }}{% else %}—{% endif %}</dd>
+          <dt class="col-5 text-muted">Recebido em</dt><dd class="col-7">{% if purchase.received_date %}{{ purchase.received_date.strftime('%d/%m/%Y') }}{% else %}—{% endif %}</dd>
+          <dt class="col-5 text-muted">Criado em</dt><dd class="col-7">{{ purchase.created_at.strftime('%d/%m/%Y %H:%M') }}</dd>
+          {% if purchase.notes %}<dt class="col-5 text-muted">Obs.</dt><dd class="col-7">{{ purchase.notes }}</dd>{% endif %}
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Produtos — SuperMarket Pro{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <h4 class="fw-bold mb-0"><i class="bi bi-box-seam me-2"></i>Produtos</h4>
+  <a href="/produtos/novo" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Novo Produto</a>
+</div>
+
+<!-- Filtros -->
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <input type="text" name="search" class="form-control form-control-sm" placeholder="Buscar por nome ou código de barras..." value="{{ search or '' }}">
+      </div>
+      <div class="col-md-3">
+        <select name="category_id" class="form-select form-select-sm">
+          <option value="">Todas as categorias</option>
+          {% for c in categories %}<option value="{{ c.id }}" {% if category_id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <div class="form-check">
+          <input type="checkbox" name="low_stock" value="true" class="form-check-input" id="low_stock" {% if low_stock %}checked{% endif %}>
+          <label class="form-check-label small" for="low_stock">Estoque baixo</label>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <button type="submit" class="btn btn-outline-primary btn-sm me-1"><i class="bi bi-search"></i> Filtrar</button>
+        <a href="/produtos" class="btn btn-outline-secondary btn-sm">Limpar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Código</th><th>Produto</th><th>Categoria</th>
+            <th>Custo</th><th>Venda</th><th>Estoque</th><th>Mín.</th><th>Status</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in products %}
+          <tr class="{% if p.stock_quantity <= p.min_stock %}table-warning{% endif %}">
+            <td><code class="small">{{ p.barcode or '—' }}</code></td>
+            <td>
+              <div class="fw-semibold">{{ p.name }}</div>
+              {% if p.brand %}<small class="text-muted">{{ p.brand.name }}</small>{% endif %}
+            </td>
+            <td><span class="badge bg-secondary-subtle text-dark">{{ p.category.name if p.category else '—' }}</span></td>
+            <td class="text-muted small">R$ {{ "%.2f"|format(p.cost_price|float) }}</td>
+            <td class="fw-semibold">R$ {{ "%.2f"|format(p.sale_price|float) }}</td>
+            <td>
+              <span class="fw-bold {% if p.stock_quantity <= p.min_stock %}text-danger{% else %}text-success{% endif %}">
+                {{ p.stock_quantity }} {{ p.unit }}
+              </span>
+            </td>
+            <td class="text-muted small">{{ p.min_stock }} {{ p.unit }}</td>
+            <td>
+              {% if p.is_active %}<span class="badge bg-success">Ativo</span>
+              {% else %}<span class="badge bg-secondary">Inativo</span>{% endif %}
+            </td>
+            <td>
+              <a href="/produtos/{{ p.id }}/editar" class="btn btn-sm btn-outline-primary me-1"><i class="bi bi-pencil"></i></a>
+              <form method="post" action="/produtos/{{ p.id }}/excluir" style="display:inline" onsubmit="return confirm('Desativar produto?')">
+                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="9" class="text-center text-muted py-4">Nenhum produto encontrado</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% if total > per_page %}
+  <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+    <small class="text-muted">{{ total }} produtos encontrados</small>
+    <nav>
+      <ul class="pagination pagination-sm mb-0">
+        {% if page > 1 %}<li class="page-item"><a class="page-link" href="?page={{ page-1 }}{% if search %}&search={{ search }}{% endif %}">Anterior</a></li>{% endif %}
+        <li class="page-item active"><a class="page-link" href="#">{{ page }}</a></li>
+        {% if page * per_page < total %}<li class="page-item"><a class="page-link" href="?page={{ page+1 }}{% if search %}&search={{ search }}{% endif %}">Próxima</a></li>{% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if product else 'Novo' }} Produto — SuperMarket Pro{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+  <a href="/produtos" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a>
+  <h4 class="fw-bold mb-0">{{ 'Editar Produto' if product else 'Novo Produto' }}</h4>
+</div>
+
+<form method="post" action="{{ '/produtos/' + product.id|string + '/editar' if product else '/produtos/novo' }}">
+  <div class="row g-4">
+    <div class="col-md-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0"><h6 class="fw-bold mb-0">Informações Básicas</h6></div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Código de Barras</label>
+              <input type="text" name="barcode" class="form-control" value="{{ product.barcode or '' if product else '' }}" placeholder="EAN-13, QR Code...">
+            </div>
+            <div class="col-md-8">
+              <label class="form-label fw-semibold">Nome do Produto <span class="text-danger">*</span></label>
+              <input type="text" name="name" class="form-control" value="{{ product.name if product else '' }}" required placeholder="Nome completo do produto">
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Descrição</label>
+              <textarea name="description" class="form-control" rows="2" placeholder="Descrição opcional...">{{ product.description or '' if product else '' }}</textarea>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Categoria</label>
+              <select name="category_id" class="form-select">
+                <option value="">— Selecionar —</option>
+                {% for c in categories %}<option value="{{ c.id }}" {% if product and product.category_id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Marca</label>
+              <select name="brand_id" class="form-select">
+                <option value="">— Selecionar —</option>
+                {% for b in brands %}<option value="{{ b.id }}" {% if product and product.brand_id == b.id %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Fornecedor</label>
+              <select name="supplier_id" class="form-select">
+                <option value="">— Selecionar —</option>
+                {% for s in suppliers %}<option value="{{ s.id }}" {% if product and product.supplier_id == s.id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-0"><h6 class="fw-bold mb-0">Preços</h6></div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Preço de Custo (R$)</label>
+            <input type="number" name="cost_price" class="form-control" step="0.01" min="0" value="{{ product.cost_price if product else '0.00' }}">
+          </div>
+          <div class="mb-2">
+            <label class="form-label fw-semibold">Preço de Venda (R$) <span class="text-danger">*</span></label>
+            <input type="number" name="sale_price" class="form-control" step="0.01" min="0" value="{{ product.sale_price if product else '0.00' }}" required>
+          </div>
+          <div class="alert alert-info py-2 small mb-0" id="margin-info">
+            Margem: <strong id="margin-pct">—</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-0"><h6 class="fw-bold mb-0">Estoque</h6></div>
+        <div class="card-body">
+          {% if not product %}
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Qtd. Inicial</label>
+            <input type="number" name="stock_quantity" class="form-control" step="0.001" min="0" value="0">
+          </div>
+          {% endif %}
+          <div class="mb-2">
+            <label class="form-label fw-semibold">Estoque Mínimo</label>
+            <input type="number" name="min_stock" class="form-control" step="0.001" min="0" value="{{ product.min_stock if product else '0' }}">
+          </div>
+          <div>
+            <label class="form-label fw-semibold">Unidade</label>
+            <select name="unit" class="form-select">
+              {% for u in ['UN', 'KG', 'LT', 'CX', 'PC', 'DZ', 'MT'] %}
+              <option value="{{ u }}" {% if product and product.unit == u %}selected{% elif not product and u == 'UN' %}selected{% endif %}>{{ u }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="form-check form-switch mb-3">
+            <input type="checkbox" name="is_active" class="form-check-input" id="is_active" {% if not product or product.is_active %}checked{% endif %}>
+            <label class="form-check-label fw-semibold" for="is_active">Produto Ativo</label>
+          </div>
+          <button type="submit" class="btn btn-primary w-100"><i class="bi bi-check-lg me-1"></i>Salvar Produto</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+<script>
+function updateMargin() {
+  const cost = parseFloat(document.querySelector('[name=cost_price]').value) || 0;
+  const sale = parseFloat(document.querySelector('[name=sale_price]').value) || 0;
+  const el = document.getElementById('margin-pct');
+  if (cost > 0 && sale > 0) {
+    const margin = ((sale - cost) / cost * 100).toFixed(1);
+    el.textContent = margin + '%';
+    el.style.color = margin > 0 ? 'green' : 'red';
+  } else { el.textContent = '—'; }
+}
+document.querySelector('[name=cost_price]').addEventListener('input', updateMargin);
+document.querySelector('[name=sale_price]').addEventListener('input', updateMargin);
+updateMargin();
+</script>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Novo Pedido de Compra{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-4 gap-3">
+  <a href="/compras" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+  <h4 class="fw-bold mb-0">Novo Pedido de Compra</h4>
+</div>
+<form method="post" action="/compras/novo" id="purchase-form">
+  <div class="row g-3">
+    <div class="col-md-8">
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-0"><h6 class="fw-bold mb-0">Itens do Pedido</h6></div>
+        <div class="card-body">
+          <div class="row g-2 mb-2">
+            <div class="col-md-5"><select id="add-product" class="form-select form-select-sm"><option value="">— Selecionar produto —</option>{% for p in products %}<option value="{{ p.id }}" data-cost="{{ p.cost_price }}">{{ p.name }}</option>{% endfor %}</select></div>
+            <div class="col-md-2"><input type="number" id="add-qty" class="form-control form-control-sm" placeholder="Qtd" step="0.001" min="0.001" value="1"></div>
+            <div class="col-md-2"><input type="number" id="add-cost" class="form-control form-control-sm" placeholder="Custo R$" step="0.01" min="0"></div>
+            <div class="col-md-3"><button type="button" class="btn btn-outline-primary btn-sm w-100" onclick="addItem()"><i class="bi bi-plus"></i> Adicionar</button></div>
+          </div>
+          <table class="table table-sm" id="items-table">
+            <thead class="table-light"><tr><th>Produto</th><th>Qtd</th><th>Custo Unit.</th><th>Total</th><th></th></tr></thead>
+            <tbody id="items-body"><tr><td colspan="5" class="text-center text-muted py-3" id="empty-msg">Nenhum item adicionado</td></tr></tbody>
+          </table>
+          <div class="text-end fw-bold fs-5">Total: R$ <span id="total-display">0,00</span></div>
+          <div id="hidden-inputs"></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0"><h6 class="fw-bold mb-0">Informações</h6></div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Fornecedor</label>
+            <select name="supplier_id" class="form-select"><option value="">— Selecionar —</option>{% for s in suppliers %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select>
+          </div>
+          <div class="mb-3"><label class="form-label fw-semibold">Nº da Nota Fiscal</label><input type="text" name="invoice_number" class="form-control" placeholder="Ex: 000123456"></div>
+          <div class="mb-3"><label class="form-label fw-semibold">Previsão de Entrega</label><input type="date" name="expected_date" class="form-control"></div>
+          <div class="mb-3"><label class="form-label fw-semibold">Observações</label><textarea name="notes" class="form-control" rows="2"></textarea></div>
+          <button type="submit" class="btn btn-primary w-100 fw-semibold" id="submit-btn" disabled><i class="bi bi-check-lg me-1"></i>Salvar Pedido</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+<script>
+let items = [];
+document.getElementById('add-product').addEventListener('change', function() {
+  const opt = this.options[this.selectedIndex];
+  const cost = opt.dataset.cost;
+  if (cost) document.getElementById('add-cost').value = parseFloat(cost).toFixed(2);
+});
+function addItem() {
+  const sel = document.getElementById('add-product');
+  const pid = sel.value;
+  const pname = sel.options[sel.selectedIndex].text;
+  const qty = parseFloat(document.getElementById('add-qty').value)||1;
+  const cost = parseFloat(document.getElementById('add-cost').value)||0;
+  if (!pid) { alert('Selecione um produto'); return; }
+  const existing = items.find(i => i.pid === pid);
+  if (existing) { existing.qty += qty; existing.total = existing.qty * existing.cost; }
+  else { items.push({ pid, pname, qty, cost, total: qty * cost }); }
+  renderItems();
+}
+function removeItem(i) { items.splice(i,1); renderItems(); }
+function renderItems() {
+  const tbody = document.getElementById('items-body');
+  const hidden = document.getElementById('hidden-inputs');
+  if (!items.length) { tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3" id="empty-msg">Nenhum item adicionado</td></tr>'; document.getElementById('submit-btn').disabled = true; return; }
+  tbody.innerHTML = items.map((item, i) => `<tr><td>${item.pname}</td><td>${item.qty}</td><td>R$ ${item.cost.toFixed(2)}</td><td>R$ ${item.total.toFixed(2)}</td><td><button type="button" class="btn btn-sm btn-outline-danger" onclick="removeItem(${i})"><i class="bi bi-x"></i></button></td></tr>`).join('');
+  hidden.innerHTML = items.map(item => `<input type="hidden" name="product_id[]" value="${item.pid}"><input type="hidden" name="quantity[]" value="${item.qty}"><input type="hidden" name="unit_cost[]" value="${item.cost}">`).join('');
+  const total = items.reduce((s,i) => s + i.total, 0);
+  document.getElementById('total-display').textContent = total.toFixed(2).replace('.',',');
+  document.getElementById('submit-btn').disabled = false;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Caixa{% endblock %}
+{% block content %}
+<h4 class="fw-bold mb-4"><i class="bi bi-cash-register me-2"></i>Controle de Caixa</h4>
+
+{% if open_register %}
+<div class="alert alert-success d-flex justify-content-between align-items-center">
+  <div><i class="bi bi-check-circle-fill me-2"></i><strong>Caixa Aberto</strong> — Desde {{ open_register.opened_at.strftime('%H:%M') }} | Fundo: R$ {{ "%.2f"|format(open_register.opening_balance|float) }}</div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#movModal">Sangria / Suprimento</button>
+    <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#closeModal">Fechar Caixa</button>
+  </div>
+</div>
+<a href="/caixa/{{ open_register.id }}" class="btn btn-outline-primary mb-3"><i class="bi bi-eye me-1"></i>Ver Detalhes do Caixa Atual</a>
+{% else %}
+<div class="alert alert-warning d-flex justify-content-between align-items-center">
+  <div><i class="bi bi-exclamation-triangle me-2"></i><strong>Caixa Fechado</strong> — Abra o caixa para realizar vendas.</div>
+  <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#openModal">Abrir Caixa</button>
+</div>
+{% endif %}
+
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-white border-0"><h6 class="fw-bold mb-0">Histórico de Caixas</h6></div>
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead class="table-light"><tr><th>#</th><th>Operador</th><th>Abertura</th><th>Fechamento</th><th>Fundo</th><th>Fechamento</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for r in history %}
+        <tr>
+          <td>#{{ r.id }}</td>
+          <td>{{ r.user.full_name if r.user else '—' }}</td>
+          <td class="small text-muted">{{ r.opened_at.strftime('%d/%m %H:%M') }}</td>
+          <td class="small text-muted">{% if r.closed_at %}{{ r.closed_at.strftime('%d/%m %H:%M') }}{% else %}—{% endif %}</td>
+          <td>R$ {{ "%.2f"|format(r.opening_balance|float) }}</td>
+          <td>{% if r.closing_balance %}R$ {{ "%.2f"|format(r.closing_balance|float) }}{% else %}—{% endif %}</td>
+          <td>{% if r.status.value == 'aberto' %}<span class="badge bg-success">Aberto</span>{% else %}<span class="badge bg-secondary">Fechado</span>{% endif %}</td>
+          <td><a href="/caixa/{{ r.id }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="text-center text-muted py-4">Nenhum histórico</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal Abrir -->
+<div class="modal fade" id="openModal" tabindex="-1">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">Abrir Caixa</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <form method="post" action="/caixa/abrir">
+      <div class="modal-body">
+        <div class="mb-3"><label class="form-label fw-semibold">Fundo de Caixa (R$)</label><input type="number" name="opening_balance" class="form-control" step="0.01" min="0" value="0"></div>
+        <div class="mb-3"><label class="form-label fw-semibold">Observações</label><textarea name="notes" class="form-control" rows="2"></textarea></div>
+      </div>
+      <div class="modal-footer"><button type="submit" class="btn btn-success w-100 fw-semibold"><i class="bi bi-unlock me-1"></i>Abrir Caixa</button></div>
+    </form>
+  </div></div>
+</div>
+
+<!-- Modal Fechar -->
+<div class="modal fade" id="closeModal" tabindex="-1">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title text-danger">Fechar Caixa</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <form method="post" action="/caixa/fechar">
+      <div class="modal-body">
+        <div class="mb-3"><label class="form-label fw-semibold">Total em Caixa (R$)</label><input type="number" name="closing_balance" class="form-control" step="0.01" min="0" value="0" required></div>
+        <div class="mb-3"><label class="form-label fw-semibold">Observações</label><textarea name="notes" class="form-control" rows="2"></textarea></div>
+      </div>
+      <div class="modal-footer"><button type="submit" class="btn btn-danger w-100 fw-semibold"><i class="bi bi-lock me-1"></i>Fechar Caixa</button></div>
+    </form>
+  </div></div>
+</div>
+
+<!-- Modal Sangria/Suprimento -->
+<div class="modal fade" id="movModal" tabindex="-1">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">Sangria / Suprimento</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    {% if open_register %}
+    <form method="post" action="/caixa/{{ open_register.id }}/movimentacao">
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Tipo</label>
+          <div class="d-flex gap-3">
+            <div class="form-check flex-fill border rounded p-2 text-center">
+              <input type="radio" name="type" value="sangria" class="form-check-input" id="t-sangria" required>
+              <label class="form-check-label d-block" for="t-sangria"><i class="bi bi-arrow-up-circle text-danger fs-4"></i><br>Sangria</label>
+            </div>
+            <div class="form-check flex-fill border rounded p-2 text-center">
+              <input type="radio" name="type" value="suprimento" class="form-check-input" id="t-suprimento">
+              <label class="form-check-label d-block" for="t-suprimento"><i class="bi bi-arrow-down-circle text-success fs-4"></i><br>Suprimento</label>
+            </div>
+          </div>
+        </div>
+        <div class="mb-3"><label class="form-label fw-semibold">Valor (R$)</label><input type="number" name="amount" class="form-control" step="0.01" min="0.01" required></div>
+        <div class="mb-3"><label class="form-label fw-semibold">Motivo</label><input type="text" name="reason" class="form-control" placeholder="Ex: Retirada para banco..."></div>
+      </div>
+      <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary">Registrar</button></div>
+    </form>
+    {% endif %}
+  </div></div>
+</div>
+{% endblock %}

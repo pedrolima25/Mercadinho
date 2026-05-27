@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="Mercadinho">
+  <rect width="96" height="96" rx="22" fill="#1e3a8a"/>
+  <path d="M22 40h52l-5 32H27L22 40Z" fill="#ffffff"/>
+  <path d="M27 40l5-16h32l5 16" fill="#60a5fa"/>
+  <path d="M34 24h24" stroke="#ffffff" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="36" cy="76" r="5" fill="#22c55e"/>
+  <circle cx="62" cy="76" r="5" fill="#22c55e"/>
+  <path d="M36 50h24M34 60h28" stroke="#1e3a8a" stroke-width="5" stroke-linecap="round"/>
+</svg>

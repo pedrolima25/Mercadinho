@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Relatório de Produtos{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center gap-3 mb-4">
+  <a href="/relatorios" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+  <h4 class="fw-bold mb-0">Produtos Mais Vendidos</h4>
+</div>
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-3"><label class="small">De</label><input type="date" name="date_from" class="form-control form-control-sm" value="{{ date_from }}"></div>
+      <div class="col-md-3"><label class="small">Até</label><input type="date" name="date_to" class="form-control form-control-sm" value="{{ date_to }}"></div>
+      <div class="col-md-2"><button type="submit" class="btn btn-primary btn-sm w-100 mt-3">Gerar</button></div>
+    </form>
+  </div>
+</div>
+<div class="row g-3">
+  <div class="col-md-7">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-0"><h6 class="fw-bold mb-0">Top 20 Produtos por Faturamento</h6></div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <thead class="table-light"><tr><th>#</th><th>Produto</th><th>Qtd</th><th>Faturamento</th></tr></thead>
+          <tbody>
+            {% for name, qty, rev in top_products %}
+            <tr>
+              <td class="text-muted">{{ loop.index }}</td>
+              <td>{{ name }}</td>
+              <td>{{ "%.2f"|format(qty|float) }}</td>
+              <td class="fw-semibold">R$ {{ "%.2f"|format(rev|float) }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-center text-muted py-3">Sem dados no período</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-5">
+    <div class="card border-0 shadow-sm border-start border-danger border-4">
+      <div class="card-header bg-white border-0"><h6 class="fw-bold mb-0 text-danger">Produtos com Estoque Baixo</h6></div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <thead class="table-light"><tr><th>Produto</th><th>Atual</th><th>Mín.</th></tr></thead>
+          <tbody>
+            {% for p in low_stock %}
+            <tr><td class="small">{{ p.name[:25] }}</td><td class="text-danger fw-bold">{{ p.stock_quantity }}</td><td class="text-muted">{{ p.min_stock }}</td></tr>
+            {% else %}
+            <tr><td colspan="3" class="text-center text-muted py-2 small">Todos ok!</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

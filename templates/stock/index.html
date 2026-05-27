@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Estoque — SuperMarket Pro{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <h4 class="fw-bold mb-0"><i class="bi bi-boxes me-2"></i>Controle de Estoque</h4>
+  <div class="d-flex gap-2">
+    <a href="/estoque/historico" class="btn btn-outline-secondary btn-sm"><i class="bi bi-clock-history me-1"></i>Histórico</a>
+    <a href="/estoque/lotes" class="btn btn-outline-info btn-sm"><i class="bi bi-layers me-1"></i>Lotes/Validade</a>
+    <a href="/estoque/movimentacao" class="btn btn-primary btn-sm"><i class="bi bi-arrow-left-right me-1"></i>Nova Movimentação</a>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm border-start border-danger border-4">
+      <div class="card-body">
+        <h6 class="text-danger fw-bold"><i class="bi bi-exclamation-triangle me-1"></i>Estoque Crítico</h6>
+        <h3 class="fw-bold mb-0">{{ low_stock|length }}</h3>
+        <small class="text-muted">produtos abaixo do mínimo</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm border-start border-warning border-4">
+      <div class="card-body">
+        <h6 class="text-warning fw-bold"><i class="bi bi-calendar-x me-1"></i>Vencendo em Breve</h6>
+        <h3 class="fw-bold mb-0">{{ expiring|length }}</h3>
+        <small class="text-muted">lotes com validade próxima</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm border-start border-primary border-4">
+      <div class="card-body">
+        <h6 class="text-primary fw-bold"><i class="bi bi-arrow-left-right me-1"></i>Movimentações</h6>
+        <h3 class="fw-bold mb-0">{{ movements|length }}</h3>
+        <small class="text-muted">últimas movimentações</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0 text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Produtos com Estoque Baixo</h6>
+        <a href="/relatorios/estoque-baixo" class="btn btn-sm btn-outline-danger">Ver relatório</a>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <thead class="table-light"><tr><th>Produto</th><th>Atual</th><th>Mínimo</th><th></th></tr></thead>
+          <tbody>
+            {% for p in low_stock %}
+            <tr>
+              <td>{{ p.name[:30] }}</td>
+              <td class="text-danger fw-bold">{{ p.stock_quantity }} {{ p.unit }}</td>
+              <td class="text-muted">{{ p.min_stock }} {{ p.unit }}</td>
+              <td><a href="/estoque/movimentacao?product_id={{ p.id }}" class="btn btn-xs btn-outline-success" style="font-size:0.75rem;padding:1px 6px">+ Entrada</a></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-center text-muted py-3">Todos os produtos com estoque ok!</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-0"><h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-1"></i>Últimas Movimentações</h6></div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <thead class="table-light"><tr><th>Produto</th><th>Tipo</th><th>Qtd</th><th>Data</th></tr></thead>
+          <tbody>
+            {% for mv in movements %}
+            <tr>
+              <td class="small">{{ mv.product.name[:25] if mv.product else '—' }}</td>
+              <td>
+                {% if mv.type.value == 'entrada' %}<span class="badge bg-success-subtle text-success">Entrada</span>
+                {% elif mv.type.value == 'saida' %}<span class="badge bg-danger-subtle text-danger">Saída</span>
+                {% else %}<span class="badge bg-warning-subtle text-warning">Ajuste</span>{% endif %}
+              </td>
+              <td class="fw-semibold">{{ mv.quantity }}</td>
+              <td class="text-muted small">{{ mv.created_at.strftime('%d/%m %H:%M') }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-center text-muted py-3">Sem movimentações</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

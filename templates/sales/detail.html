@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Venda #{{ sale.id }} — SuperMarket Pro{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-4 gap-3">
+  <a href="/vendas" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+  <h4 class="fw-bold mb-0">Venda #{{ sale.id }}</h4>
+  {% if sale.status.value == 'finalizada' %}<span class="badge bg-success fs-6">Finalizada</span>
+  {% elif sale.status.value == 'cancelada' %}<span class="badge bg-danger fs-6">Cancelada</span>
+  {% else %}<span class="badge bg-warning fs-6">Aberta</span>{% endif %}
+  <div class="ms-auto">
+    {% if sale.status.value == 'finalizada' %}
+    <form method="post" action="/vendas/{{ sale.id }}/cancelar" style="display:inline" onsubmit="return confirm('Cancelar esta venda e devolver estoque?')">
+      <button class="btn btn-outline-danger"><i class="bi bi-x-circle me-1"></i>Cancelar Venda</button>
+    </form>
+    {% endif %}
+    <button class="btn btn-outline-secondary ms-2" onclick="window.print()"><i class="bi bi-printer me-1"></i>Imprimir</button>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-8">
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-white border-0"><h6 class="fw-bold mb-0">Itens da Venda</h6></div>
+      <div class="card-body p-0">
+        <table class="table mb-0">
+          <thead class="table-light"><tr><th>#</th><th>Produto</th><th>Qtd</th><th>Preço Unit.</th><th>Desconto</th><th>Total</th></tr></thead>
+          <tbody>
+            {% for item in sale.items %}
+            <tr>
+              <td class="text-muted">{{ loop.index }}</td>
+              <td>{{ item.product.name if item.product else 'Produto removido' }}</td>
+              <td>{{ item.quantity }} {{ item.product.unit if item.product else '' }}</td>
+              <td>R$ {{ "%.2f"|format(item.unit_price|float) }}</td>
+              <td>{% if item.discount > 0 %}R$ {{ "%.2f"|format(item.discount|float) }}{% else %}—{% endif %}</td>
+              <td class="fw-semibold">R$ {{ "%.2f"|format(item.total|float) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot class="table-light">
+            <tr><td colspan="5" class="text-end fw-semibold">Subtotal</td><td class="fw-semibold">R$ {{ "%.2f"|format(sale.subtotal|float) }}</td></tr>
+            {% if sale.discount > 0 %}
+            <tr><td colspan="5" class="text-end text-danger">Desconto</td><td class="text-danger">— R$ {{ "%.2f"|format(sale.discount|float) }}</td></tr>
+            {% endif %}
+            <tr class="table-success"><td colspan="5" class="text-end fw-bold fs-5">TOTAL</td><td class="fw-bold fs-5">R$ {{ "%.2f"|format(sale.total|float) }}</td></tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-0"><h6 class="fw-bold mb-0">Pagamentos</h6></div>
+      <div class="card-body">
+        {% for pay in sale.payments %}
+        <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+          <div>
+            {% if pay.method.value == 'dinheiro' %}<i class="bi bi-cash me-2"></i>Dinheiro
+            {% elif pay.method.value == 'pix' %}<i class="bi bi-qr-code me-2"></i>PIX
+            {% elif pay.method.value == 'debito' %}<i class="bi bi-credit-card-2-back me-2"></i>Débito
+            {% elif pay.method.value == 'credito' %}<i class="bi bi-credit-card me-2"></i>Crédito
+            {% elif pay.method.value == 'fiado' %}<i class="bi bi-person-check me-2"></i>Fiado{% endif %}
+          </div>
+          <span class="fw-bold">R$ {{ "%.2f"|format(pay.amount|float) }}</span>
+        </div>
+        {% endfor %}
+        {% set total_paid = sale.payments | sum(attribute='amount') %}
+        {% set troco = total_paid - sale.total %}
+        {% if troco > 0 %}
+        <div class="d-flex justify-content-between mt-2 text-success fw-bold">
+          <span>Troco</span><span>R$ {{ "%.2f"|format(troco|float) }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-white border-0"><h6 class="fw-bold mb-0">Informações</h6></div>
+      <div class="card-body">
+        <dl class="row small mb-0">
+          <dt class="col-5 text-muted">Data/Hora</dt>
+          <dd class="col-7">{{ sale.created_at.strftime('%d/%m/%Y %H:%M') }}</dd>
+          <dt class="col-5 text-muted">Operador</dt>
+          <dd class="col-7">{{ sale.user.full_name if sale.user else '—' }}</dd>
+          <dt class="col-5 text-muted">Cliente</dt>
+          <dd class="col-7">{{ sale.customer.name if sale.customer else 'Consumidor Final' }}</dd>
+          {% if sale.notes %}
+          <dt class="col-5 text-muted">Obs.</dt>
+          <dd class="col-7">{{ sale.notes }}</dd>
+          {% endif %}
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
