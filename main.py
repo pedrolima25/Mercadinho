@@ -1,15 +1,30 @@
-from fastapi import FastAPI, Request, Depends
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import FastAPI, Request, Depends, Query
+from fastapi.responses import HTMLResponse, RedirectResponse, Response, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy import func, extract
+from sqlalchemy import func, extract, inspect, text
 from datetime import date, timedelta
+import segno, io
 
 from database import engine, Base, get_db
 import models
 import auth as auth_utils
 from config import settings
+import time
+
+
+def wait_for_db(retries: int = 15, delay: int = 2) -> None:
+    for attempt in range(1, retries + 1):
+        try:
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+            return
+        except Exception:
+            if attempt == retries:
+                raise
+            print(f"Aguardando banco de dados... ({attempt}/{retries})", flush=True)
+            time.sleep(delay)
 
 # Routers
 from routers.auth_router import router as auth_router
@@ -27,18 +42,58 @@ from routers.catalogs import (
     customers_router, employees_router
 )
 
-# Criar tabelas
+# Tabelas criadas após wait_for_db() mais abaixo
+
+
+def _add_columns_if_missing(table: str, columns: dict):
+    inspector = inspect(engine)
+    existing = {c["name"] for c in inspector.get_columns(table)}
+    with engine.begin() as conn:
+        for col, col_type in columns.items():
+            if col not in existing:
+                # SQLite DEFAULT inline não suporta NUMERIC, simplifica
+                safe_type = col_type.split(" DEFAULT")[0]
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {safe_type}"))
+
+
+def ensure_schema_updates():
+    _add_columns_if_missing("products", {
+        "ncm": "VARCHAR(8)",
+        "cest": "VARCHAR(10)",
+        "cfop": "VARCHAR(4)",
+        "origin": "VARCHAR(1)",
+        "cst_csosn": "VARCHAR(4)",
+        "icms_rate": "NUMERIC(5,2)",
+        "pis_rate": "NUMERIC(5,2)",
+        "cofins_rate": "NUMERIC(5,2)",
+        "tax_notes": "TEXT",
+    })
+    _add_columns_if_missing("company_profile", {
+        "pix_key": "VARCHAR(150)",
+        "pix_city": "VARCHAR(80)",
+    })
+
+
+wait_for_db()
 Base.metadata.create_all(bind=engine)
+ensure_schema_updates()
 
 app = FastAPI(title=settings.app_name, docs_url="/api/docs")
 app.state.market_name = settings.market_name
 app.state.market_logo_url = settings.market_logo_url
+app.state.pix_key = settings.pix_key
+app.state.pix_city = settings.pix_city
 app.state.company_receipt_footer = "Obrigado pela preferencia"
 app.state.company_cnpj = ""
 app.state.company_phone = ""
 app.state.company_email = ""
 app.state.company_address = ""
 load_company_brand(app)
+
+# Seed inicial (seguro chamar múltiplas vezes — verifica antes de criar)
+@app.on_event("startup")
+async def on_startup():
+    create_initial_data()
 
 # Static files e templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -125,21 +180,145 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         models.Product.stock_quantity <= models.Product.min_stock
     ).order_by(models.Product.stock_quantity).limit(8).all()
 
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request,
+    # Gráfico: vendas por dia nos últimos 7 dias
+    chart_days, chart_totals = [], []
+    for i in range(6, -1, -1):
+        d = today - timedelta(days=i)
+        t = db.query(func.sum(models.Sale.total)).filter(
+            models.Sale.status == models.SaleStatus.finalizada,
+            func.date(models.Sale.created_at) == d
+        ).scalar() or 0
+        chart_days.append(d.strftime('%d/%m'))
+        chart_totals.append(float(t))
+
+    # Gráfico: métodos de pagamento (últimos 30 dias)
+    since30 = today - timedelta(days=30)
+    pay_rows = db.query(
+        models.Payment.method, func.sum(models.Payment.amount)
+    ).join(models.Sale).filter(
+        models.Sale.status == models.SaleStatus.finalizada,
+        func.date(models.Sale.created_at) >= since30
+    ).group_by(models.Payment.method).all()
+    pay_labels = {"dinheiro": "Dinheiro", "pix": "PIX", "debito": "Débito",
+                  "credito": "Crédito", "fiado": "Fiado", "vale": "Vale"}
+    chart_pay_labels = [pay_labels.get(r[0].value, r[0].value) for r in pay_rows]
+    chart_pay_values = [float(r[1]) for r in pay_rows]
+
+    # Gráfico: top 5 produtos por receita (últimos 30 dias)
+    top_rows = db.query(
+        models.Product.name, func.sum(models.SaleItem.total).label('rev')
+    ).join(models.SaleItem).join(models.Sale).filter(
+        models.Sale.status == models.SaleStatus.finalizada,
+        func.date(models.Sale.created_at) >= since30
+    ).group_by(models.Product.id, models.Product.name).order_by(
+        func.sum(models.SaleItem.total).desc()
+    ).limit(5).all()
+    chart_top_names = [r[0][:25] for r in top_rows]
+    chart_top_values = [float(r[1]) for r in top_rows]
+
+    return templates.TemplateResponse(request, "dashboard.html", {
         "current_user": current_user,
         "stats": stats,
         "recent_sales": recent_sales,
         "low_stock": low_stock,
-        "today": today.isoformat()
+        "today": today.isoformat(),
+        "chart_days": chart_days,
+        "chart_totals": chart_totals,
+        "chart_pay_labels": chart_pay_labels,
+        "chart_pay_values": chart_pay_values,
+        "chart_top_names": chart_top_names,
+        "chart_top_values": chart_top_values,
     })
 
 
-# ─── Contexto global para templates ──────────────────────────────────────────
+# ─── QR Code generator ───────────────────────────────────────────────────────
+@app.get("/api/qrcode")
+def qrcode_image(text: str = Query(...), scale: int = Query(4)):
+    qr = segno.make(text, error='m')
+    buf = io.BytesIO()
+    qr.save(buf, kind='png', scale=scale, border=1)
+    buf.seek(0)
+    return Response(content=buf.getvalue(), media_type="image/png",
+                    headers={"Cache-Control": "no-store"})
+
+
+# ─── Alertas globais (middleware) ────────────────────────────────────────────
+_SKIP_ALERTS = {"/login", "/logout", "/api/alerts"}
+
 @app.middleware("http")
-async def add_template_globals(request: Request, call_next):
-    response = await call_next(request)
-    return response
+async def inject_alerts(request: Request, call_next):
+    path = request.url.path
+    skip = (path.startswith("/static") or path.startswith("/api/")
+            or path in _SKIP_ALERTS or request.method != "GET")
+    if skip:
+        request.state.alerts = {"low_stock": 0, "overdue_payable": 0,
+                                 "overdue_receivable": 0, "total": 0}
+    else:
+        from database import SessionLocal as _SL
+        _db = _SL()
+        try:
+            _today = date.today()
+            ls = _db.query(func.count(models.Product.id)).filter(
+                models.Product.is_active == True,
+                models.Product.stock_quantity <= models.Product.min_stock
+            ).scalar() or 0
+            op = _db.query(func.count(models.AccountPayable.id)).filter(
+                models.AccountPayable.status == models.AccountStatus.pendente,
+                models.AccountPayable.due_date < _today
+            ).scalar() or 0
+            orec = _db.query(func.count(models.AccountReceivable.id)).filter(
+                models.AccountReceivable.status == models.AccountStatus.pendente,
+                models.AccountReceivable.due_date < _today
+            ).scalar() or 0
+            request.state.alerts = {
+                "low_stock": ls, "overdue_payable": op,
+                "overdue_receivable": orec, "total": ls + op + orec
+            }
+        except Exception:
+            request.state.alerts = {"low_stock": 0, "overdue_payable": 0,
+                                     "overdue_receivable": 0, "total": 0}
+        finally:
+            _db.close()
+    return await call_next(request)
+
+
+@app.get("/api/alerts")
+def alerts_api(request: Request, db: Session = Depends(get_db)):
+    current_user = auth_utils.get_current_user_from_cookie(request, db)
+    if not current_user:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    today = date.today()
+
+    low_stock = db.query(models.Product).filter(
+        models.Product.is_active == True,
+        models.Product.stock_quantity <= models.Product.min_stock
+    ).order_by(models.Product.stock_quantity).limit(8).all()
+
+    overdue_pay = db.query(models.AccountPayable).filter(
+        models.AccountPayable.status == models.AccountStatus.pendente,
+        models.AccountPayable.due_date < today
+    ).order_by(models.AccountPayable.due_date).limit(8).all()
+
+    overdue_rec = db.query(models.AccountReceivable).filter(
+        models.AccountReceivable.status == models.AccountStatus.pendente,
+        models.AccountReceivable.due_date < today
+    ).order_by(models.AccountReceivable.due_date).limit(8).all()
+
+    return JSONResponse({
+        "low_stock": [{"id": p.id, "name": p.name,
+                       "qty": float(p.stock_quantity), "min": float(p.min_stock),
+                       "unit": p.unit} for p in low_stock],
+        "overdue_payable": [{"id": a.id, "description": a.description,
+                              "amount": float(a.amount),
+                              "due_date": a.due_date.isoformat() if a.due_date else "",
+                              "days": (today - a.due_date).days if a.due_date else 0}
+                             for a in overdue_pay],
+        "overdue_receivable": [{"id": a.id, "description": a.description,
+                                 "amount": float(a.amount),
+                                 "due_date": a.due_date.isoformat() if a.due_date else "",
+                                 "days": (today - a.due_date).days if a.due_date else 0}
+                                for a in overdue_rec],
+    })
 
 
 # ─── Seed de dados iniciais ───────────────────────────────────────────────────

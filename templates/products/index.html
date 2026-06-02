@@ -50,6 +50,7 @@
             <td>
               <div class="fw-semibold">{{ p.name }}</div>
               {% if p.brand %}<small class="text-muted">{{ p.brand.name }}</small>{% endif %}
+              {% if p.ncm %}<small class="text-muted d-block">NCM {{ p.ncm }}</small>{% endif %}
             </td>
             <td><span class="badge bg-secondary-subtle text-dark">{{ p.category.name if p.category else '—' }}</span></td>
             <td class="text-muted small">R$ {{ "%.2f"|format(p.cost_price|float) }}</td>

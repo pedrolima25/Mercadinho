@@ -16,20 +16,26 @@ def login_page(request: Request):
     user = auth_utils.get_current_user_from_cookie(request, next(get_db()))
     if user:
         return RedirectResponse("/", status_code=302)
-    return templates.TemplateResponse("login.html", {"request": request, "error": None})
+    return templates.TemplateResponse(request, "login.html", {"error": None})
 
 
 @router.post("/login")
 async def login(request: Request, username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
     user = auth_utils.authenticate_user(db, username, password)
     if not user or not user.is_active:
-        return templates.TemplateResponse("login.html", {"request": request, "error": "Usuário ou senha inválidos"})
+        return templates.TemplateResponse(request, "login.html", {"error": "Usuário ou senha inválidos"})
     token = auth_utils.create_access_token(
         {"sub": user.username},
         timedelta(minutes=settings.access_token_expire_minutes)
     )
     response = RedirectResponse("/", status_code=302)
-    response.set_cookie("access_token", f"Bearer {token}", httponly=True, max_age=settings.access_token_expire_minutes * 60)
+    response.set_cookie(
+        "access_token",
+        f"Bearer {token}",
+        httponly=True,
+        samesite="lax",
+        max_age=settings.access_token_expire_minutes * 60,
+    )
     return response
 
 

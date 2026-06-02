@@ -1,118 +1,113 @@
-from fastapi import APIRouter, Depends, Request, Form
+"""
+Rotas de Estoque
+================
+Responsabilidade: receber requisições HTTP e delegar ao ServicoEstoque.
+"""
+
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy.orm import Session, joinedload
 from typing import Optional
-from datetime import date, timedelta
+from sqlalchemy.orm import Session
 from database import get_db
-import models, auth as auth_utils
+import models
+import auth as auth_utils
+from servicos.estoque import ServicoEstoque
+from servicos.produtos import ServicoProdutos
 
 router = APIRouter(prefix="/estoque", tags=["estoque"])
 templates = Jinja2Templates(directory="templates")
 
 
 @router.get("", response_class=HTMLResponse)
-def stock_overview(request: Request, db: Session = Depends(get_db), current_user: models.User = Depends(auth_utils.require_gerente)):
-    low_stock = db.query(models.Product).filter(
-        models.Product.is_active == True,
-        models.Product.stock_quantity <= models.Product.min_stock
-    ).order_by(models.Product.name).all()
-
-    expiring = db.query(models.ProductBatch).options(joinedload(models.ProductBatch.product)).filter(
-        models.ProductBatch.expiry_date != None
-    ).order_by(models.ProductBatch.expiry_date).limit(20).all()
-
-    movements = db.query(models.StockMovement).options(
-        joinedload(models.StockMovement.product),
-        joinedload(models.StockMovement.user)
-    ).order_by(models.StockMovement.created_at.desc()).limit(30).all()
-
-    return templates.TemplateResponse("stock/index.html", {
-        "request": request, "low_stock": low_stock, "expiring": expiring,
-        "movements": movements, "current_user": current_user
-    })
+def visao_geral(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth_utils.require_gerente),
+):
+    """Tela principal de estoque: produtos críticos, lotes e últimas movimentações."""
+    servico = ServicoEstoque(db)
+    dados = servico.visao_geral()
+    return templates.TemplateResponse(request, "stock/index.html", {**dados, "current_user": current_user})
 
 
 @router.get("/movimentacao", response_class=HTMLResponse)
-def new_movement(request: Request, db: Session = Depends(get_db), current_user: models.User = Depends(auth_utils.require_gerente)):
-    products = db.query(models.Product).filter(models.Product.is_active == True).order_by(models.Product.name).all()
-    return templates.TemplateResponse("stock/movement.html", {"request": request, "products": products, "current_user": current_user})
+def nova_movimentacao(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth_utils.require_gerente),
+):
+    """Formulário para registrar movimentação de estoque."""
+    servico_produtos = ServicoProdutos(db)
+    produtos, _ = servico_produtos.listar(por_pagina=1000)
+    return templates.TemplateResponse(
+        request, "stock/movement.html",
+        {"products": produtos, "current_user": current_user},
+    )
 
 
 @router.post("/movimentacao")
-async def create_movement(request: Request, db: Session = Depends(get_db), current_user: models.User = Depends(auth_utils.require_gerente)):
+async def registrar_movimentacao(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth_utils.require_gerente),
+):
+    """Salva movimentação de estoque (entrada, saída ou ajuste)."""
     form = await request.form()
-    product_id = int(form.get("product_id"))
-    quantity = float(form.get("quantity", 0))
-    mov_type = form.get("type")
-    reason = form.get("reason") or None
-
-    product = db.query(models.Product).filter(models.Product.id == product_id).first()
-    if product:
-        if mov_type == "entrada":
-            product.stock_quantity = float(product.stock_quantity) + quantity
-        elif mov_type == "saida":
-            product.stock_quantity = max(0, float(product.stock_quantity) - quantity)
-        elif mov_type == "ajuste":
-            product.stock_quantity = quantity
-
-        mv = models.StockMovement(
-            product_id=product_id, type=models.MovementType(mov_type),
-            quantity=quantity, reason=reason, user_id=current_user.id
-        )
-        db.add(mv)
-        db.commit()
-
+    ServicoEstoque(db).registrar_movimentacao(form, current_user)
     return RedirectResponse("/estoque", status_code=302)
 
 
 @router.get("/lotes", response_class=HTMLResponse)
-def batches(request: Request, db: Session = Depends(get_db), current_user: models.User = Depends(auth_utils.require_gerente)):
-    batches = db.query(models.ProductBatch).options(joinedload(models.ProductBatch.product)).order_by(models.ProductBatch.expiry_date).all()
-    products = db.query(models.Product).filter(models.Product.is_active == True).all()
-    today = date.today()
-    near_date = (today + timedelta(days=30)).isoformat()
-    return templates.TemplateResponse("stock/batches.html", {
-        "request": request, "batches": batches, "products": products,
-        "current_user": current_user,
-        "now_date": today.isoformat(), "near_date": near_date
-    })
+def lotes(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth_utils.require_gerente),
+):
+    """Tela de lotes e validades."""
+    servico = ServicoEstoque(db)
+    dados = servico.listar_lotes()
+    return templates.TemplateResponse(request, "stock/batches.html", {**dados, "current_user": current_user})
 
 
 @router.post("/lotes/novo")
-async def create_batch(request: Request, db: Session = Depends(get_db), current_user: models.User = Depends(auth_utils.require_gerente)):
+async def criar_lote(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth_utils.require_gerente),
+):
+    """Cria novo lote de produto."""
     form = await request.form()
-    batch = models.ProductBatch(
-        product_id=int(form.get("product_id")),
-        batch_number=form.get("batch_number") or None,
-        quantity=float(form.get("quantity") or 0),
-        expiry_date=form.get("expiry_date") or None
-    )
-    db.add(batch)
-    db.commit()
+    ServicoEstoque(db).criar_lote(form)
     return RedirectResponse("/estoque/lotes", status_code=302)
 
 
 @router.get("/historico", response_class=HTMLResponse)
-def movement_history(
+def historico(
     request: Request,
     product_id: Optional[int] = None,
     type: Optional[str] = None,
     page: int = 1,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente)
+    current_user: models.User = Depends(auth_utils.require_gerente),
 ):
-    q = db.query(models.StockMovement).options(joinedload(models.StockMovement.product), joinedload(models.StockMovement.user))
-    if product_id:
-        q = q.filter(models.StockMovement.product_id == product_id)
-    if type:
-        q = q.filter(models.StockMovement.type == type)
-    total = q.count()
-    per_page = 30
-    movements = q.order_by(models.StockMovement.created_at.desc()).offset((page - 1) * per_page).limit(per_page).all()
-    products = db.query(models.Product).filter(models.Product.is_active == True).all()
-    return templates.TemplateResponse("stock/history.html", {
-        "request": request, "movements": movements, "products": products,
-        "product_id": product_id, "type": type, "page": page,
-        "total": total, "per_page": per_page, "current_user": current_user
-    })
+    """Histórico completo de movimentações com filtros."""
+    servico = ServicoEstoque(db)
+    servico_produtos = ServicoProdutos(db)
+
+    movimentacoes, total = servico.historico(produto_id=product_id, tipo=type, pagina=page)
+    produtos, _ = servico_produtos.listar(por_pagina=1000)
+
+    return templates.TemplateResponse(
+        request, "stock/history.html",
+        {
+            "movements": movimentacoes,
+            "products": produtos,
+            "product_id": product_id,
+            "type": type,
+            "page": page,
+            "total": total,
+            "per_page": 30,
+            "current_user": current_user,
+        },
+    )

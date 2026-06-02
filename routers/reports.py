@@ -14,7 +14,7 @@ templates = Jinja2Templates(directory="templates")
 
 @router.get("", response_class=HTMLResponse)
 def reports_home(request: Request, current_user: models.User = Depends(auth_utils.require_gerente)):
-    return templates.TemplateResponse("reports/index.html", {"request": request, "current_user": current_user})
+    return templates.TemplateResponse(request, "reports/index.html", {"current_user": current_user})
 
 
 @router.get("/vendas", response_class=HTMLResponse)
@@ -53,8 +53,8 @@ def sales_report(
             method = pay.method.value
             by_payment[method] = by_payment.get(method, 0) + float(pay.amount)
 
-    return templates.TemplateResponse("reports/sales.html", {
-        "request": request, "current_user": current_user,
+    return templates.TemplateResponse(request, "reports/sales.html", {
+        "current_user": current_user,
         "date_from": date_from, "date_to": date_to,
         "total_sales": total_sales, "total_discount": total_discount,
         "count": count, "avg_ticket": avg_ticket,
@@ -93,8 +93,8 @@ def products_report(
         models.Product.stock_quantity <= models.Product.min_stock
     ).order_by(models.Product.stock_quantity).all()
 
-    return templates.TemplateResponse("reports/products.html", {
-        "request": request, "current_user": current_user,
+    return templates.TemplateResponse(request, "reports/products.html", {
+        "current_user": current_user,
         "date_from": date_from, "date_to": date_to,
         "top_products": top_products, "low_stock": low_stock
     })
@@ -136,8 +136,8 @@ def financial_report(
 
     profit = float(sales_total) - float(expenses_total) - float(purchases_total)
 
-    return templates.TemplateResponse("reports/financial.html", {
-        "request": request, "current_user": current_user,
+    return templates.TemplateResponse(request, "reports/financial.html", {
+        "current_user": current_user,
         "month": month, "year": year,
         "sales_total": sales_total, "expenses_total": expenses_total,
         "purchases_total": purchases_total, "profit": profit,
@@ -151,4 +151,4 @@ def low_stock_report(request: Request, db: Session = Depends(get_db), current_us
         models.Product.is_active == True,
         models.Product.stock_quantity <= models.Product.min_stock
     ).order_by(models.Product.stock_quantity).all()
-    return templates.TemplateResponse("reports/low_stock.html", {"request": request, "products": products, "current_user": current_user})
+    return templates.TemplateResponse(request, "reports/low_stock.html", {"products": products, "current_user": current_user})

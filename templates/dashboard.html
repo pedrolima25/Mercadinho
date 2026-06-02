@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Dashboard — SuperMarket Pro{% endblock %}
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
 {% block content %}
 <div class="d-flex align-items-center justify-content-between mb-4">
   <div>
@@ -68,6 +71,52 @@
     </div>
   </div>
 </div>
+
+<!-- ── Gráficos ─────────────────────────────────────────────────── -->
+<div class="row g-3 mb-4">
+  <!-- Vendas por dia -->
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0"><i class="bi bi-bar-chart-line me-1 text-primary"></i>Vendas — Últimos 7 dias</h6>
+      </div>
+      <div class="card-body" style="position:relative;height:220px;">
+        <canvas id="chartDays"></canvas>
+      </div>
+    </div>
+  </div>
+  <!-- Métodos de pagamento -->
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white border-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-pie-chart me-1 text-success"></i>Pagamentos — 30 dias</h6>
+      </div>
+      <div class="card-body d-flex align-items-center justify-content-center" style="height:220px;">
+        {% if chart_pay_values %}
+        <canvas id="chartPay"></canvas>
+        {% else %}
+        <span class="text-muted small">Sem dados no período</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Top produtos -->
+{% if chart_top_names %}
+<div class="row g-3 mb-4">
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-trophy me-1 text-warning"></i>Top 5 Produtos — Receita (30 dias)</h6>
+      </div>
+      <div class="card-body" style="position:relative;height:180px;">
+        <canvas id="chartTop"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
 
 <div class="row g-3">
   <!-- Últimas vendas -->
@@ -140,4 +189,89 @@
     </div>
   </div>
 </div>
+
+<script>
+const fmtR = v => 'R$ ' + Number(v).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+// ── Vendas por dia ────────────────────────────────────────────────────────────
+new Chart(document.getElementById('chartDays'), {
+  type: 'bar',
+  data: {
+    labels: {{ chart_days | tojson }},
+    datasets: [{
+      label: 'Vendas (R$)',
+      data: {{ chart_totals | tojson }},
+      backgroundColor: 'rgba(59,130,246,0.75)',
+      borderColor: 'rgba(59,130,246,1)',
+      borderWidth: 1, borderRadius: 5,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => fmtR(ctx.parsed.y) } }
+    },
+    scales: {
+      y: { beginAtZero: true,
+           ticks: { callback: v => 'R$' + Number(v).toLocaleString('pt-BR') },
+           grid: { color: 'rgba(0,0,0,0.04)' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// ── Métodos de pagamento ──────────────────────────────────────────────────────
+{% if chart_pay_values %}
+new Chart(document.getElementById('chartPay'), {
+  type: 'doughnut',
+  data: {
+    labels: {{ chart_pay_labels | tojson }},
+    datasets: [{
+      data: {{ chart_pay_values | tojson }},
+      backgroundColor: ['#3b82f6','#22c55e','#a855f7','#f97316','#ef4444','#14b8a6'],
+      borderWidth: 2, borderColor: '#fff', hoverOffset: 6,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+      tooltip: { callbacks: { label: ctx => `${ctx.label}: ${fmtR(ctx.parsed)}` } }
+    },
+    cutout: '62%'
+  }
+});
+{% endif %}
+
+// ── Top 5 produtos ────────────────────────────────────────────────────────────
+{% if chart_top_names %}
+new Chart(document.getElementById('chartTop'), {
+  type: 'bar',
+  data: {
+    labels: {{ chart_top_names | tojson }},
+    datasets: [{
+      label: 'Receita (R$)',
+      data: {{ chart_top_values | tojson }},
+      backgroundColor: ['rgba(245,158,11,.8)','rgba(59,130,246,.8)','rgba(16,185,129,.8)','rgba(139,92,246,.8)','rgba(239,68,68,.8)'],
+      borderRadius: 4, borderWidth: 0,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => fmtR(ctx.parsed.x) } }
+    },
+    scales: {
+      x: { beginAtZero: true,
+           ticks: { callback: v => 'R$' + Number(v).toLocaleString('pt-BR') },
+           grid: { color: 'rgba(0,0,0,0.04)' } },
+      y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+    }
+  }
+});
+{% endif %}
+</script>
 {% endblock %}

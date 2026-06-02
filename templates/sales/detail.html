@@ -7,13 +7,16 @@
   {% if sale.status.value == 'finalizada' %}<span class="badge bg-success fs-6">Finalizada</span>
   {% elif sale.status.value == 'cancelada' %}<span class="badge bg-danger fs-6">Cancelada</span>
   {% else %}<span class="badge bg-warning fs-6">Aberta</span>{% endif %}
-  <div class="ms-auto">
+  <div class="ms-auto d-flex gap-2 flex-wrap">
     {% if sale.status.value == 'finalizada' %}
+    <a href="/vendas/{{ sale.id }}/devolver" class="btn btn-outline-warning">
+      <i class="bi bi-arrow-return-left me-1"></i>Devolver
+    </a>
     <form method="post" action="/vendas/{{ sale.id }}/cancelar" style="display:inline" onsubmit="return confirm('Cancelar esta venda e devolver estoque?')">
       <button class="btn btn-outline-danger"><i class="bi bi-x-circle me-1"></i>Cancelar Venda</button>
     </form>
     {% endif %}
-    <button class="btn btn-outline-secondary ms-2" onclick="window.print()"><i class="bi bi-printer me-1"></i>Imprimir</button>
+    <button class="btn btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer me-1"></i>Imprimir</button>
   </div>
 </div>
 
@@ -74,6 +77,43 @@
   </div>
 
   <div class="col-md-4">
+    {% if request.query_params.get('devolucao') %}
+    <div class="alert alert-success d-flex align-items-center gap-2 mb-3">
+      <i class="bi bi-check-circle-fill"></i>
+      <span>Devolução #{{ request.query_params.get('devolucao') }} registrada com sucesso!</span>
+    </div>
+    {% endif %}
+
+    {% if sale.returns %}
+    <div class="card border-0 shadow-sm mb-3 border-warning">
+      <div class="card-header bg-warning-subtle border-0">
+        <h6 class="fw-bold mb-0 text-warning"><i class="bi bi-arrow-return-left me-1"></i>Devoluções</h6>
+      </div>
+      <div class="card-body p-0">
+        {% for ret in sale.returns %}
+        <div class="px-3 py-2 {% if not loop.last %}border-bottom{% endif %}">
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="fw-semibold small">#{{ ret.id }} — {{ ret.type.value|capitalize }}</span>
+            <span class="badge {% if ret.status.value == 'processada' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+              {{ ret.status.value|capitalize }}
+            </span>
+          </div>
+          <div class="text-muted small">{{ ret.created_at.strftime('%d/%m/%Y %H:%M') }} · {{ ret.user.full_name }}</div>
+          <div class="text-muted small">Motivo: {{ ret.reason }}</div>
+          <div class="fw-bold text-warning small mt-1">Total: R$ {{ "%.2f"|format(ret.total|float) }}</div>
+          {% if ret.items %}
+          <ul class="mb-0 mt-1" style="font-size:0.75rem;padding-left:16px;">
+            {% for ri in ret.items %}
+            <li>{{ ri.product.name if ri.product else '—' }} — {{ ri.quantity }} × R$ {{ "%.2f"|format(ri.unit_price|float) }}</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
     <div class="card border-0 shadow-sm mb-3">
       <div class="card-header bg-white border-0"><h6 class="fw-bold mb-0">Informações</h6></div>
       <div class="card-body">

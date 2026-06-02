@@ -22,6 +22,16 @@ class SaleStatus(str, enum.Enum):
     cancelada = "cancelada"
 
 
+class ReturnType(str, enum.Enum):
+    reembolso = "reembolso"
+    troca = "troca"
+
+
+class ReturnStatus(str, enum.Enum):
+    processada = "processada"
+    cancelada = "cancelada"
+
+
 class PurchaseStatus(str, enum.Enum):
     pendente = "pendente"
     recebida = "recebida"
@@ -58,6 +68,15 @@ class CashRegisterStatus(str, enum.Enum):
 class CashMovementType(str, enum.Enum):
     sangria = "sangria"
     suprimento = "suprimento"
+
+
+class FiscalDocumentStatus(str, enum.Enum):
+    pendente = "pendente"
+    emitida = "emitida"
+    autorizada = "autorizada"
+    rejeitada = "rejeitada"
+    cancelada = "cancelada"
+    contingencia = "contingencia"
 
 
 # ─── Usuários e Funcionários ─────────────────────────────────────────────────
@@ -187,6 +206,8 @@ class CompanyProfile(Base):
     responsible_email = Column(String(120), nullable=True)
     slogan = Column(String(180), nullable=True)
     receipt_footer = Column(String(255), nullable=True)
+    pix_key = Column(String(150), nullable=True)
+    pix_city = Column(String(80), nullable=True)
     logo_url = Column(String(255), default="/static/img/logo.svg")
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -207,6 +228,15 @@ class Product(Base):
     stock_quantity = Column(Numeric(10, 3), default=0)
     min_stock = Column(Numeric(10, 3), default=0)
     unit = Column(String(10), default="UN")
+    ncm = Column(String(8), nullable=True)
+    cest = Column(String(10), nullable=True)
+    cfop = Column(String(4), nullable=True)
+    origin = Column(String(1), nullable=True, default="0")
+    cst_csosn = Column(String(4), nullable=True)
+    icms_rate = Column(Numeric(5, 2), default=0)
+    pis_rate = Column(Numeric(5, 2), default=0)
+    cofins_rate = Column(Numeric(5, 2), default=0)
+    tax_notes = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -301,6 +331,8 @@ class Sale(Base):
     user = relationship("User", back_populates="sales")
     items = relationship("SaleItem", back_populates="sale", cascade="all, delete-orphan")
     payments = relationship("Payment", back_populates="sale", cascade="all, delete-orphan")
+    fiscal_documents = relationship("FiscalDocument", back_populates="sale")
+    returns = relationship("SaleReturn", back_populates="sale")
 
 
 class SaleItem(Base):
@@ -326,6 +358,59 @@ class Payment(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     sale = relationship("Sale", back_populates="payments")
+
+
+class SaleReturn(Base):
+    __tablename__ = "sale_returns"
+    id = Column(Integer, primary_key=True, index=True)
+    sale_id = Column(Integer, ForeignKey("sales.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    type = Column(Enum(ReturnType), default=ReturnType.reembolso)
+    reason = Column(String(255), nullable=False)
+    total = Column(Numeric(10, 2), default=0)
+    status = Column(Enum(ReturnStatus), default=ReturnStatus.processada)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    sale = relationship("Sale", back_populates="returns")
+    user = relationship("User")
+    items = relationship("SaleReturnItem", back_populates="sale_return", cascade="all, delete-orphan")
+
+
+class SaleReturnItem(Base):
+    __tablename__ = "sale_return_items"
+    id = Column(Integer, primary_key=True, index=True)
+    return_id = Column(Integer, ForeignKey("sale_returns.id"), nullable=False)
+    sale_item_id = Column(Integer, ForeignKey("sale_items.id"), nullable=False)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    quantity = Column(Numeric(10, 3), nullable=False)
+    unit_price = Column(Numeric(10, 2), nullable=False)
+    total = Column(Numeric(10, 2), nullable=False)
+
+    sale_return = relationship("SaleReturn", back_populates="items")
+    sale_item = relationship("SaleItem")
+    product = relationship("Product")
+
+
+class FiscalDocument(Base):
+    __tablename__ = "fiscal_documents"
+    id = Column(Integer, primary_key=True, index=True)
+    sale_id = Column(Integer, ForeignKey("sales.id"), nullable=True)
+    model = Column(String(10), nullable=False, default="NFC-e")
+    series = Column(String(10), nullable=True)
+    number = Column(BigInteger, nullable=True)
+    access_key = Column(String(44), nullable=True, index=True)
+    status = Column(Enum(FiscalDocumentStatus), default=FiscalDocumentStatus.pendente)
+    protocol = Column(String(80), nullable=True)
+    qr_code_url = Column(Text, nullable=True)
+    xml_path = Column(String(255), nullable=True)
+    rejection_reason = Column(Text, nullable=True)
+    contingency = Column(Boolean, default=False)
+    issued_at = Column(DateTime(timezone=True), nullable=True)
+    authorized_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    sale = relationship("Sale", back_populates="fiscal_documents")
 
 
 # ─── Compras ──────────────────────────────────────────────────────────────────

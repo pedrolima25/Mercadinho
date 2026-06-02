@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Devolução — Venda #{{ sale.id }}{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-4 gap-3">
+  <a href="/vendas/{{ sale.id }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+  <div>
+    <h4 class="fw-bold mb-0"><i class="bi bi-arrow-return-left me-2 text-warning"></i>Devolução — Venda #{{ sale.id }}</h4>
+    <small class="text-muted">{{ sale.created_at.strftime('%d/%m/%Y %H:%M') }}
+      {% if sale.customer %} · {{ sale.customer.name }}{% endif %}
+    </small>
+  </div>
+</div>
+
+{% if request.query_params.get('erro') %}
+<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>Nenhum item selecionado ou quantidade inválida.</div>
+{% endif %}
+
+<form method="post" action="/vendas/{{ sale.id }}/devolver">
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-0">
+          <h6 class="fw-bold mb-0">Selecione os itens a devolver</h6>
+        </div>
+        <div class="card-body p-0">
+          <table class="table mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width:36px"></th>
+                <th>Produto</th>
+                <th class="text-end">Qtd Original</th>
+                <th class="text-end">Já devolvido</th>
+                <th class="text-end">Disponível</th>
+                <th class="text-center" style="width:130px">Qtd a devolver</th>
+                <th class="text-end">Valor unit.</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in sale.items %}
+              {% set already = returned_qty.get(item.id, 0) %}
+              {% set available = item.quantity|float - already %}
+              <tr class="{% if available <= 0 %}table-secondary text-muted{% endif %}">
+                <td class="text-center align-middle">
+                  <input type="checkbox" class="form-check-input item-check"
+                         data-id="{{ item.id }}" {% if available <= 0 %}disabled{% endif %}>
+                </td>
+                <td class="align-middle fw-semibold">{{ item.product.name if item.product else '—' }}</td>
+                <td class="text-end align-middle">{{ item.quantity }} {{ item.product.unit if item.product else '' }}</td>
+                <td class="text-end align-middle {% if already > 0 %}text-warning{% endif %}">
+                  {% if already > 0 %}{{ "%.3f"|format(already)|replace('.000','') }}{% else %}—{% endif %}
+                </td>
+                <td class="text-end align-middle {% if available <= 0 %}text-danger{% endif %}">
+                  {% if available > 0 %}{{ "%.3f"|format(available)|replace('.000','') }}{% else %}<span class="badge bg-secondary">Devolvido</span>{% endif %}
+                </td>
+                <td class="text-center align-middle">
+                  <input type="number" name="qty_{{ item.id }}" id="qty_{{ item.id }}"
+                         class="form-control form-control-sm text-end qty-input"
+                         min="0.001" max="{{ available }}" step="0.001"
+                         value="0" style="width:110px;margin:auto;"
+                         {% if available <= 0 %}disabled{% endif %}>
+                </td>
+                <td class="text-end align-middle text-muted small">R$ {{ "%.2f"|format(item.unit_price|float) }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-0"><h6 class="fw-bold mb-0">Tipo de Devolução</h6></div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Tipo <span class="text-danger">*</span></label>
+            <select name="type" class="form-select">
+              <option value="reembolso">Reembolso (dinheiro de volta)</option>
+              <option value="troca">Troca de produto</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Motivo <span class="text-danger">*</span></label>
+            <input type="text" name="reason" class="form-control" required
+                   placeholder="Ex: produto com defeito, troca de tamanho...">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Observações</label>
+            <textarea name="notes" class="form-control" rows="2"></textarea>
+          </div>
+
+          <div class="card bg-light border-0 mb-3 p-3">
+            <div class="d-flex justify-content-between small text-muted mb-1">
+              <span>Total da venda</span>
+              <span>R$ {{ "%.2f"|format(sale.total|float) }}</span>
+            </div>
+            <div class="d-flex justify-content-between fw-bold text-danger">
+              <span>Total a devolver</span>
+              <span id="return-total">R$ 0,00</span>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-warning w-100 fw-bold"
+                  onclick="return confirm('Confirmar devolução? O estoque será restaurado.')">
+            <i class="bi bi-arrow-return-left me-2"></i>Confirmar Devolução
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+<script>
+const unitPrices = {
+  {% for item in sale.items %}
+  '{{ item.id }}': {{ item.unit_price|float }},
+  {% endfor %}
+};
+
+function recalc() {
+  let total = 0;
+  document.querySelectorAll('.item-check:checked').forEach(cb => {
+    const id = cb.dataset.id;
+    const qty = parseFloat(document.getElementById('qty_' + id).value) || 0;
+    total += qty * (unitPrices[id] || 0);
+  });
+  document.getElementById('return-total').textContent =
+    'R$ ' + total.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+document.querySelectorAll('.item-check').forEach(cb => {
+  cb.addEventListener('change', function() {
+    const qtyInput = document.getElementById('qty_' + this.dataset.id);
+    if (this.checked) {
+      if (parseFloat(qtyInput.value) <= 0) qtyInput.value = qtyInput.max;
+      qtyInput.focus();
+    } else {
+      qtyInput.value = 0;
+    }
+    recalc();
+  });
+});
+
+document.querySelectorAll('.qty-input').forEach(inp => {
+  inp.addEventListener('input', recalc);
+});
+</script>
+{% endblock %}

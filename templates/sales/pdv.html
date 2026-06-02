@@ -465,6 +465,108 @@
   /* flash "produto não encontrado" */
   .bc-error { border-color: #ef4444 !important; background: rgba(239,68,68,0.08) !important; animation: shake 0.3s ease; }
   @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+
+  @media (max-width: 900px) {
+    .pdv-layout {
+      height: auto;
+      min-height: calc(100vh - 84px);
+      flex-direction: column;
+      overflow: visible;
+    }
+    .right-col {
+      order: 1;
+      min-height: 62vh;
+      overflow: visible;
+    }
+    .left-col {
+      order: 2;
+      width: 100%;
+      overflow: visible;
+    }
+    .left-body {
+      overflow: visible;
+      display: grid;
+      grid-template-columns: 1fr;
+      padding: 10px;
+    }
+    .left-foot {
+      position: sticky;
+      bottom: 0;
+      z-index: 10;
+      background: #1a3060;
+    }
+    .last-item {
+      min-height: 66px;
+      padding: 12px 14px;
+    }
+    .last-name {
+      font-size: 1rem;
+    }
+    .last-meta {
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .items-area {
+      margin: 6px;
+      min-height: 300px;
+      box-shadow: none;
+    }
+    .tbl-head, .item-row {
+      grid-template-columns: minmax(0, 1fr) 82px 96px 34px;
+      padding: 9px 10px;
+      gap: 6px;
+    }
+    .tbl-head span:nth-child(3),
+    .item-row .i-val {
+      display: none;
+    }
+    .i-name {
+      font-size: 0.78rem;
+      word-break: break-word;
+    }
+    .i-code {
+      font-size: 0.58rem;
+    }
+    .i-qty {
+      width: 64px;
+    }
+    .i-tot {
+      font-size: 0.78rem;
+    }
+    .total-bar {
+      flex-direction: column;
+    }
+    .total-info {
+      border-right: 0;
+      border-bottom: 1px solid #f1f5f9;
+      padding: 10px 14px;
+    }
+    .total-value {
+      min-width: 0;
+      width: 100%;
+      align-items: flex-start;
+      padding: 12px 14px;
+    }
+    .total-num {
+      font-size: 1.8rem;
+    }
+    .pay-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .pm.wide {
+      grid-column: span 3;
+    }
+    .modal-dialog {
+      margin: 0.75rem;
+    }
+    .m-pm-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .cat-grid {
+      grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+      max-height: 48vh;
+    }
+  }
 </style>
 {% endblock %}
 
@@ -886,6 +988,7 @@
           <div class="receipt-row"><span>Venda</span><strong id="s-sale-id">#0</strong></div>
           <div class="receipt-row"><span>Data</span><span id="s-date">--/--/----</span></div>
           <div class="receipt-row"><span>Operador</span><span id="s-operator">{{ current_user.full_name if current_user else 'Caixa' }}</span></div>
+          <div class="receipt-row" id="s-customer-row" style="display:none"><span>Cliente</span><span id="s-customer"></span></div>
           <div class="receipt-line"></div>
           <div id="s-receipt-items"></div>
           <div class="receipt-line"></div>
@@ -919,6 +1022,9 @@ const COMPANY_CNPJ = {{ request.app.state.company_cnpj|tojson }};
 const COMPANY_ADDRESS = {{ request.app.state.company_address|tojson }};
 const COMPANY_PHONE = {{ request.app.state.company_phone|tojson }};
 const COMPANY_RECEIPT_FOOTER = {{ request.app.state.company_receipt_footer|tojson }};
+const PIX_KEY = {{ request.app.state.pix_key|tojson }};
+const PIX_CITY = {{ request.app.state.pix_city|tojson }};
+const CASH_OPEN = {{ 'true' if open_register else 'false' }};
 const focusBi = () => { if (bi) bi.focus(); };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1047,14 +1153,30 @@ function addToCartFromSearch(p) { addToCart(p); bi.value = ''; hideSearch(); }
 function hideSearch() { document.getElementById('search-results').style.display = 'none'; }
 
 function addToCart(product, quantityOverride = null) {
+  if (!CASH_OPEN) {
+    alert('Abra o caixa antes de iniciar uma venda.');
+    return;
+  }
   if (quantityOverride === null && isWeightProduct(product)) {
     openWeightModal(product);
     return;
   }
   const qty = quantityOverride !== null ? roundWeightQty(quantityOverride) : (parseFloat(qi.value) || 1);
+  const available = Number(product.stock_quantity) || 0;
+  const currentQty = cart.filter(i => i.product_id === product.id).reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+  if (available <= 0) {
+    alert('Produto sem estoque.');
+    focusBi();
+    return;
+  }
+  if (currentQty + qty > available + 0.0005) {
+    alert(`Estoque insuficiente. Disponivel: ${available} ${product.unit}`);
+    focusBi();
+    return;
+  }
   const ex = cart.find(i => i.product_id === product.id);
   if (ex) { ex.quantity = isWeightProduct(product) ? roundWeightQty(ex.quantity + qty) : ex.quantity + qty; ex.total = ex.quantity * ex.unit_price - ex.discount; }
-  else cart.push({ product_id: product.id, barcode: product.barcode||'', name: product.name, unit: product.unit, quantity: qty, unit_price: product.sale_price, discount: 0, total: qty * product.sale_price });
+  else cart.push({ product_id: product.id, barcode: product.barcode||'', name: product.name, unit: product.unit, quantity: qty, unit_price: product.sale_price, stock_quantity: available, discount: 0, total: qty * product.sale_price });
   qi.value = 1;
   document.getElementById('last-item-bar').innerHTML = `
     <div class="last-name">${product.name}</div>
@@ -1163,6 +1285,11 @@ function renderCart() {
 
 function updateQty(i, v) {
   const qty = isWeightUnit(cart[i].unit) ? roundWeightQty(parseDecimalValue(v)) : (parseFloat(v) || 1);
+  if (qty > Number(cart[i].stock_quantity || 0) + 0.0005) {
+    alert(`Estoque insuficiente. Disponivel: ${cart[i].stock_quantity} ${cart[i].unit}`);
+    renderCart();
+    return;
+  }
   cart[i].quantity = qty > 0 ? qty : 1;
   cart[i].total = cart[i].quantity * cart[i].unit_price - cart[i].discount;
   renderCart(); updateTotals();
@@ -1337,21 +1464,28 @@ function calcCRC16(str) {
   return crc.toString(16).toUpperCase().padStart(4, '0');
 }
 
+function removeAcentos(str) {
+  return str.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\x20-\x7E]/g, '');
+}
+
 function gerarPixPayload(valor) {
   const tlv = (t, v) => t + String(v.length).padStart(2,'0') + v;
-  const pixKey = 'contato@supermercado.com';
-  const amt    = valor.toFixed(2);
-  const txId   = 'SMKT' + Date.now().toString().slice(-8);
-  const info   = tlv('26', tlv('00','BR.GOV.BCB.PIX') + tlv('01', pixKey));
+  const pixKey  = PIX_KEY || 'contato@supermercado.com';
+  const amt     = valor.toFixed(2);
+  const txId    = 'SMKT' + Date.now().toString().slice(-8);
+  const nome    = removeAcentos(MARKET_NAME).slice(0, 25);
+  const cidade  = removeAcentos(PIX_CITY || 'MANAUS').toUpperCase().slice(0, 15);
+  const info    = tlv('26', tlv('00','BR.GOV.BCB.PIX') + tlv('01', pixKey));
   let p = tlv('00','01') + tlv('01','12') + info + tlv('52','0000') +
           tlv('53','986') + tlv('54',amt) + tlv('58','BR') +
-          tlv('59', MARKET_NAME.slice(0, 25)) + tlv('60','SAO PAULO') +
+          tlv('59', nome) + tlv('60', cidade) +
           tlv('62', tlv('05', txId)) + '6304';
   return p + calcCRC16(p);
 }
 
 let pixModal = null;
 function openPixModal() {
+  if (!CASH_OPEN) { alert('Abra o caixa antes de finalizar uma venda.'); return; }
   if (!cart.length) { focusBi(); return; }
   const total = getTotal();
   document.getElementById('pix-amt-display').textContent = fmtR(total);
@@ -1360,7 +1494,11 @@ function openPixModal() {
   document.getElementById('pix-copied').style.display = 'none';
   const qrDiv = document.getElementById('pix-qrcode');
   qrDiv.innerHTML = '';
-  new QRCode(qrDiv, { text: pixStr, width: 220, height: 220, colorDark:'#000000', colorLight:'#ffffff', correctLevel: QRCode.CorrectLevel.M });
+  const img2 = document.createElement('img');
+  img2.src = '/api/qrcode?text=' + encodeURIComponent(pixStr) + '&scale=5';
+  img2.alt = 'QR Code PIX';
+  img2.style.cssText = 'display:block;max-width:100%;height:auto;';
+  qrDiv.appendChild(img2);
   pixModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('pixModal'));
   pixModal.show();
 }
@@ -1382,6 +1520,7 @@ function confirmPixPayment() {
 
 let payModal = null;
 function openPayModal(method) {
+  if (!CASH_OPEN) { alert('Abra o caixa antes de finalizar uma venda.'); return; }
   if (!cart.length) { focusBi(); return; }
   payments = []; renderPayments();
   document.getElementById('modal-total-display').textContent = fmtR(getTotal());
@@ -1412,7 +1551,11 @@ function selectPayMethod(m) {
     document.getElementById('pix-inline-copied').style.display = 'none';
     const qrDiv = document.getElementById('pix-qr-inline');
     qrDiv.innerHTML = '';
-    new QRCode(qrDiv, { text: pixStr, width: 160, height: 160, colorDark:'#000', colorLight:'#fff', correctLevel: QRCode.CorrectLevel.M });
+    const img1 = document.createElement('img');
+    img1.src = '/api/qrcode?text=' + encodeURIComponent(pixStr) + '&scale=4';
+    img1.alt = 'QR Code PIX';
+    img1.style.cssText = 'display:block;max-width:100%;height:auto;';
+    qrDiv.appendChild(img1);
   } else {
     document.getElementById('pay-amount').value = Math.max(0, getTotal()-getPaid()).toFixed(2);
     calcTroco();
@@ -1485,17 +1628,18 @@ function renderSaleReceipt(result) {
         <span>${formatReceiptQty(item)} x ${fmtR(item.unit_price)}</span>
         <strong>${fmtR(item.total)}</strong>
       </div>
+      ${item.discount > 0 ? `<div class="receipt-row receipt-muted"><span style="padding-left:8px">Desconto</span><span>-${fmtR(item.discount)}</span></div>` : ''}
     </div>
   `).join('');
 
-  const receiptPayments = payments.map(payment => `
+  const receiptPayments = payments.map(p => `
     <div class="receipt-row">
-      <span>${esc(payLbls[payment.method] || payment.method)}</span>
-      <span>${fmtR(payment.amount)}</span>
+      <span>${esc(payLbls[p.method] || p.method)}</span>
+      <span>${fmtR(p.amount)}</span>
     </div>
   `).join('');
 
-  document.getElementById('s-sale-id').textContent = '#'+result.sale_id;
+  document.getElementById('s-sale-id').textContent = '#' + result.sale_id;
   document.getElementById('s-logo').src = MARKET_LOGO_URL;
   document.getElementById('s-market-name').textContent = MARKET_NAME;
   document.getElementById('s-company-cnpj').textContent = COMPANY_CNPJ ? `CNPJ: ${COMPANY_CNPJ}` : '';
@@ -1510,29 +1654,50 @@ function renderSaleReceipt(result) {
   document.getElementById('s-payments').innerHTML = receiptPayments;
   document.getElementById('s-troco').textContent = fmtR(result.troco);
   document.getElementById('s-link').href = `/vendas/${result.sale_id}`;
+
+  const customerRow = document.getElementById('s-customer-row');
+  if (result.customer_name) {
+    document.getElementById('s-customer').textContent = result.customer_name;
+    customerRow.style.display = 'flex';
+  } else {
+    customerRow.style.display = 'none';
+  }
+
   lastReceiptHtml = document.getElementById('receipt-paper').innerHTML;
+  lastSaleId = result.sale_id;
 }
 
+let lastSaleId = 0;
+
 function printReceipt() {
-  const win = window.open('', '_blank', 'width=380,height=640');
+  const win = window.open('', '_blank', 'width=420,height=700');
   if (!win) { window.print(); return; }
-  win.document.write(`<!doctype html><html><head><title>Cupom</title>
+  win.document.write(`<!doctype html><html><head>
+    <meta charset="UTF-8">
+    <title>Cupom #${lastSaleId}</title>
     <base href="${location.origin}/">
     <style>
-      body{margin:0;padding:10px;background:#fff;color:#111;font-family:'Courier New',monospace;font-size:12px;}
-      .receipt-logo{width:46px;height:46px;display:block;margin:0 auto 6px;object-fit:contain;}
-      .receipt-head{text-align:center;font-weight:900;font-size:16px;letter-spacing:.04em;}
-      .receipt-sub{text-align:center;color:#555;font-size:11px;margin-top:2px;}
-      .receipt-line{border-top:1px dashed #777;margin:10px 0;}
-      .receipt-row{display:flex;justify-content:space-between;gap:12px;}
-      .receipt-muted{color:#555;}
-      .receipt-item{margin-bottom:8px;}
-      .receipt-item-name{font-weight:800;text-transform:uppercase;}
-      .receipt-total{font-size:15px;font-weight:900;}
-    </style></head><body>${lastReceiptHtml}</body></html>`);
+      @page { size: 80mm auto; margin: 4mm 2mm; }
+      * { box-sizing: border-box; }
+      body { margin: 0; padding: 6px 4px; background: #fff; color: #000;
+             font-family: 'Courier New', monospace; font-size: 11px;
+             width: 72mm; max-width: 72mm; }
+      .receipt-logo { width: 48px; height: 48px; display: block; margin: 0 auto 6px; object-fit: contain; }
+      .receipt-head { text-align: center; font-weight: 900; font-size: 13px; letter-spacing: .04em; }
+      .receipt-sub { text-align: center; color: #444; font-size: 10px; margin-top: 2px; }
+      .receipt-line { border: none; border-top: 1px dashed #555; margin: 8px 0; }
+      .receipt-row { display: flex; justify-content: space-between; gap: 8px; margin: 2px 0; }
+      .receipt-muted { color: #555; font-size: 10px; }
+      .receipt-item { margin-bottom: 6px; }
+      .receipt-item-name { font-weight: 800; text-transform: uppercase; font-size: 10px; word-break: break-word; }
+      .receipt-total { font-size: 14px; font-weight: 900; margin: 3px 0; }
+    </style>
+  </head><body>${lastReceiptHtml}</body></html>`);
   win.document.close();
-  win.focus();
-  win.print();
+  const logo = win.document.querySelector('.receipt-logo');
+  const doPrint = () => { win.focus(); win.print(); win.onafterprint = () => win.close(); };
+  if (logo && !logo.complete) { logo.onload = doPrint; logo.onerror = doPrint; }
+  else win.onload = doPrint;
 }
 
 async function confirmFinalize() {
@@ -1541,9 +1706,14 @@ async function confirmFinalize() {
   if (amt > 0 && selMethod) payments.push({method: selMethod, amount: amt});
   await doFinalize();
 }
-function finalizeSale() { if (!cart.length) { focusBi(); return; } openPayModal('dinheiro'); }
+function finalizeSale() {
+  if (!CASH_OPEN) { alert('Abra o caixa antes de finalizar uma venda.'); return; }
+  if (!cart.length) { focusBi(); return; }
+  openPayModal('dinheiro');
+}
 
 async function doFinalize() {
+  if (!CASH_OPEN) { alert('Abra o caixa antes de finalizar uma venda.'); return; }
   try {
     const res = await fetch('/pdv/finalizar', {
       method: 'POST',
@@ -1569,6 +1739,5 @@ function newSale() {
 }
 </script>
 {% block extra_scripts %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 {% endblock %}
 {% endblock %}

@@ -16,7 +16,7 @@ router = APIRouter(prefix="/empresa", tags=["empresa"])
 templates = Jinja2Templates(directory="templates")
 
 UPLOAD_DIR = Path("static") / "uploads" / "company"
-ALLOWED_LOGO_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".svg"}
+ALLOWED_LOGO_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
 
 COMPANY_FIELDS = [
     "legal_name", "trade_name", "cnpj", "state_registration",
@@ -24,7 +24,7 @@ COMPANY_FIELDS = [
     "whatsapp", "website", "zip_code", "street", "number", "complement",
     "neighborhood", "city", "state", "country", "responsible_name",
     "responsible_cpf", "responsible_phone", "responsible_email", "slogan",
-    "receipt_footer", "notes",
+    "receipt_footer", "pix_key", "pix_city", "notes",
 ]
 
 
@@ -52,6 +52,8 @@ def apply_company_to_app(app, company: models.CompanyProfile) -> None:
     app.state.company_cnpj = company.cnpj or ""
     app.state.company_phone = company.phone or company.whatsapp or ""
     app.state.company_email = company.email or ""
+    app.state.pix_key = company.pix_key or settings.pix_key or ""
+    app.state.pix_city = (company.pix_city or settings.pix_city or "MANAUS").upper()
     address_parts = [
         company.street,
         company.number,
@@ -94,8 +96,7 @@ def company_form(
     current_user: models.User = Depends(auth_utils.require_gerente),
 ):
     company = get_or_create_company(db)
-    return templates.TemplateResponse("company/form.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "company/form.html", {
         "company": company,
         "current_user": current_user,
         "success": request.query_params.get("success") == "1",

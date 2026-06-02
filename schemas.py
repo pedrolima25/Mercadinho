@@ -2,7 +2,7 @@ from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional, List
 from datetime import datetime, date
 from decimal import Decimal
-from models import UserRole, SaleStatus, PurchaseStatus, PaymentMethod, AccountStatus, MovementType, CashRegisterStatus, CashMovementType
+from models import UserRole, SaleStatus, PurchaseStatus, PaymentMethod, AccountStatus, MovementType, CashRegisterStatus, CashMovementType, FiscalDocumentStatus
 
 
 # ─── Auth ─────────────────────────────────────────────────────────────────────
@@ -171,6 +171,15 @@ class ProductBase(BaseModel):
     stock_quantity: Decimal = Decimal("0")
     min_stock: Decimal = Decimal("0")
     unit: str = "UN"
+    ncm: Optional[str] = None
+    cest: Optional[str] = None
+    cfop: Optional[str] = None
+    origin: Optional[str] = "0"
+    cst_csosn: Optional[str] = None
+    icms_rate: Decimal = Decimal("0")
+    pis_rate: Decimal = Decimal("0")
+    cofins_rate: Decimal = Decimal("0")
+    tax_notes: Optional[str] = None
     is_active: bool = True
 
 class ProductCreate(ProductBase):
@@ -295,6 +304,27 @@ class PaymentCreate(BaseModel):
 class PaymentOut(PaymentCreate):
     id: int
     created_at: datetime
+    class Config:
+        from_attributes = True
+
+
+class FiscalDocumentOut(BaseModel):
+    id: int
+    sale_id: Optional[int]
+    model: str
+    series: Optional[str]
+    number: Optional[int]
+    access_key: Optional[str]
+    status: FiscalDocumentStatus
+    protocol: Optional[str]
+    qr_code_url: Optional[str]
+    xml_path: Optional[str]
+    rejection_reason: Optional[str]
+    contingency: bool
+    issued_at: Optional[datetime]
+    authorized_at: Optional[datetime]
+    created_at: datetime
+
     class Config:
         from_attributes = True
 

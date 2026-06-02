@@ -93,6 +93,55 @@
         </div>
       </div>
 
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-0"><h6 class="fw-bold mb-0">Fiscal</h6></div>
+        <div class="card-body">
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label fw-semibold small">NCM</label>
+              <input type="text" name="ncm" class="form-control" maxlength="8" value="{{ product.ncm or '' if product else '' }}" placeholder="00000000">
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold small">CEST</label>
+              <input type="text" name="cest" class="form-control" maxlength="10" value="{{ product.cest or '' if product else '' }}">
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold small">CFOP</label>
+              <input type="text" name="cfop" class="form-control" maxlength="4" value="{{ product.cfop or '' if product else '' }}" placeholder="5102">
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold small">Origem</label>
+              <select name="origin" class="form-select">
+                {% set origin_value = product.origin if product and product.origin is not none else '0' %}
+                {% for code, label in [('0','0 - Nacional'),('1','1 - Estrangeira direta'),('2','2 - Estrangeira mercado interno'),('3','3 - Nacional imp. > 40%'),('4','4 - Nacional processo basico'),('5','5 - Nacional imp. <= 40%'),('6','6 - Estrangeira direta sem similar'),('7','7 - Estrangeira mercado sem similar'),('8','8 - Nacional imp. > 70%')] %}
+                <option value="{{ code }}" {% if origin_value == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold small">CST/CSOSN</label>
+              <input type="text" name="cst_csosn" class="form-control" maxlength="4" value="{{ product.cst_csosn or '' if product else '' }}" placeholder="Ex.: 102, 500, 060">
+            </div>
+            <div class="col-4">
+              <label class="form-label fw-semibold small">ICMS %</label>
+              <input type="number" name="icms_rate" class="form-control" step="0.01" min="0" value="{{ product.icms_rate if product else '0.00' }}">
+            </div>
+            <div class="col-4">
+              <label class="form-label fw-semibold small">PIS %</label>
+              <input type="number" name="pis_rate" class="form-control" step="0.01" min="0" value="{{ product.pis_rate if product else '0.00' }}">
+            </div>
+            <div class="col-4">
+              <label class="form-label fw-semibold small">COFINS %</label>
+              <input type="number" name="cofins_rate" class="form-control" step="0.01" min="0" value="{{ product.cofins_rate if product else '0.00' }}">
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold small">Observacoes fiscais</label>
+              <textarea name="tax_notes" class="form-control" rows="2">{{ product.tax_notes or '' if product else '' }}</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="card border-0 shadow-sm">
         <div class="card-body">
           <div class="form-check form-switch mb-3">

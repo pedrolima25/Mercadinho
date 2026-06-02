@@ -71,6 +71,45 @@
       font-size: 0.65rem; color: #94a3b8;
     }
 
+    @media (max-width: 900px) {
+      body {
+        min-height: 100%;
+        height: auto;
+        overflow: auto;
+      }
+      .pdv-header {
+        height: auto;
+        min-height: 56px;
+        padding: 8px 10px;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .pdv-brand {
+        min-width: 0;
+        flex: 1 1 auto;
+        font-size: 0.86rem;
+      }
+      .pdv-center {
+        order: 3;
+        flex: 1 0 100%;
+        justify-content: flex-start;
+      }
+      .pdv-right {
+        min-width: 0;
+        font-size: 0.65rem;
+      }
+      .pdv-body {
+        overflow: visible;
+      }
+      .pdv-footer {
+        height: auto;
+        min-height: 28px;
+        gap: 8px;
+        flex-wrap: wrap;
+        padding: 5px 10px;
+      }
+    }
+
   </style>
   {% block extra_head %}{% endblock %}
 </head>

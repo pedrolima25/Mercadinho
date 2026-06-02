@@ -1,225 +1,377 @@
-# Mercadinho
+# SuperMarket Pro
 
-Sistema web de gestao para mercadinho, mercado, padaria, loja pequena e operacoes similares. O projeto roda localmente com FastAPI, Jinja2, SQLAlchemy e PostgreSQL.
+Sistema de gestão comercial para mercados, mercearias, padarias e lojas de pequeno e médio porte.  
+Roda localmente na rede interna — sem mensalidade, sem internet obrigatória.
 
-## O que o sistema faz
+---
 
-- PDV / frente de caixa com busca por codigo de barras ou nome.
-- Venda por unidade e por KG, com janela para peso ou conversao de valor em quilo.
-- Pagamentos em dinheiro, PIX, debito, credito e fiado.
-- Cupom ao finalizar venda, com dados da empresa, logo, itens, pagamentos e troco.
-- Cadastro completo da empresa, incluindo logo.
-- Cadastro de produtos, categorias, marcas, fornecedores, clientes e funcionarios.
-- Controle de estoque, movimentacoes, lotes e validade.
-- Caixa com abertura, fechamento, sangria e suprimento.
-- Compras, contas a pagar, contas a receber e despesas.
-- Relatorios de vendas, produtos, financeiro e estoque baixo.
-- Usuarios e permissoes.
+## Índice
 
-## Tecnologias
+1. [O que o sistema faz](#funcionalidades)
+2. [Requisitos](#requisitos)
+3. [Instalação — Servidor (Docker)](#instalação-servidor)
+4. [Instalação — Outras Máquinas (Caixas / Gerentes)](#instalação-clientes)
+5. [Primeiro acesso](#primeiro-acesso)
+6. [Perfis de usuário](#perfis-de-usuário)
+7. [Módulos do sistema](#módulos-do-sistema)
+8. [Configuração da empresa](#configuração-da-empresa)
+9. [Backup dos dados](#backup)
+10. [Solução de problemas](#solução-de-problemas)
+11. [Referência técnica](#referência-técnica)
 
-- Python 3.10+
-- FastAPI
-- SQLAlchemy
-- PostgreSQL
-- Jinja2
-- Bootstrap
+---
+
+## Funcionalidades
+
+| Módulo | O que faz |
+|---|---|
+| **PDV — Frente de Caixa** | Venda por código de barras ou catálogo, múltiplos pagamentos, QR Code PIX, cupom imprimível |
+| **Caixa** | Abertura e fechamento de caixa, sangria, suprimento, histórico |
+| **Estoque** | Entradas, saídas, ajustes, lotes com validade, alertas de estoque baixo |
+| **Produtos** | Cadastro completo com código de barras, preço de custo/venda, dados fiscais |
+| **Compras** | Pedidos a fornecedores, recebimento de mercadorias com atualização automática do estoque |
+| **Financeiro** | Contas a pagar, contas a receber, despesas, visão geral financeira |
+| **Clientes** | Cadastro com limite de fiado, controle de saldo devedor |
+| **Devoluções** | Devolução parcial ou total de itens com reposição automática no estoque |
+| **Relatórios** | Vendas por período, produtos mais vendidos, estoque baixo, análise financeira |
+| **Dashboard** | Gráficos de vendas diárias, métodos de pagamento e top produtos |
+| **Alertas** | Notificações de estoque baixo e contas vencidas em tempo real |
+| **Empresa** | Logo, dados fiscais, chave PIX, rodapé do cupom |
+| **Usuários** | Múltiplos usuários com diferentes níveis de acesso |
+
+---
 
 ## Requisitos
 
-Instale antes:
+### Máquina Servidor
+- Windows 10 / 11 (64 bits)
+- **Docker Desktop** — [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/)
+- 4 GB de RAM (recomendado: 8 GB)
+- 10 GB de espaço em disco
+- Conexão com a internet (somente na primeira instalação)
 
-- Python 3.10 ou superior
-- PostgreSQL local, ou Docker Desktop para rodar o banco via `docker-compose.yml`
-- Git, se for clonar pelo GitHub
+### Máquinas Clientes (Caixas / Gerentes)
+- Qualquer computador ou tablet com browser (Chrome, Edge, Firefox)
+- Conectado na mesma rede Wi-Fi ou cabo que o servidor
+- **Não precisa instalar nada**
 
-## Instalacao rapida no Windows
+---
 
-1. Clone o projeto:
+## Instalação — Servidor
 
-```bash
-git clone https://github.com/pedrolima25/Mercadinho.git
-cd Mercadinho
+> Execute este processo apenas **uma vez**, na máquina que será o servidor.
+
+### 1. Instalar o Docker Desktop
+
+Baixe em: https://www.docker.com/products/docker-desktop/
+
+Durante a instalação aceite as opções padrão.  
+Após instalar, **reinicie o computador**.  
+Abra o Docker Desktop e aguarde o ícone ficar verde na barra de tarefas.
+
+### 2. Executar o instalador
+
+Na pasta do sistema, clique duas vezes em:
+
+```
+INSTALAR.bat
 ```
 
-2. Suba o PostgreSQL.
+O instalador vai:
+- Verificar se o Docker está rodando
+- Criar o arquivo de configurações (`.env`)
+- Fazer o build e subir os containers (PostgreSQL + App)
+- Liberar a porta 8000 no firewall do Windows
+- Criar atalhos na área de trabalho
+- Abrir o sistema no browser automaticamente
 
-Se for usar Docker:
+> **Tempo estimado:** 5 a 10 minutos na primeira vez (baixa as imagens Docker).  
+> Nas próximas vezes leva menos de 30 segundos.
 
-```bash
-docker compose up -d
+### 3. Anotar o IP do servidor
+
+Ao final da instalação, o IP da máquina é exibido na tela.  
+Exemplo: `192.168.1.10`
+
+Anote esse número — será necessário para configurar as outras máquinas.
+
+---
+
+## Instalação — Clientes
+
+As máquinas clientes (caixas, gerentes) **não precisam de instalação**.
+
+### Opção 1 — Abrir direto no browser
+
+1. Abra o Chrome ou Edge
+2. Digite na barra de endereço:
+   ```
+   http://192.168.1.10:8000
+   ```
+   (substitua pelo IP do servidor)
+3. Salve como favorito
+
+### Opção 2 — Atalho na área de trabalho (Caixa em tela cheia)
+
+Crie um atalho com o destino:
+
+```
+"C:\Program Files\Google\Chrome\Application\chrome.exe" --kiosk http://192.168.1.10:8000/pdv --no-first-run
 ```
 
-O `docker-compose.yml` cria um banco com:
+Isso abre o PDV em **tela cheia** ao clicar — ideal para terminais de caixa.  
+Para sair da tela cheia: `ALT + F4`.
 
-```text
-usuario: postgres
-senha: postgres
-banco: supermercado
-porta: 5432
-```
+---
 
-3. Execute o instalador:
+## Uso diário
+
+| Ação | Como fazer |
+|---|---|
+| **Ligar o sistema** | Clique em `SuperMarket Pro - Iniciar` na área de trabalho |
+| **Acessar pelo browser** | http://localhost:8000 (servidor) ou http://IP:8000 (clientes) |
+| **Desligar o sistema** | Clique em `SuperMarket Pro - Parar` na área de trabalho |
+
+> O `INICIAR.bat` inicia o Docker automaticamente se ele não estiver rodando.
+
+---
+
+## Primeiro acesso
+
+Acesse http://localhost:8000 e faça login com:
+
+| Campo | Valor |
+|---|---|
+| Usuário | `admin` |
+| Senha | `admin123` |
+
+**Troque a senha imediatamente** em: Usuários → admin → Editar.
+
+### Configuração inicial recomendada
+
+1. **Empresa** (`/empresa`) — Preencha nome, CNPJ, endereço, logo e chave PIX
+2. **Categorias** (`/categorias`) — Crie as categorias de produtos
+3. **Fornecedores** (`/fornecedores`) — Cadastre os fornecedores
+4. **Produtos** (`/produtos`) — Cadastre o estoque inicial
+5. **Usuários** (`/usuarios`) — Crie usuários para cada operador
+
+---
+
+## Perfis de usuário
+
+| Perfil | O que pode fazer |
+|---|---|
+| **admin** | Acesso total — configurações, usuários, todos os módulos |
+| **gerente** | Todos os módulos exceto configurações do sistema |
+| **caixa** | PDV, abertura/fechamento de caixa, visualização de vendas |
+| **estoquista** | Produtos, estoque, compras |
+| **financeiro** | Financeiro, relatórios |
+
+---
+
+## Módulos do sistema
+
+### PDV — Frente de Caixa (`/pdv`)
+
+- Acesse em uma aba separada ou máquina dedicada
+- Busca de produtos por código de barras (leitor ou teclado) ou pelo catálogo
+- Suporte a produtos vendidos por peso (KG)
+- Pagamentos: Dinheiro, PIX, Débito, Crédito, Fiado, Vale
+- PIX gera QR Code automaticamente com base na chave configurada
+- Cupom impresso direto do browser (compatível com impressoras térmicas 80mm)
+- Atalhos de teclado: F2 (foco leitor), F4 (finalizar), F5–F9 (pagamentos), ESC (limpar)
+
+### Caixa (`/caixa`)
+
+- Abrir o caixa com saldo inicial antes de começar as vendas
+- Sangria (retirada) e suprimento (entrada) de dinheiro
+- Fechar o caixa com conferência de valores
+- Histórico de operações por caixa e operador
+
+### Estoque (`/estoque`)
+
+- Entrada, saída e ajuste de estoque com registro de motivo
+- Controle de lotes com data de validade
+- Histórico completo de movimentações
+- Alerta automático de produtos abaixo do estoque mínimo
+
+### Compras (`/compras`)
+
+- Registro de pedidos a fornecedores com produtos e valores
+- Ao marcar como "Recebida" o estoque é atualizado automaticamente
+- Geração automática de conta a pagar
+
+### Financeiro (`/financeiro`)
+
+- **Contas a pagar:** lançamento manual ou automático (via compras)
+- **Contas a receber:** controle de valores a receber, incluindo vendas fiado
+- **Despesas:** registro de despesas operacionais por categoria
+- Alertas de contas vencidas no sino de notificações
+
+### Devoluções (`/vendas/{id}/devolver`)
+
+- Acessível pela tela de detalhes da venda
+- Devolução parcial ou total de itens
+- Tipo: reembolso ou troca
+- Estoque reposto automaticamente
+
+### Relatórios (`/relatorios`)
+
+| Relatório | O que mostra |
+|---|---|
+| Vendas | Total por período, por dia, por método de pagamento |
+| Produtos | Top 20 produtos por receita, produtos com estoque baixo |
+| Financeiro | Receitas, despesas, compras e lucro estimado por mês |
+| Estoque baixo | Lista de produtos abaixo do mínimo |
+
+---
+
+## Configuração da empresa
+
+Acesse `/empresa` para configurar:
+
+- **Logo** — upload de imagem (PNG, JPG, WebP)
+- **Dados fiscais** — CNPJ, IE, IM, regime tributário
+- **Endereço** — aparece no cupom de venda
+- **Contato** — e-mail, telefone, WhatsApp
+- **PIX** — chave PIX e cidade (gera o QR Code nas vendas)
+- **Cupom** — slogan e mensagem do rodapé
+
+---
+
+## Backup
+
+### Backup manual
+
+Abra o terminal (CMD) e execute:
 
 ```bat
-instalar.bat
+docker exec supermarket_db pg_dump -U postgres supermercado > backup_%date:~6,4%%date:~3,2%%date:~0,2%.sql
 ```
 
-O script cria o ambiente virtual, instala as dependencias, copia `.env.example` para `.env` se ainda nao existir, cria as tabelas e gera dados iniciais.
+Isso cria um arquivo `.sql` com todos os dados do sistema.
 
-4. Confira o arquivo `.env`.
-
-Se estiver usando o banco do Docker, deixe assim:
-
-```env
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/supermercado
-SECRET_KEY=troque-esta-chave-em-producao
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=480
-APP_NAME=SuperMarket Pro
-MARKET_NAME=Mercadinho
-MARKET_LOGO_URL=/static/img/logo.svg
-```
-
-5. Inicie o sistema:
+### Restaurar backup
 
 ```bat
-iniciar.bat
+docker exec -i supermarket_db psql -U postgres supermercado < backup_AAAAMMDD.sql
 ```
 
-6. Acesse no navegador:
+### Onde ficam os dados
 
-```text
-http://localhost:8000
+Os dados ficam em um volume Docker chamado `postgres_data`.  
+Ao parar e reiniciar os containers, os dados são preservados automaticamente.
+
+---
+
+## Solução de problemas
+
+### Sistema não abre / porta 8000 inacessível
+
+1. Verifique se o Docker Desktop está rodando (ícone verde na barra de tarefas)
+2. Execute `INICIAR.bat` e aguarde a mensagem "SISTEMA RODANDO"
+3. Tente acessar http://localhost:8000
+
+### "Cannot connect to the Docker daemon"
+
+O Docker Desktop não está iniciado.  
+Abra o Docker Desktop manualmente e aguarde ficar verde, depois execute `INICIAR.bat`.
+
+### Erro no build do Dockerfile
+
+Verifique a conexão com a internet e execute `INSTALAR.bat` novamente.
+
+### Outro computador não acessa o sistema
+
+1. Confirme que estão na mesma rede Wi-Fi ou cabo
+2. Verifique o IP correto do servidor (salvo em `ip_servidor.txt`)
+3. Confirme que o firewall foi liberado — execute `INSTALAR.bat` novamente como administrador
+
+### Esqueci a senha do admin
+
+Execute no terminal (com o sistema rodando):
+
+```bat
+docker exec -it supermarket_app python -c "from database import SessionLocal; from models import User; import auth; db=SessionLocal(); u=db.query(User).filter(User.username=='admin').first(); u.hashed_password=auth.get_password_hash('nova_senha'); db.commit(); print('Senha alterada')"
 ```
 
-Login inicial:
+---
 
-```text
-usuario: admin
-senha: admin123
+## Referência técnica
+
+### Stack
+
+| Componente | Tecnologia |
+|---|---|
+| Backend | Python 3.12 + FastAPI |
+| Banco de dados | PostgreSQL 16 |
+| ORM | SQLAlchemy 2 |
+| Templates | Jinja2 + Bootstrap 5 |
+| Autenticação | JWT (python-jose) |
+| QR Code PIX | segno (geração server-side) |
+| Gráficos | Chart.js 4 |
+| Deploy | Docker + docker-compose |
+
+### Estrutura de arquivos
+
 ```
-
-## Instalacao manual
-
-Use estes passos caso prefira nao usar o `.bat`:
-
-```bash
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
-copy .env.example .env
-python -c "from main import create_initial_data; create_initial_data()"
-python main.py
-```
-
-Depois acesse:
-
-```text
-http://localhost:8000
-```
-
-## Configuracao da empresa
-
-Depois de entrar no sistema, acesse:
-
-```text
-Cadastros > Empresa
-```
-
-Nessa tela voce pode cadastrar:
-
-- nome fantasia e razao social
-- CNPJ e inscricoes
-- endereco completo
-- telefone, WhatsApp, e-mail e site
-- responsavel
-- slogan e mensagem do cupom
-- logo da empresa
-
-Esses dados aparecem no sistema, no PDV e no cupom final.
-
-## Como usar o PDV
-
-1. Abra ou confirme que existe um caixa aberto.
-2. Acesse `PDV - Frente de Caixa`.
-3. Leia o codigo de barras ou digite o nome do produto.
-4. Para produtos em KG, informe o peso ou o valor em reais para converter em quilos.
-5. Clique em finalizar ou use os atalhos de pagamento.
-6. Confirme o pagamento.
-7. O sistema mostra o cupom da venda, com opcao de imprimir.
-
-## Atalhos do PDV
-
-- `F2`: focar busca de produto
-- `F4`: finalizar venda
-- `F5`: dinheiro
-- `F6`: PIX
-- `F7`: debito
-- `F8`: credito
-- `F9`: fiado
-- `ESC`: cancelar venda
-
-## Funcionamento offline
-
-O sistema pode funcionar sem internet se estiver rodando no computador local ou em um servidor dentro da rede da loja.
-
-Para uso offline completo, evite depender de arquivos externos da internet. O banco deve estar no mesmo computador ou em outro computador da rede local.
-
-Exemplo em rede interna:
-
-```text
-http://IP_DO_SERVIDOR:8000
-```
-
-## Estrutura do projeto
-
-```text
-.
-├── main.py                 # Inicializacao da aplicacao FastAPI
-├── models.py               # Modelos do banco
+supermarket/
+├── main.py                 # App principal, dashboard, middlewares
+├── models.py               # Modelos do banco de dados
 ├── schemas.py              # Schemas Pydantic
-├── database.py             # Conexao com o banco
-├── auth.py                 # Login, senha e token
-├── routers/                # Rotas do sistema
-├── templates/              # Telas HTML/Jinja
-├── static/                 # CSS, JS, imagens e logo
-├── requirements.txt        # Dependencias Python
-├── docker-compose.yml      # PostgreSQL via Docker
-├── instalar.bat            # Instalacao no Windows
-└── iniciar.bat             # Inicia o sistema
+├── auth.py                 # Autenticação JWT
+├── config.py               # Configurações (.env)
+├── database.py             # Conexão com banco
+├── routers/
+│   ├── auth_router.py      # Login/logout
+│   ├── products.py         # Produtos
+│   ├── sales.py            # Vendas + PDV
+│   ├── stock.py            # Estoque
+│   ├── purchases.py        # Compras
+│   ├── financial.py        # Financeiro
+│   ├── cash_register.py    # Caixa
+│   ├── reports.py          # Relatórios
+│   ├── users.py            # Usuários
+│   ├── company.py          # Empresa
+│   └── catalogs.py         # Categorias, marcas, fornecedores, clientes
+├── templates/              # HTML Jinja2
+├── static/                 # CSS, JS, imagens
+├── Dockerfile
+├── docker-compose.yml
+├── .env.example
+├── requirements.txt
+├── INSTALAR.bat
+├── INICIAR.bat
+└── PARAR.bat
 ```
 
-## Cuidados importantes
+### Variáveis de ambiente (.env)
 
-- Nao envie o arquivo `.env` para o GitHub.
-- Troque `SECRET_KEY` antes de usar em producao.
-- Troque a senha padrao do usuario `admin`.
-- Faca backup do PostgreSQL regularmente.
-- A pasta `static/uploads/` guarda arquivos enviados, como logos de empresa.
+| Variável | Descrição | Padrão |
+|---|---|---|
+| `DATABASE_URL` | URL de conexão com o banco | PostgreSQL via Docker |
+| `SECRET_KEY` | Chave de assinatura JWT | Trocar em produção |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Duração da sessão em minutos | 480 (8 horas) |
+| `APP_NAME` | Nome do sistema | SuperMarket Pro |
+| `MARKET_NAME` | Nome do mercado | Mercadinho |
+| `PIX_KEY` | Chave PIX (opcional — pode configurar pelo painel) | vazio |
+| `PIX_CITY` | Cidade para o payload PIX | MANAUS |
 
-## Backup basico do banco
+### Endpoints da API
 
-Exemplo usando PostgreSQL local:
+| Endpoint | Descrição |
+|---|---|
+| `GET /api/docs` | Documentação interativa (Swagger UI) |
+| `GET /api/qrcode?text=...` | Gera QR Code PNG |
+| `GET /api/alerts` | Alertas de estoque baixo e contas vencidas |
+| `GET /produtos/api/buscar?q=...` | Busca de produtos para o PDV |
+| `GET /produtos/api/barcode/{code}` | Produto por código de barras |
+| `POST /pdv/finalizar` | Finaliza uma venda |
+| `POST /auth/token` | Gera token JWT (integração API) |
 
-```bash
-pg_dump -U postgres -h localhost supermercado > backup_supermercado.sql
-```
+### Portas utilizadas
 
-Para restaurar:
-
-```bash
-psql -U postgres -h localhost supermercado < backup_supermercado.sql
-```
-
-## Atualizar no GitHub
-
-Depois de alterar arquivos:
-
-```bash
-git status
-git add .
-git commit -m "Descricao da alteracao"
-git push
-```
-
+| Porta | Serviço |
+|---|---|
+| `8000` | Aplicação web (acesso do browser) |
+| `5432` | PostgreSQL (interno ao Docker) |
