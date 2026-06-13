@@ -85,6 +85,7 @@ class ServicoProdutos(ServicoBase):
                 "stock_quantity": float(p.stock_quantity),
                 "unit": p.unit,
                 "category": p.category.name if p.category else "Sem categoria",
+                "image_url": p.image_url or "",
             }
             for p in produtos
         ]
@@ -100,6 +101,7 @@ class ServicoProdutos(ServicoBase):
                 "sale_price": float(p.sale_price),
                 "stock_quantity": float(p.stock_quantity),
                 "unit": p.unit,
+                "image_url": p.image_url or "",
             }
             for p in produtos
         ]

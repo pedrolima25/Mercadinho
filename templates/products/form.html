@@ -52,6 +52,27 @@
     </div>
 
     <div class="col-md-4">
+
+      {% if product %}
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-0"><h6 class="fw-bold mb-0"><i class="bi bi-image me-1"></i>Foto do Produto</h6></div>
+        <div class="card-body text-center">
+          <div id="img-preview" style="width:100%;aspect-ratio:1/1;border-radius:10px;overflow:hidden;background:#f1f5f9;display:flex;align-items:center;justify-content:center;margin-bottom:12px;border:2px dashed #cbd5e1;">
+            {% if product.image_url %}
+              <img src="{{ product.image_url }}" style="width:100%;height:100%;object-fit:cover;" id="img-tag">
+            {% else %}
+              <i class="bi bi-image" style="font-size:3rem;color:#cbd5e1;" id="img-placeholder"></i>
+            {% endif %}
+          </div>
+          <label class="btn btn-outline-primary btn-sm w-100" style="cursor:pointer;">
+            <i class="bi bi-upload me-1"></i>Enviar Foto
+            <input type="file" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="uploadImagem(this)">
+          </label>
+          <div id="img-status" class="mt-2 small"></div>
+        </div>
+      </div>
+      {% endif %}
+
       <div class="card border-0 shadow-sm mb-3">
         <div class="card-header bg-white border-0"><h6 class="fw-bold mb-0">Preços</h6></div>
         <div class="card-body">
@@ -169,5 +190,30 @@ function updateMargin() {
 document.querySelector('[name=cost_price]').addEventListener('input', updateMargin);
 document.querySelector('[name=sale_price]').addEventListener('input', updateMargin);
 updateMargin();
+
+async function uploadImagem(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const status = document.getElementById('img-status');
+  status.innerHTML = '<span class="text-muted">Enviando...</span>';
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const resp = await fetch('{{ "/produtos/" + product.id|string + "/imagem" if product else "#" }}', {
+      method: 'POST', body: fd
+    });
+    const data = await resp.json();
+    if (data.image_url) {
+      const preview = document.getElementById('img-preview');
+      preview.style.border = 'none';
+      preview.innerHTML = `<img src="${data.image_url}?t=${Date.now()}" style="width:100%;height:100%;object-fit:cover;">`;
+      status.innerHTML = '<span class="text-success"><i class="bi bi-check-circle me-1"></i>Foto salva!</span>';
+    } else {
+      status.innerHTML = `<span class="text-danger">${data.error || 'Erro ao enviar'}</span>`;
+    }
+  } catch(e) {
+    status.innerHTML = '<span class="text-danger">Erro de conexão</span>';
+  }
+}
 </script>
 {% endblock %}

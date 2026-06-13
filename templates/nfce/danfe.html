@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>DANFE NFC-e {{ doc.number }}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Courier New', monospace; font-size: 11px; width: 80mm; margin: 0 auto; padding: 4px; background:#fff; color:#000; }
+  .center { text-align:center; }
+  .bold { font-weight:bold; }
+  .line { border-top:1px dashed #000; margin:4px 0; }
+  .row { display:flex; justify-content:space-between; }
+  .homolog-bar { background:#000; color:#fff; text-align:center; padding:3px; font-size:10px; font-weight:bold; margin-bottom:4px; }
+  .logo { max-width:60px; max-height:40px; display:block; margin:0 auto 4px; }
+  .empresa-nome { font-size:13px; font-weight:bold; text-align:center; }
+  .empresa-info { font-size:10px; text-align:center; color:#333; }
+  .doc-titulo { text-align:center; font-size:12px; font-weight:bold; margin:6px 0 2px; letter-spacing:1px; }
+  table { width:100%; border-collapse:collapse; }
+  th { font-size:9px; text-transform:uppercase; border-bottom:1px solid #000; padding:1px 0; }
+  td { font-size:10px; padding:1px 0; vertical-align:top; }
+  .td-r { text-align:right; }
+  .td-c { text-align:center; }
+  .total-row { font-size:13px; font-weight:bold; }
+  .pgto-row { font-size:11px; }
+  .chave { font-size:8px; word-break:break-all; text-align:center; }
+  .status-autorizada { color:#16a34a; font-weight:bold; }
+  .status-pendente   { color:#d97706; font-weight:bold; }
+  .status-rejeitada  { color:#dc2626; font-weight:bold; }
+  .qr-wrap { text-align:center; margin:6px 0; }
+  .qr-wrap img { max-width:120px; }
+  @media print {
+    @page { margin:0; size:80mm auto; }
+    body { width:80mm; }
+    .no-print { display:none; }
+  }
+</style>
+</head>
+<body>
+
+{% if doc.status.value == 'autorizada' %}
+  {% if doc.contingency %}<div class="homolog-bar">EMISSÃO EM CONTINGÊNCIA</div>{% endif %}
+{% else %}
+<div class="homolog-bar">AMBIENTE DE HOMOLOGAÇÃO — SEM VALOR FISCAL</div>
+{% endif %}
+
+<!-- Cabeçalho da empresa -->
+{% if empresa %}
+<div class="center" style="margin-bottom:4px;">
+  <div class="empresa-nome">{{ empresa.trade_name or empresa.legal_name }}</div>
+  <div class="empresa-info">CNPJ: {{ empresa.cnpj or '—' }}</div>
+  {% if empresa.state_registration %}<div class="empresa-info">IE: {{ empresa.state_registration }}</div>{% endif %}
+  <div class="empresa-info">{{ empresa.street or '' }}{% if empresa.number %}, {{ empresa.number }}{% endif %}</div>
+  {% if empresa.city %}<div class="empresa-info">{{ empresa.city }}/{{ empresa.state }}</div>{% endif %}
+  {% if empresa.phone %}<div class="empresa-info">Tel: {{ empresa.phone }}</div>{% endif %}
+</div>
+{% endif %}
+
+<div class="line"></div>
+
+<div class="doc-titulo">DOCUMENTO AUXILIAR DA NFC-e</div>
+<div class="center" style="font-size:10px;">Documento Fiscal Eletrônico — Modelo 65</div>
+<div class="center" style="font-size:10px;margin-top:2px;">
+  Série: {{ doc.series }}  Nº: {{ doc.number }}
+  &nbsp;|&nbsp;
+  Status:
+  <span class="status-{{ doc.status.value }}">{{ doc.status.value.upper() }}</span>
+</div>
+
+<div class="line"></div>
+
+<!-- Itens -->
+<table>
+  <thead>
+    <tr>
+      <th style="width:40%">PRODUTO</th>
+      <th class="td-c" style="width:15%">QTD</th>
+      <th class="td-r" style="width:20%">V.UNIT</th>
+      <th class="td-r" style="width:25%">V.TOTAL</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% if venda %}
+    {% for item in venda.items %}
+    <tr>
+      <td>{{ item.product.name[:30] }}</td>
+      <td class="td-c">
+        {% if item.product.unit in ['KG','KILO','QUILO'] %}{{ "%.3f"|format(item.quantity|float) }}{% else %}{{ item.quantity|int }}{% endif %}
+        {{ item.product.unit }}
+      </td>
+      <td class="td-r">R${{ "%.2f"|format(item.unit_price|float) }}</td>
+      <td class="td-r">R${{ "%.2f"|format(item.total|float) }}</td>
+    </tr>
+    {% if item.discount and item.discount > 0 %}
+    <tr><td colspan="4" style="font-size:9px;color:#555;">  Desconto: -R${{ "%.2f"|format(item.discount|float) }}</td></tr>
+    {% endif %}
+    {% endfor %}
+  {% endif %}
+  </tbody>
+</table>
+
+<div class="line"></div>
+
+{% if venda %}
+<div class="row" style="margin:2px 0;"><span>Subtotal</span><span>R$ {{ "%.2f"|format(venda.subtotal|float) }}</span></div>
+{% if venda.discount and venda.discount > 0 %}
+<div class="row" style="margin:2px 0;color:#555;"><span>Desconto</span><span>-R$ {{ "%.2f"|format(venda.discount|float) }}</span></div>
+{% endif %}
+<div class="line"></div>
+<div class="row total-row"><span>TOTAL</span><span>R$ {{ "%.2f"|format(venda.total|float) }}</span></div>
+<div class="line"></div>
+
+<!-- Pagamentos -->
+{% set pay_labels = {'dinheiro':'Dinheiro','pix':'PIX','debito':'Débito','credito':'Crédito','fiado':'Fiado','vale':'Vale'} %}
+{% for pgto in venda.payments %}
+<div class="row pgto-row">
+  <span>{{ pay_labels.get(pgto.method.value, pgto.method.value) }}</span>
+  <span>R$ {{ "%.2f"|format(pgto.amount|float) }}</span>
+</div>
+{% endfor %}
+{% endif %}
+
+<div class="line"></div>
+
+<!-- Chave de acesso -->
+{% if doc.access_key %}
+<div style="font-size:9px;text-align:center;margin-bottom:2px;">Consulte pela chave de acesso:</div>
+<div class="chave">{{ doc.access_key[:22] }}<br>{{ doc.access_key[22:] }}</div>
+{% endif %}
+
+{% if doc.protocol %}
+<div class="center" style="font-size:9px;margin-top:3px;">
+  Protocolo: {{ doc.protocol }}<br>
+  {% if doc.authorized_at %}Autorizado em: {{ doc.authorized_at.strftime('%d/%m/%Y %H:%M') }}{% endif %}
+</div>
+{% endif %}
+
+<!-- QR Code -->
+{% if doc.qr_code_url %}
+<div class="qr-wrap">
+  <img src="/api/qrcode?text={{ doc.qr_code_url|urlencode }}&scale=3" alt="QR Code NFC-e">
+  <div style="font-size:8px;margin-top:2px;">Consulte em: nfce.sefaz.am.gov.br</div>
+</div>
+{% endif %}
+
+<div class="line"></div>
+<div class="center" style="font-size:9px;margin-top:2px;">
+  Obrigado pela preferência!<br>
+  Emitido por SuperMarket Pro
+</div>
+
+<div class="no-print" style="margin-top:12px;text-align:center;">
+  <button onclick="window.print()" style="padding:8px 24px;font-size:13px;cursor:pointer;background:#1e3a8a;color:#fff;border:none;border-radius:6px;">
+    Imprimir DANFE
+  </button>
+  <button onclick="window.close()" style="padding:8px 16px;font-size:13px;cursor:pointer;margin-left:8px;border:1px solid #ccc;border-radius:6px;">
+    Fechar
+  </button>
+</div>
+
+</body>
+</html>

@@ -16,8 +16,9 @@
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    background: #1a3060;
+    background: linear-gradient(180deg, #0c1a3a 0%, #142248 50%, #0f1d40 100%);
     overflow: hidden;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.25);
   }
 
   .left-body {
@@ -42,10 +43,11 @@
 
   /* cards do sidebar */
   .sc {
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 10px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
     padding: 12px 13px;
+    backdrop-filter: blur(4px);
   }
   .sc-title {
     font-size: 0.6rem;
@@ -84,12 +86,16 @@
     max-height: 240px; overflow-y: auto; z-index: 999; display: none;
     border: 1px solid #e2e8f0;
   }
-  .sr-item { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+  .sr-item {
+    padding: 9px 12px; border-bottom: 1px solid #f1f5f9; cursor: pointer;
+    display: grid; grid-template-columns: 1fr auto;
+    align-items: center; gap: 8px;
+  }
   .sr-item:last-child { border-bottom: none; }
   .sr-item:hover { background: #eff6ff; }
-  .sr-name { font-size: 0.81rem; color: #1e3a8a; font-weight: 600; }
-  .sr-sub  { font-size: 0.65rem; color: #94a3b8; }
-  .sr-price{ font-size: 0.85rem; color: #16a34a; font-weight: 700; }
+  .sr-name { font-size: 0.85rem; color: #1e3a8a; font-weight: 700; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sr-sub  { font-size: 0.68rem; color: #94a3b8; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sr-price{ font-size: 0.92rem; color: #16a34a; font-weight: 800; white-space: nowrap; text-align: right; }
 
   .qty-row { display: flex; gap: 7px; margin-top: 8px; align-items: center; }
   .qty-lbl { font-size: 0.7rem; color: rgba(255,255,255,0.5); font-weight: 600; white-space: nowrap; }
@@ -116,44 +122,57 @@
   .cl-sel:focus { border-color: #60a5fa; }
 
   /* resumo */
-  .rs-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.07); }
+  .rs-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.07); }
   .rs-row:last-child { border-bottom: none; padding-bottom: 0; }
-  .rl { font-size: 0.7rem; color: rgba(255,255,255,0.45); }
-  .rv { font-size: 0.78rem; color: rgba(255,255,255,0.85); font-weight: 700; }
-  .rv.big { font-size: 1.15rem; color: #4ade80; font-weight: 900; }
+  .rl { font-size: 0.78rem; color: rgba(255,255,255,0.55); font-weight: 500; }
+  .rv { font-size: 0.88rem; color: rgba(255,255,255,0.9); font-weight: 700; }
+  .rv.big { font-size: 1.3rem; color: #4ade80; font-weight: 900; }
   .ds-in {
     width: 70px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18);
     border-radius: 5px; padding: 3px 6px; font-size: 0.76rem; text-align: right; color: #fff; outline: none;
   }
 
   /* pagamento */
-  .pay-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .pay-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
   .pm {
-    display: flex; flex-direction: column; align-items: center; gap: 4px;
-    background: rgba(255,255,255,0.07); border: 1.5px solid rgba(255,255,255,0.12);
-    border-radius: 9px; padding: 9px 4px; color: rgba(255,255,255,0.65);
-    font-size: 0.7rem; font-weight: 700; cursor: pointer; transition: all 0.12s;
-    font-family: 'Inter', sans-serif;
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+    background: rgba(255,255,255,0.1); border: 1.5px solid rgba(255,255,255,0.22);
+    border-radius: 12px; padding: 11px 4px; color: rgba(255,255,255,0.9);
+    font-size: 0.75rem; font-weight: 800; cursor: pointer; transition: all 0.15s;
+    font-family: 'Inter', sans-serif; letter-spacing: 0.02em;
   }
-  .pm i { font-size: 1.2rem; }
-  .pm:hover { background: rgba(255,255,255,0.16); color: #fff; border-color: rgba(255,255,255,0.35); transform: translateY(-1px); }
-  .pm.din:hover { background: rgba(74,222,128,0.18); border-color: #4ade80; color: #4ade80; }
-  .pm.pix:hover { background: rgba(34,211,238,0.18); border-color: #22d3ee; color: #22d3ee; }
-  .pm.deb:hover { background: rgba(167,139,250,0.18); border-color: #a78bfa; color: #a78bfa; }
-  .pm.cre:hover { background: rgba(251,146,60,0.18); border-color: #fb923c; color: #fb923c; }
-  .pm.wide { grid-column: span 2; flex-direction: row; justify-content: center; gap: 8px; }
-  .pm-k { font-size: 0.57rem; color: rgba(255,255,255,0.28); font-family: monospace; }
+  .pm i { font-size: 1.4rem; color: #fff; }
+  .pm:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.35); }
+  .pm.din { background: rgba(74,222,128,0.12); border-color: rgba(74,222,128,0.4); color: #86efac; }
+  .pm.din i { color: #4ade80; }
+  .pm.din:hover { background: rgba(74,222,128,0.25); border-color: #4ade80; color: #fff; box-shadow: 0 4px 20px rgba(74,222,128,0.3); }
+  .pm.pix { background: rgba(34,211,238,0.12); border-color: rgba(34,211,238,0.4); color: #67e8f9; }
+  .pm.pix i { color: #22d3ee; }
+  .pm.pix:hover { background: rgba(34,211,238,0.25); border-color: #22d3ee; color: #fff; box-shadow: 0 4px 20px rgba(34,211,238,0.3); }
+  .pm.deb { background: rgba(167,139,250,0.12); border-color: rgba(167,139,250,0.4); color: #c4b5fd; }
+  .pm.deb i { color: #a78bfa; }
+  .pm.deb:hover { background: rgba(167,139,250,0.25); border-color: #a78bfa; color: #fff; box-shadow: 0 4px 20px rgba(167,139,250,0.3); }
+  .pm.cre { background: rgba(251,146,60,0.12); border-color: rgba(251,146,60,0.4); color: #fdba74; }
+  .pm.cre i { color: #fb923c; }
+  .pm.cre:hover { background: rgba(251,146,60,0.25); border-color: #fb923c; color: #fff; box-shadow: 0 4px 20px rgba(251,146,60,0.3); }
+  .pm.wide { grid-column: span 2; flex-direction: row; justify-content: center; gap: 8px; background: rgba(250,204,21,0.12); border-color: rgba(250,204,21,0.35); color: #fde68a; }
+  .pm.wide i { color: #fbbf24; }
+  .pm.wide:hover { background: rgba(250,204,21,0.25); border-color: #fbbf24; color: #fff; }
+  .pm-k { font-size: 0.64rem; color: rgba(255,255,255,0.7); font-family: monospace; background: rgba(0,0,0,0.25); border-radius: 4px; padding: 1px 5px; font-weight: 700; }
 
   /* finalizar */
   .btn-fin {
-    width: 100%; background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
-    border: none; border-radius: 10px; color: #fff; padding: 14px;
-    font-size: 1rem; font-weight: 900; cursor: pointer; letter-spacing: 0.04em;
+    width: 100%; background: linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%);
+    border: none; border-radius: 12px; color: #fff; padding: 15px;
+    font-size: 1.05rem; font-weight: 900; cursor: pointer; letter-spacing: 0.06em;
     display: flex; align-items: center; justify-content: center; gap: 8px;
-    box-shadow: 0 4px 16px rgba(22,163,74,0.4); font-family: 'Inter', sans-serif; transition: all 0.12s;
+    box-shadow: 0 6px 24px rgba(22,163,74,0.45), 0 0 0 1px rgba(255,255,255,0.1) inset;
+    font-family: 'Inter', sans-serif; transition: all 0.15s; position: relative; overflow: hidden;
   }
-  .btn-fin:hover:not(:disabled) { background: linear-gradient(135deg, #15803d 0%, #14532d 100%); box-shadow: 0 6px 20px rgba(22,163,74,0.5); transform: translateY(-1px); }
-  .btn-fin:disabled { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.25); cursor: not-allowed; box-shadow: none; }
+  .btn-fin::after { content:''; position:absolute; inset:0; background:linear-gradient(180deg,rgba(255,255,255,0.12) 0%,transparent 60%); pointer-events:none; }
+  .btn-fin:hover:not(:disabled) { background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); box-shadow: 0 8px 28px rgba(22,163,74,0.55); transform: translateY(-2px); }
+  .btn-fin:active:not(:disabled) { transform: translateY(0); }
+  .btn-fin:disabled { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.2); cursor: not-allowed; box-shadow: none; }
   .fk { font-size: 0.63rem; background: rgba(255,255,255,0.2); border-radius: 4px; padding: 2px 6px; }
   .btn-cnl {
     width: 100%; background: transparent; border: 1px solid rgba(255,255,255,0.15);
@@ -168,23 +187,36 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    background: #f0f4f8;
+    background: #eef2f7;
     overflow: hidden;
   }
 
   /* Último item escaneado */
   .last-item {
     flex-shrink: 0;
-    background: #fff;
-    border-bottom: 3px solid #e2e8f0;
-    padding: 16px 28px;
+    background: linear-gradient(135deg, #fff 0%, #f8faff 100%);
+    border-bottom: 3px solid #dbeafe;
+    padding: 10px 18px;
     min-height: 82px;
     display: flex;
-    flex-direction: column;
-    justify-content: center;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 2px 8px rgba(30,58,138,0.06);
   }
-  .last-name { font-size: 1.5rem; font-weight: 900; color: #dc2626; text-transform: uppercase; line-height: 1.1; }
-  .last-meta { font-size: 0.74rem; color: #94a3b8; margin-top: 5px; display: flex; gap: 14px; }
+  .last-img {
+    width: 62px; height: 62px; flex-shrink: 0;
+    border-radius: 10px; object-fit: cover;
+    border: 1.5px solid #e2e8f0; background: #f8fafc;
+  }
+  .last-img-placeholder {
+    width: 62px; height: 62px; flex-shrink: 0;
+    border-radius: 10px; border: 1.5px dashed #cbd5e1;
+    background: #f8fafc; display: flex; align-items: center; justify-content: center;
+    color: #cbd5e1; font-size: 1.4rem;
+  }
+  .last-info { display: flex; flex-direction: column; justify-content: center; }
+  .last-name { font-size: 1.3rem; font-weight: 900; background: linear-gradient(135deg,#1e3a8a,#2563eb); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; text-transform: uppercase; line-height: 1.1; }
+  .last-meta { font-size: 0.74rem; color: #94a3b8; margin-top: 5px; display: flex; gap: 14px; flex-wrap: wrap; }
   .last-meta span { display: flex; align-items: center; gap: 4px; }
   .last-empty { font-size: 0.9rem; color: #cbd5e1; font-style: italic; }
 
@@ -197,50 +229,82 @@
     overflow: hidden;
     margin: 8px;
     background: #fff;
-    border-radius: 10px;
-    box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+    border-radius: 14px;
+    box-shadow: 0 4px 20px rgba(30,58,138,0.08), 0 1px 4px rgba(0,0,0,0.04);
+    border: 1px solid rgba(30,58,138,0.06);
   }
 
   .tbl-head {
     flex-shrink: 0;
     display: grid;
-    grid-template-columns: minmax(160px,2fr) 110px 130px 130px 40px;
-    background: #f8fafc;
-    border-bottom: 2px solid #e2e8f0;
-    padding: 9px 20px;
-    border-radius: 10px 10px 0 0;
+    grid-template-columns: minmax(160px,2fr) 110px 110px 110px 110px 40px;
+    background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%);
+    border-bottom: none;
+    padding: 10px 20px;
+    border-radius: 13px 13px 0 0;
   }
-  .tbl-head span { font-size: 0.63rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; }
+  .tbl-head span { font-size: 0.72rem; font-weight: 800; color: rgba(255,255,255,0.9); text-transform: uppercase; letter-spacing: 0.08em; }
   .tbl-head span:not(:first-child) { text-align: right; }
 
-  .items-body { flex: 1; overflow-y: auto; }
+  .items-body { flex: 1; overflow-y: auto; position: relative; }
   .items-body::-webkit-scrollbar { width: 4px; }
   .items-body::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 2px; }
+  .items-watermark {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 12px; pointer-events: none; user-select: none; z-index: 0;
+  }
+  .items-watermark img {
+    width: 180px; height: 180px; object-fit: contain;
+    opacity: 0.07; filter: grayscale(30%);
+  }
+  .items-watermark span {
+    font-size: 1.6rem; font-weight: 900; color: #1e3a8a;
+    opacity: 0.07; letter-spacing: -0.02em; text-align: center;
+  }
 
+  .i-disc { width: 80px; border: 1.5px solid #fcd34d; border-radius: 6px; padding: 4px; font-size: 0.78rem; text-align: center; color: #92400e; outline: none; display: block; margin-left: auto; font-family: 'Inter', sans-serif; background: #fffbeb; }
+  .i-disc:focus { border-color: #f59e0b; background: #fef3c7; }
+  .i-disc-lbl { font-size: 0.6rem; color: #f59e0b; font-weight: 700; text-align: right; margin-top: 2px; }
   .item-row {
     display: grid;
-    grid-template-columns: minmax(160px,2fr) 110px 130px 130px 40px;
+    grid-template-columns: minmax(160px,2fr) 110px 110px 110px 110px 40px;
     align-items: center;
-    padding: 9px 20px;
-    border-bottom: 1px solid #f8fafc;
-    transition: background 0.1s;
+    padding: 12px 20px;
+    border-bottom: 1px solid #f1f5f9;
+    transition: all 0.1s;
+    border-left: 3px solid transparent;
   }
-  .item-row:hover { background: #f8fafc; }
+  .item-row:hover { background: #f0f7ff; border-left-color: #3b82f6; }
   .item-row:nth-child(even) { background: #fafbff; }
-  .item-row:nth-child(even):hover { background: #eff6ff; }
-  .i-name { font-size: 0.86rem; color: #1e3a8a; font-weight: 600; line-height: 1.2; }
-  .i-code { font-size: 0.63rem; color: #cbd5e1; margin-top: 2px; }
-  .i-val  { font-size: 0.84rem; color: #64748b; text-align: right; }
-  .i-tot  { font-size: 0.9rem; color: #16a34a; font-weight: 700; text-align: right; }
-  .i-qty  { width: 68px; border: 1.5px solid #e2e8f0; border-radius: 6px; padding: 4px; font-size: 0.82rem; text-align: center; color: #334155; outline: none; margin-left: auto; display: block; font-weight: 700; font-family: 'Inter', sans-serif; }
-  .i-qty:focus { border-color: #3b82f6; }
-  .i-unit { font-size: 0.61rem; color: #cbd5e1; text-align: center; }
-  .btn-rm { background: none; border: none; color: #e2e8f0; cursor: pointer; padding: 4px; border-radius: 5px; display: flex; align-items: center; transition: all 0.1s; }
-  .btn-rm:hover { background: #fee2e2; color: #ef4444; }
+  .item-row:nth-child(even):hover { background: #eff6ff; border-left-color: #3b82f6; }
+  .i-name { font-size: 1rem; color: #1e3a8a; font-weight: 800; line-height: 1.2; }
+  .i-code { font-size: 0.72rem; color: #94a3b8; margin-top: 3px; font-family: monospace; }
+  .i-val  { font-size: 0.95rem; color: #475569; text-align: right; font-weight: 600; }
+  .i-tot  { font-size: 1.05rem; color: #15803d; font-weight: 900; text-align: right; }
+  .i-qty  { width: 72px; border: 1.5px solid #dbeafe; border-radius: 7px; padding: 5px 4px; font-size: 0.95rem; text-align: center; color: #1e3a8a; outline: none; margin-left: auto; display: block; font-weight: 800; font-family: 'Inter', sans-serif; background: #f0f7ff; }
+  .i-qty:focus { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 2px rgba(59,130,246,0.15); }
+  .i-unit { font-size: 0.68rem; color: #94a3b8; text-align: center; font-weight: 600; }
+  .btn-rm { background: none; border: none; color: #e2e8f0; cursor: pointer; padding: 5px; border-radius: 6px; display: flex; align-items: center; transition: all 0.1s; }
+  .btn-rm:hover { background: #fee2e2; color: #ef4444; transform: scale(1.1); }
 
   .empty-st {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    height: 100%; gap: 14px; padding: 40px;
+    height: 100%; gap: 10px; padding: 40px;
+  }
+  .empty-logo {
+    width: 100px; height: 100px; object-fit: contain;
+    border-radius: 20px; padding: 10px;
+    background: #f8fafc; border: 2px solid #e2e8f0;
+    margin-bottom: 4px;
+  }
+  .empty-market-name {
+    font-size: 1.5rem; font-weight: 900; color: #1e3a8a;
+    letter-spacing: -0.02em; text-align: center;
+  }
+  .empty-welcome {
+    font-size: 1rem; color: #64748b; margin: 0;
+    font-weight: 500; text-align: center;
   }
   .empty-st i { font-size: 3.5rem; color: #e2e8f0; }
   .empty-st p { font-size: 0.88rem; color: #cbd5e1; margin: 0; text-align: center; }
@@ -255,33 +319,35 @@
   /* barra total */
   .total-bar {
     flex-shrink: 0;
-    background: #fff;
-    border-top: 2px solid #e2e8f0;
+    background: linear-gradient(135deg, #fff 0%, #f8faff 100%);
+    border-top: 2px solid #dbeafe;
     display: flex;
     align-items: stretch;
     overflow: hidden;
+    box-shadow: 0 -4px 16px rgba(30,58,138,0.06);
   }
   .total-info {
     flex: 1;
-    padding: 14px 20px;
+    padding: 12px 20px;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    border-right: 1px solid #f1f5f9;
+    border-right: 1px solid #e8f0fe;
   }
-  .total-op { font-size: 0.7rem; color: #94a3b8; }
-  .total-op strong { color: #475569; }
-  .total-cnt { font-size: 0.72rem; color: #cbd5e1; margin-top: 2px; }
+  .total-op { font-size: 0.85rem; color: #64748b; }
+  .total-op strong { color: #1e293b; font-weight: 800; }
+  .total-cnt { font-size: 0.82rem; color: #94a3b8; margin-top: 3px; font-weight: 600; }
   .total-value {
-    padding: 14px 28px;
+    padding: 12px 24px;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
     justify-content: center;
-    min-width: 200px;
+    min-width: 220px;
+    background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%);
   }
-  .total-lbl { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #94a3b8; margin-bottom: 2px; }
-  .total-num { font-size: 2.3rem; font-weight: 900; color: #0f172a; letter-spacing: -0.03em; line-height: 1; }
+  .total-lbl { font-size: 0.78rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.7); margin-bottom: 2px; }
+  .total-num { font-size: 2.8rem; font-weight: 900; color: #fff; letter-spacing: -0.03em; line-height: 1; text-shadow: 0 2px 8px rgba(0,0,0,0.2); }
 
   /* ═══ Modal Pagamento ═══ */
   .modal-content { border: none; border-radius: 14px; box-shadow: 0 24px 64px rgba(0,0,0,0.2); font-family: 'Inter', sans-serif; }
@@ -408,6 +474,13 @@
   .prod-card:hover { border-color: #3b82f6; background: #eff6ff; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59,130,246,0.12); }
   .prod-card.esgotado { opacity: 0.45; cursor: not-allowed; }
   .prod-card.esgotado:hover { transform: none; box-shadow: none; border-color: #e2e8f0; background: #fff; }
+  .pc-img-wrap {
+    width: 100%; aspect-ratio: 1/1; border-radius: 7px; overflow: hidden;
+    background: #f1f5f9; display: flex; align-items: center; justify-content: center;
+    margin-bottom: 4px; flex-shrink: 0;
+  }
+  .pc-img { width: 100%; height: 100%; object-fit: cover; }
+  .pc-img-ph { font-size: 1.8rem; color: #cbd5e1; }
   .pc-cat { font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; }
   .pc-name { font-size: 0.8rem; font-weight: 700; color: #1e3a8a; line-height: 1.2; }
   .pc-price { font-size: 1rem; font-weight: 900; color: #16a34a; margin-top: 4px; }
@@ -465,6 +538,14 @@
   /* flash "produto não encontrado" */
   .bc-error { border-color: #ef4444 !important; background: rgba(239,68,68,0.08) !important; animation: shake 0.3s ease; }
   @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+
+  /* TEF spinner */
+  .tef-spinner {
+    width:52px;height:52px;border-radius:50%;
+    border:5px solid #e2e8f0;border-top-color:#1e3a8a;
+    animation:tef-spin .8s linear infinite;
+  }
+  @keyframes tef-spin { to { transform:rotate(360deg); } }
 
   @media (max-width: 900px) {
     .pdv-layout {
@@ -590,6 +671,21 @@
           <input type="number" id="qty-input" class="qty-in" value="1" min="0.001" step="1">
           <button class="btn-bsc" onclick="searchByBarcode()"><i class="bi bi-search me-1"></i>Buscar &nbsp;F2</button>
         </div>
+        <div style="display:flex;gap:6px;margin-top:6px;">
+          <button id="btn-preco" onclick="toggleConsultaPreco()"
+            style="flex:1;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:8px;color:#93c5fd;font-size:0.72rem;font-weight:700;padding:5px;cursor:pointer;transition:all .15s;"
+            title="Consultar preço sem adicionar (F3)">
+            <i class="bi bi-tag me-1"></i>Consultar Preço F3
+          </button>
+        </div>
+        {% if not open_register %}
+        <div style="margin-top:8px;">
+          <button onclick="document.getElementById('modalAbrirCaixa').style.display='flex'"
+            style="width:100%;background:#16a34a;border:none;border-radius:8px;color:#fff;font-size:0.78rem;font-weight:800;padding:8px;cursor:pointer;">
+            <i class="bi bi-cash-stack me-1"></i>ABRIR CAIXA
+          </button>
+        </div>
+        {% endif %}
       </div>
 
       <!-- Catálogo -->
@@ -667,10 +763,15 @@
         <span>Produto</span>
         <span>Quantidade</span>
         <span>Preço Unit.</span>
+        <span>Desconto</span>
         <span>Total</span>
         <span></span>
       </div>
       <div class="items-body" id="items-body">
+        <div class="items-watermark">
+          <img src="{{ request.app.state.market_logo_url }}" alt="">
+          <span>{{ request.app.state.market_name }}</span>
+        </div>
         <div class="empty-st">
           <i class="bi bi-cart-x"></i>
           <p>Nenhum item adicionado</p>
@@ -735,10 +836,20 @@
 <div class="modal fade" id="weightModal" tabindex="-1" data-bs-backdrop="static">
   <div class="modal-dialog modal-dialog-centered" style="max-width:420px;">
     <div class="modal-content">
-      <div class="modal-header" style="background:linear-gradient(135deg,#1d4ed8,#0f766e);border-radius:14px 14px 0 0;border:none;padding:16px 20px;">
+      <div class="modal-header" style="background:linear-gradient(135deg,#1d4ed8,#0f766e);border-radius:14px 14px 0 0;border:none;padding:14px 20px;">
         <span class="modal-title" style="color:#fff;font-weight:800;font-size:0.92rem;">
           <i class="bi bi-speedometer2 me-2"></i>Balança / Produto KG
         </span>
+        <div style="display:flex;align-items:center;gap:8px;margin-left:auto;margin-right:10px;">
+          <span id="balanca-status" style="display:flex;align-items:center;gap:5px;font-size:0.68rem;color:rgba(255,255,255,0.7);">
+            <span id="balanca-dot" style="width:8px;height:8px;border-radius:50%;background:#94a3b8;flex-shrink:0;"></span>
+            <span id="balanca-status-txt">Desconectada</span>
+          </span>
+          <button id="btn-balanca-conectar" onclick="toggleBalanca()" title="Conectar balança serial"
+            style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:7px;color:#fff;padding:4px 10px;font-size:0.7rem;font-weight:700;cursor:pointer;transition:all .15s;">
+            <i class="bi bi-usb-symbol me-1"></i>Conectar
+          </button>
+        </div>
         <button type="button" class="btn-close" onclick="cancelWeightEntry()" style="filter:invert(1) opacity(.7);"></button>
       </div>
       <div class="modal-body">
@@ -773,6 +884,25 @@
           </div>
         </div>
         <div class="weight-error" id="weight-error">Informe um peso ou valor maior que zero.</div>
+
+        <!-- Leitura automática da balança -->
+        <div id="balanca-leitura" style="display:none;margin-top:10px;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:10px 14px;text-align:center;">
+          <div style="font-size:0.68rem;color:#15803d;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">
+            <i class="bi bi-broadcast me-1"></i>Aguardando peso na balança...
+          </div>
+          <div id="balanca-peso-live" style="font-size:2rem;font-weight:900;color:#15803d;letter-spacing:-0.02em;">0,000 KG</div>
+          <div style="font-size:0.72rem;color:#86efac;margin-top:2px;">Retire e coloque o produto para nova leitura</div>
+        </div>
+
+        <div style="margin-top:8px;">
+          <label style="font-size:0.65rem;color:#94a3b8;font-weight:600;">Velocidade da porta serial:</label>
+          <select id="balanca-baud" style="margin-left:8px;border:1px solid #e2e8f0;border-radius:6px;padding:2px 8px;font-size:0.72rem;color:#475569;">
+            <option value="9600" selected>9600 baud (Toledo, Filizola, Urano, Prix)</option>
+            <option value="4800">4800 baud (Filizola antiga)</option>
+            <option value="19200">19200 baud</option>
+            <option value="38400">38400 baud</option>
+          </select>
+        </div>
       </div>
       <div class="modal-footer" style="background:#f8fafc;border-top:1px solid #e2e8f0;border-radius:0 0 14px 14px;">
         <button type="button" class="btn btn-outline-secondary btn-sm" onclick="cancelWeightEntry()">Cancelar</button>
@@ -915,7 +1045,45 @@
           </div>
         </div>
 
-        <!-- Campos normais (escondidos no PIX) -->
+        <!-- Seção Fiado (aparece só quando Fiado selecionado) -->
+        <div id="fiado-section" style="display:none;">
+          <div id="fiado-box" style="border-radius:12px;padding:14px 16px;border:1.5px solid #e2e8f0;background:#f8fafc;">
+            <div style="font-size:0.62rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:#64748b;margin-bottom:10px;">
+              <i class="bi bi-person-check me-1"></i>Crédito do Cliente
+            </div>
+            <div style="margin-bottom:10px;">
+              <select id="fiado-cliente-select" class="form-select form-select-sm"
+                onchange="sincronizarClienteFiado(this.value)">
+                <option value="">— Selecione o cliente —</option>
+              </select>
+            </div>
+            <div id="fiado-loading" style="text-align:center;color:#94a3b8;font-size:0.8rem;padding:8px 0;display:none;">
+              <i class="bi bi-hourglass-split me-1"></i>Carregando...
+            </div>
+            <div id="fiado-info" style="display:none;">
+              <div style="font-weight:700;font-size:0.9rem;color:#1e293b;margin-bottom:10px;" id="fiado-cliente-nome"></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+                <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:8px;text-align:center;">
+                  <div style="font-size:0.58rem;font-weight:700;text-transform:uppercase;color:#94a3b8;margin-bottom:2px;">Limite</div>
+                  <div style="font-size:0.88rem;font-weight:800;color:#1e3a8a;" id="fiado-limite">R$ 0,00</div>
+                </div>
+                <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:8px;text-align:center;">
+                  <div style="font-size:0.58rem;font-weight:700;text-transform:uppercase;color:#94a3b8;margin-bottom:2px;">Deve</div>
+                  <div style="font-size:0.88rem;font-weight:800;color:#ef4444;" id="fiado-saldo">R$ 0,00</div>
+                </div>
+                <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:8px;text-align:center;">
+                  <div style="font-size:0.58rem;font-weight:700;text-transform:uppercase;color:#94a3b8;margin-bottom:2px;">Disponível</div>
+                  <div style="font-size:0.88rem;font-weight:800;color:#16a34a;" id="fiado-disponivel">R$ 0,00</div>
+                </div>
+              </div>
+              <div id="fiado-alerta" style="display:none;background:#fef2f2;border:1.5px solid #fecaca;border-radius:8px;padding:8px 12px;font-size:0.75rem;color:#dc2626;font-weight:600;">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i><span id="fiado-alerta-msg"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Campos normais (escondidos no PIX e Fiado) -->
         <div id="pay-normal-section">
           <div class="pi-row">
             <label>Valor recebido</label>
@@ -944,6 +1112,78 @@
         <button class="btn fw-bold px-4" onclick="confirmPixInline()"
           style="background:linear-gradient(135deg,#0891b2,#0e7490);color:#fff;border:none;border-radius:8px;">
           <i class="bi bi-check-circle me-1"></i>Confirmar PIX Recebido
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Modal Abrir Caixa (PDV) ═══ -->
+<div id="modalAbrirCaixa" style="display:none;position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:28px 32px;min-width:320px;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <h5 style="font-weight:800;color:#1e3a8a;margin-bottom:4px;"><i class="bi bi-cash-stack me-2"></i>Abrir Caixa</h5>
+    <p style="font-size:0.8rem;color:#64748b;margin-bottom:16px;">Informe o valor inicial em dinheiro no caixa.</p>
+    <label style="font-size:0.78rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Fundo de Caixa (R$)</label>
+    <input type="number" id="fundo-caixa-inp" step="0.01" min="0" value="0.00" placeholder="0,00"
+      style="width:100%;border:1.5px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:1.1rem;font-weight:700;outline:none;margin-bottom:16px;"
+      onkeydown="if(event.key==='Enter') confirmarAbrirCaixa()">
+    <div style="display:flex;gap:8px;">
+      <button onclick="document.getElementById('modalAbrirCaixa').style.display='none'"
+        style="flex:1;padding:10px;border:1.5px solid #e2e8f0;border-radius:8px;background:#fff;cursor:pointer;font-weight:600;">
+        Cancelar
+      </button>
+      <button onclick="confirmarAbrirCaixa()"
+        style="flex:2;padding:10px;background:#16a34a;color:#fff;border:none;border-radius:8px;font-weight:800;cursor:pointer;font-size:0.95rem;">
+        <i class="bi bi-check-lg me-1"></i>Abrir Caixa
+      </button>
+    </div>
+    <div id="caixa-msg" style="margin-top:10px;font-size:0.78rem;display:none;"></div>
+  </div>
+</div>
+
+<!-- ═══ Modal Consulta de Preço ═══ -->
+<div id="modalConsultaPreco" style="display:none;position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:24px 28px;min-width:300px;max-width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <div id="cp-img-wrap" style="width:80px;height:80px;margin:0 auto 12px;border-radius:12px;overflow:hidden;background:#f1f5f9;display:flex;align-items:center;justify-content:center;">
+      <i class="bi bi-image" style="font-size:2rem;color:#cbd5e1;"></i>
+    </div>
+    <div id="cp-name" style="font-size:1.1rem;font-weight:800;color:#1e3a8a;margin-bottom:4px;"></div>
+    <div id="cp-barcode" style="font-size:0.72rem;color:#94a3b8;margin-bottom:12px;"></div>
+    <div id="cp-price" style="font-size:2.2rem;font-weight:900;color:#16a34a;margin-bottom:4px;"></div>
+    <div id="cp-stock" style="font-size:0.78rem;color:#64748b;margin-bottom:16px;"></div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="fecharConsultaPreco()"
+        style="flex:1;padding:8px;border:1.5px solid #e2e8f0;border-radius:8px;background:#fff;cursor:pointer;font-weight:600;font-size:0.85rem;">
+        Fechar (Esc)
+      </button>
+      <button onclick="adicionarDaConsulta()"
+        style="flex:2;padding:8px;background:#1e3a8a;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.85rem;">
+        <i class="bi bi-cart-plus me-1"></i>Adicionar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Modal TEF ═══ -->
+<div class="modal fade" id="tefModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:340px;">
+    <div class="modal-content" style="border-radius:16px;overflow:hidden;">
+      <div class="modal-header" style="background:#1e3a8a;color:#fff;border:none;padding:14px 20px;">
+        <span class="modal-title fw-bold fs-6"><i class="bi bi-credit-card me-2"></i>Pagamento TEF</span>
+      </div>
+      <div class="modal-body text-center py-4 px-4">
+        <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;color:#94a3b8;margin-bottom:4px;" id="tef-metodo-label">DÉBITO</div>
+        <div style="font-size:2rem;font-weight:800;color:#1e3a8a;margin-bottom:24px;" id="tef-valor-label">R$ 0,00</div>
+        <div id="tef-icon" style="margin-bottom:16px;min-height:56px;display:flex;align-items:center;justify-content:center;"></div>
+        <div id="tef-msg" style="font-size:0.88rem;color:#475569;font-weight:500;min-height:36px;line-height:1.4;"></div>
+        <div id="tef-nsu" style="display:none;margin-top:10px;font-size:0.7rem;color:#94a3b8;"></div>
+      </div>
+      <div class="modal-footer border-0 justify-content-center gap-2 pb-4">
+        <button id="tef-cancel-btn" class="btn btn-outline-danger btn-sm px-4" onclick="cancelarTEF()">
+          <i class="bi bi-x-circle me-1"></i>Cancelar
+        </button>
+        <button id="tef-retry-btn" class="btn btn-primary btn-sm px-4" style="display:none;" onclick="retryTEF()">
+          <i class="bi bi-arrow-clockwise me-1"></i>Tentar Novamente
         </button>
       </div>
     </div>
@@ -1005,6 +1245,9 @@
       <div class="receipt-actions">
         <button class="btn btn-success fw-bold btn-sm" onclick="newSale()"><i class="bi bi-arrow-counterclockwise me-1"></i>Nova Venda</button>
         <button class="btn btn-primary fw-bold btn-sm" onclick="printReceipt()"><i class="bi bi-printer me-1"></i>Imprimir</button>
+        <button class="btn btn-warning fw-bold btn-sm" id="btn-nfce" onclick="emitirNfce()" title="Emitir Nota Fiscal Eletrônica">
+          <i class="bi bi-receipt me-1"></i>NFC-e
+        </button>
         <a href="#" id="s-link" class="btn btn-outline-secondary btn-sm" target="_blank">Detalhes</a>
       </div>
     </div>
@@ -1034,18 +1277,30 @@ document.addEventListener('DOMContentLoaded', () => {
   bi.focus();
   updateTotals();
 
+  /* Recarrega crédito fiado se cliente mudar enquanto modal está aberto */
+  document.getElementById('customer-select').addEventListener('change', () => {
+    if (selMethod === 'fiado' && document.querySelector('#payModal.show')) {
+      carregarCreditoFiado();
+    }
+  });
+
   /* ── Atalhos de teclado globais ── */
   document.addEventListener('keydown', e => {
     if (document.querySelector('.modal.show')) return;
     const map = {
       F2: () => bi.focus(),
+      F3: toggleConsultaPreco,
       F4: finalizeSale,
       F5: () => openPayModal('dinheiro'),
       F6: openPixModal,
       F7: () => openPayModal('debito'),
       F8: () => openPayModal('credito'),
       F9: () => openPayModal('fiado'),
-      Escape: clearCart
+      Escape: () => {
+        if (document.getElementById('modalConsultaPreco').style.display !== 'none') { fecharConsultaPreco(); return; }
+        if (document.getElementById('modalAbrirCaixa').style.display !== 'none') { document.getElementById('modalAbrirCaixa').style.display='none'; return; }
+        clearCart();
+      }
     };
     if (map[e.key]) { e.preventDefault(); map[e.key](); }
   });
@@ -1099,22 +1354,252 @@ function formatKg(value) {
   return roundWeightQty(value || 0).toFixed(3).replace('.', ',');
 }
 
+// ══════════════════ BALANÇA SERIAL ══════════════════════════════════════════
+class BalancaSerial {
+  constructor() {
+    this.port    = null;
+    this.reader  = null;
+    this.ativo   = false;
+    this.onPeso  = null;  // callback(kg: number, estavel: boolean)
+  }
+
+  get conectada() { return !!this.port; }
+
+  async conectar(baudRate = 9600) {
+    if (!('serial' in navigator))
+      throw new Error('Web Serial não suportado. Use Chrome ou Edge 89+.');
+    this.port = await navigator.serial.requestPort();
+    await this.port.open({ baudRate, dataBits: 8, stopBits: 1, parity: 'none' });
+    this.ativo = true;
+    this._ler();
+  }
+
+  async desconectar() {
+    this.ativo = false;
+    try { if (this.reader) { await this.reader.cancel(); this.reader = null; } } catch {}
+    try { if (this.port) { await this.port.close(); this.port = null; } } catch {}
+  }
+
+  async _ler() {
+    const dec = new TextDecoder();
+    let buf = '';
+    while (this.ativo && this.port?.readable) {
+      this.reader = this.port.readable.getReader();
+      try {
+        while (true) {
+          const { value, done } = await this.reader.read();
+          if (done) break;
+          buf += dec.decode(value);
+          const r = this._parse(buf);
+          if (r !== null) {
+            if (this.onPeso) this.onPeso(r.kg, r.estavel);
+            buf = '';
+          }
+          if (buf.length > 200) buf = buf.slice(-100);
+        }
+      } catch(e) { if (this.ativo) console.warn('Balança:', e); }
+      finally { try { this.reader?.releaseLock(); } catch {} }
+    }
+  }
+
+  _parse(buf) {
+    // Filizola / Toledo / Prix: "ST,+000.500 kg\r\n" ou "ST,+000500\r\n"
+    const m1 = buf.match(/ST[,\s][+\-]?\s*(\d+[.,]\d+)\s*(?:kg)?/i);
+    if (m1) return { kg: parseFloat(m1[1].replace(',','.')), estavel: true };
+
+    // Instável Filizola: "US,+000.500"
+    const m2 = buf.match(/US[,\s][+\-]?\s*(\d+[.,]\d+)\s*(?:kg)?/i);
+    if (m2) return { kg: parseFloat(m2[1].replace(',','.')), estavel: false };
+
+    // Urano / genérico: "+000.500\r\n" ou "000.500 kg\r\n"
+    const m3 = buf.match(/[+\-]?\s*(\d+[.,]\d{3})\s*(?:kg)?\s*[\r\n]/i);
+    if (m3) { const v = parseFloat(m3[1].replace(',','.')); if (v >= 0) return { kg: v, estavel: true }; }
+
+    // Toledo binário-ascii: "P+000500" (gramas)
+    const m4 = buf.match(/P[+\-](\d{6})/);
+    if (m4) return { kg: parseInt(m4[1]) / 1000, estavel: true };
+
+    return null;
+  }
+}
+
+const _balanca = new BalancaSerial();
+
+async function toggleBalanca() {
+  const btn = document.getElementById('btn-balanca-conectar');
+  if (_balanca.conectada) {
+    await _balanca.desconectar();
+    _setBalancaUI(false);
+    return;
+  }
+  try {
+    btn.disabled = true;
+    btn.textContent = 'Conectando...';
+    const baud = parseInt(document.getElementById('balanca-baud').value);
+    _balanca.onPeso = (kg, estavel) => {
+      const pesoEl = document.getElementById('balanca-peso-live');
+      const inp    = document.getElementById('weight-input');
+      if (pesoEl) pesoEl.textContent = kg.toFixed(3).replace('.',',') + ' KG';
+      if (estavel && kg > 0) {
+        if (inp) { inp.value = kg.toFixed(3).replace('.',','); updateWeightPreview(); }
+        if (typeof beepOk === 'function') beepOk();
+      }
+    };
+    await _balanca.conectar(baud);
+    _setBalancaUI(true);
+  } catch(e) {
+    btn.disabled = false;
+    _setBalancaUI(false);
+    if (e.name !== 'NotFoundError') alert('Balança: ' + e.message);
+  }
+}
+
+function _setBalancaUI(conectada) {
+  const btn    = document.getElementById('btn-balanca-conectar');
+  const dot    = document.getElementById('balanca-dot');
+  const txt    = document.getElementById('balanca-status-txt');
+  const painel = document.getElementById('balanca-leitura');
+  btn.disabled = false;
+  if (conectada) {
+    btn.innerHTML = '<i class="bi bi-usb-symbol me-1"></i>Desconectar';
+    btn.style.background = 'rgba(239,68,68,0.25)';
+    btn.style.borderColor = '#f87171';
+    dot.style.background = '#4ade80';
+    txt.textContent = 'Conectada';
+    if (painel) painel.style.display = 'block';
+  } else {
+    btn.innerHTML = '<i class="bi bi-usb-symbol me-1"></i>Conectar';
+    btn.style.background = 'rgba(255,255,255,0.15)';
+    btn.style.borderColor = 'rgba(255,255,255,0.3)';
+    dot.style.background = '#94a3b8';
+    txt.textContent = 'Desconectada';
+    if (painel) painel.style.display = 'none';
+  }
+}
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ── Sons ─────────────────────────────────────────────────────────────────────
+let _actx = null;
+function _getACtx() { return _actx || (_actx = new (window.AudioContext || window.webkitAudioContext)()); }
+function beepOk() {
+  try {
+    const ctx = _getACtx(), o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = 'sine'; o.frequency.value = 1047;
+    g.gain.setValueAtTime(0.25, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+    o.start(); o.stop(ctx.currentTime + 0.12);
+  } catch {}
+}
+function beepErr() {
+  try {
+    const ctx = _getACtx(), o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = 'square'; o.frequency.value = 200;
+    g.gain.setValueAtTime(0.2, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+    o.start(); o.stop(ctx.currentTime + 0.35);
+  } catch {}
+}
+
+// ── Consulta de Preço ────────────────────────────────────────────────────────
+let _consultaMode = false, _consultaProd = null;
+function toggleConsultaPreco() {
+  _consultaMode = !_consultaMode;
+  const btn = document.getElementById('btn-preco');
+  if (_consultaMode) {
+    btn.style.background = 'rgba(250,204,21,0.25)';
+    btn.style.borderColor = '#fbbf24';
+    btn.style.color = '#fbbf24';
+    bi.placeholder = 'Escanear para consultar preço...';
+  } else {
+    btn.style.background = 'rgba(255,255,255,0.08)';
+    btn.style.borderColor = 'rgba(255,255,255,0.2)';
+    btn.style.color = '#93c5fd';
+    bi.placeholder = 'Escaneie ou digite...';
+  }
+  focusBi();
+}
+function fecharConsultaPreco() {
+  document.getElementById('modalConsultaPreco').style.display = 'none';
+  _consultaProd = null;
+  focusBi();
+}
+function adicionarDaConsulta() {
+  if (_consultaProd) { addToCart(_consultaProd); }
+  fecharConsultaPreco();
+  if (_consultaMode) toggleConsultaPreco();
+}
+function mostrarConsultaPreco(p) {
+  beepOk();
+  _consultaProd = p;
+  const imgWrap = document.getElementById('cp-img-wrap');
+  imgWrap.innerHTML = p.image_url
+    ? `<img src="${p.image_url}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.innerHTML='<i class=\\'bi bi-image\\' style=\\'font-size:2rem;color:#cbd5e1;\\'></i>'">`
+    : '<i class="bi bi-image" style="font-size:2rem;color:#cbd5e1;"></i>';
+  document.getElementById('cp-name').textContent    = p.name;
+  document.getElementById('cp-barcode').textContent = p.barcode || '';
+  document.getElementById('cp-price').textContent   = fmtR(p.sale_price);
+  document.getElementById('cp-stock').textContent   = `Estoque: ${p.stock_quantity} ${p.unit}`;
+  document.getElementById('modalConsultaPreco').style.display = 'flex';
+  bi.value = '';
+}
+
+// ── Abrir Caixa direto do PDV ────────────────────────────────────────────────
+async function confirmarAbrirCaixa() {
+  const fundo = parseFloat(document.getElementById('fundo-caixa-inp').value) || 0;
+  const msg   = document.getElementById('caixa-msg');
+  msg.style.display = 'none';
+  try {
+    const fd = new FormData();
+    fd.append('opening_balance', fundo.toFixed(2));
+    const resp = await fetch('/caixa/abrir', {method:'POST', body: fd});
+    if (resp.ok || resp.redirected) {
+      document.getElementById('modalAbrirCaixa').style.display = 'none';
+      location.reload();
+    } else {
+      msg.textContent = 'Erro ao abrir caixa. Tente novamente.';
+      msg.style.cssText = 'display:block;color:#dc2626;';
+    }
+  } catch(e) {
+    msg.textContent = 'Erro de conexão.';
+    msg.style.cssText = 'display:block;color:#dc2626;';
+  }
+}
+
+// ── Busca por código de barras ────────────────────────────────────────────────
 async function searchByBarcode() {
-  const val = bi.value.trim();
-  if (!val) return;
+  let raw = bi.value.trim();
+  if (!raw) return;
+
+  // Detecta prefixo de quantidade: "3*7891..." ou "3x7891..." ou "3 7891..."
+  let qtyOverride = null;
+  const qtyMatch = raw.match(/^(\d+(?:[.,]\d+)?)\s*[*xX]\s*(.+)$/);
+  if (qtyMatch) {
+    qtyOverride = parseFloat(qtyMatch[1].replace(',', '.'));
+    raw = qtyMatch[2].trim();
+  }
+
   /* 1. tenta código de barras exato */
   try {
-    const res = await fetch(`/produtos/api/barcode/${encodeURIComponent(val)}`);
-    if (res.ok) { addToCart(await res.json()); bi.value = ''; hideSearch(); return; }
+    const res = await fetch(`/produtos/api/barcode/${encodeURIComponent(raw)}`);
+    if (res.ok) {
+      const p = await res.json();
+      if (_consultaMode) { mostrarConsultaPreco(p); return; }
+      beepOk();
+      addToCart(p, qtyOverride); bi.value = ''; hideSearch(); return;
+    }
   } catch {}
-  /* 2. busca textual — se encontrar algo, adiciona o primeiro automaticamente */
+  /* 2. busca textual */
   try {
-    const res = await fetch(`/produtos/api/buscar?q=${encodeURIComponent(val)}`);
+    const res = await fetch(`/produtos/api/buscar?q=${encodeURIComponent(raw)}`);
     const ps = await res.json();
     if (ps.length === 1) {
-      addToCart(ps[0]); bi.value = ''; hideSearch();
+      if (_consultaMode) { mostrarConsultaPreco(ps[0]); return; }
+      beepOk();
+      addToCart(ps[0], qtyOverride); bi.value = ''; hideSearch();
     } else if (ps.length > 1) {
-      showDropdown(ps); /* múltiplos → mostra dropdown para escolher */
+      showDropdown(ps);
     } else {
       notFound();
     }
@@ -1122,6 +1607,7 @@ async function searchByBarcode() {
 }
 
 function notFound() {
+  beepErr();
   bi.classList.add('bc-error');
   setTimeout(() => bi.classList.remove('bc-error'), 600);
   bi.select();
@@ -1178,13 +1664,19 @@ function addToCart(product, quantityOverride = null) {
   if (ex) { ex.quantity = isWeightProduct(product) ? roundWeightQty(ex.quantity + qty) : ex.quantity + qty; ex.total = ex.quantity * ex.unit_price - ex.discount; }
   else cart.push({ product_id: product.id, barcode: product.barcode||'', name: product.name, unit: product.unit, quantity: qty, unit_price: product.sale_price, stock_quantity: available, discount: 0, total: qty * product.sale_price });
   qi.value = 1;
+  const imgHtml = product.image_url
+    ? `<img class="last-img" src="${product.image_url}" alt="" onerror="this.style.display='none'">`
+    : `<div class="last-img-placeholder"><i class="bi bi-image"></i></div>`;
   document.getElementById('last-item-bar').innerHTML = `
-    <div class="last-name">${product.name}</div>
-    <div class="last-meta">
-      <span><i class="bi bi-upc"></i>${product.barcode||'sem código'}</span>
-      <span><i class="bi bi-tag"></i>R$ ${product.sale_price.toFixed(2).replace('.',',')} / ${product.unit}</span>
-      ${isWeightProduct(product) ? `<span><i class="bi bi-speedometer2"></i>Peso: ${formatKg(qty)} KG</span>` : ''}
-      <span><i class="bi bi-boxes"></i>Estoque: ${product.stock_quantity} ${product.unit}</span>
+    ${imgHtml}
+    <div class="last-info">
+      <div class="last-name">${product.name}</div>
+      <div class="last-meta">
+        <span><i class="bi bi-upc"></i>${product.barcode||'sem código'}</span>
+        <span><i class="bi bi-tag"></i>R$ ${product.sale_price.toFixed(2).replace('.',',')} / ${product.unit}</span>
+        ${isWeightProduct(product) ? `<span><i class="bi bi-speedometer2"></i>Peso: ${formatKg(qty)} KG</span>` : ''}
+        <span><i class="bi bi-boxes"></i>Estoque: ${product.stock_quantity} ${product.unit}</span>
+      </div>
     </div>`;
   renderCart(); updateTotals(); focusBi();
 }
@@ -1257,12 +1749,15 @@ function renderCart() {
   const body = document.getElementById('items-body');
   if (!cart.length) {
     body.innerHTML = `<div class="empty-st">
-      <i class="bi bi-cart-x"></i><p>Nenhum item adicionado</p>
+      <img src="${MARKET_LOGO_URL}" alt="${MARKET_NAME}" class="empty-logo" onerror="this.style.display='none'">
+      <div class="empty-market-name">${MARKET_NAME}</div>
+      <p class="empty-welcome">Obrigado pela sua preferência!</p>
       <div class="empty-hint">
         <span class="hint-chip"><i class="bi bi-upc me-1"></i>Escaneie o código</span>
         <span class="hint-chip"><i class="bi bi-keyboard me-1"></i>Digite e pressione Enter</span>
         <span class="hint-chip">F2 para buscar</span>
-      </div></div>`;
+      </div>
+    </div>`;
     return;
   }
   body.innerHTML = cart.map((item, i) => {
@@ -1276,6 +1771,10 @@ function renderCart() {
         <div class="i-unit">${item.unit}</div>
       </div>
       <div class="i-val">R$ ${item.unit_price.toFixed(2).replace('.',',')}</div>
+      <div>
+        <input type="number" class="i-disc" value="${(item.discount||0).toFixed(2)}" min="0" step="0.01" placeholder="0,00" onchange="updateDiscount(${i},this.value)" title="Desconto em R$">
+        ${item.discount > 0 ? `<div class="i-disc-lbl">-${fmtR(item.discount)}</div>` : ''}
+      </div>
       <div class="i-tot">R$ ${item.total.toFixed(2).replace('.',',')}</div>
       <button class="btn-rm" onclick="removeItem(${i})"><i class="bi bi-x-lg"></i></button>
     </div>`;
@@ -1295,6 +1794,18 @@ function updateQty(i, v) {
   renderCart(); updateTotals();
 }
 function removeItem(i) { cart.splice(i,1); renderCart(); updateTotals(); }
+
+function updateDiscount(i, v) {
+  const disc = parseDecimalValue(v);
+  const maxDisc = cart[i].quantity * cart[i].unit_price;
+  if (disc < 0 || disc > maxDisc) {
+    alert(`Desconto inválido. Máximo: ${fmtR(maxDisc)}`);
+    renderCart(); return;
+  }
+  cart[i].discount = disc;
+  cart[i].total = cart[i].quantity * cart[i].unit_price - disc;
+  renderCart(); updateTotals();
+}
 /* ════ Catálogo de Produtos ════ */
 let todosProds = [], catFiltro = 'Todos', catalogoModal = null;
 
@@ -1353,8 +1864,12 @@ function renderCatalogo(lista) {
     const low = !sem && p.stock_quantity <= 5;
     const stClass = sem ? 'out' : low ? 'low' : '';
     const stTxt   = sem ? 'Sem estoque' : `${p.stock_quantity} ${p.unit}`;
-    const weight = isWeightProduct(p);
+    const weight  = isWeightProduct(p);
+    const imgHtml = p.image_url
+      ? `<div class="pc-img-wrap"><img src="${p.image_url}" alt="" class="pc-img" onerror="this.parentElement.innerHTML='<i class=\\'bi bi-image pc-img-ph\\'></i>'"></div>`
+      : `<div class="pc-img-wrap"><i class="bi bi-image pc-img-ph"></i></div>`;
     return `<div class="prod-card${sem ? ' esgotado' : ''}" onclick="${sem ? '' : `addFromCatalogo(${JSON.stringify(p).replace(/"/g,"'")})`}">
+      ${imgHtml}
       <div class="pc-cat">${p.category}</div>
       <div class="pc-name">${p.name}</div>
       <div class="pc-price">R$ ${p.sale_price.toFixed(2).replace('.',',')}</div>
@@ -1518,10 +2033,105 @@ function confirmPixPayment() {
 }
 /* ════════════════════ */
 
+// ════════════════════ TEF ════════════════════
+let tefModal = null, tefTxId = null, tefMetodo = null, tefValor = 0, tefPoll = null;
+
+function openTEFModal(metodo) {
+  if (!CASH_OPEN) { alert('Abra o caixa antes de finalizar uma venda.'); return; }
+  if (!cart.length) { focusBi(); return; }
+  if (payModal) payModal.hide();
+  tefMetodo = metodo;
+  tefValor  = Math.max(0, getTotal() - getPaid());
+  tefTxId   = null;
+  clearInterval(tefPoll);
+  document.getElementById('tef-metodo-label').textContent = metodo === 'debito' ? 'DÉBITO' : 'CRÉDITO';
+  document.getElementById('tef-valor-label').textContent  = fmtR(tefValor);
+  document.getElementById('tef-nsu').style.display = 'none';
+  setTEFStatus('processando', 'Iniciando transação TEF...');
+  tefModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('tefModal'));
+  tefModal.show();
+  iniciarTEF();
+}
+
+async function iniciarTEF() {
+  try {
+    const resp = await fetch('/pdv/tef/iniciar', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({valor: tefValor, metodo: tefMetodo, parcelas: 1}),
+    });
+    if (!resp.ok) {
+      setTEFStatus('erro', `Erro HTTP ${resp.status} — reinicie o servidor`);
+      return;
+    }
+    const data = await resp.json();
+    if (data.id) {
+      tefTxId = data.id;
+      setTEFStatus(data.status, data.mensagem);
+      tefPoll = setInterval(pollTEF, 1500);
+    } else {
+      setTEFStatus('erro', data.error || 'Erro ao iniciar transação');
+    }
+  } catch(e) {
+    setTEFStatus('erro', 'Erro de conexão: ' + e.message);
+  }
+}
+
+async function pollTEF() {
+  if (!tefTxId) return;
+  try {
+    const resp = await fetch('/pdv/tef/status/' + tefTxId);
+    const data = await resp.json();
+    setTEFStatus(data.status, data.mensagem);
+    if (data.status === 'aprovado') {
+      clearInterval(tefPoll);
+      if (data.nsu) {
+        const nsuEl = document.getElementById('tef-nsu');
+        nsuEl.textContent = `NSU: ${data.nsu}  |  Aut: ${data.autorizacao}`;
+        nsuEl.style.display = 'block';
+      }
+      setTimeout(() => {
+        tefModal.hide();
+        payments.push({method: tefMetodo, amount: tefValor});
+        doFinalize();
+      }, 1800);
+    } else if (['negado','cancelado','erro'].includes(data.status)) {
+      clearInterval(tefPoll);
+    }
+  } catch { /* ignora falhas de poll */ }
+}
+
+function setTEFStatus(status, msg) {
+  const iconEl = document.getElementById('tef-icon');
+  const icons  = {
+    processando: '<div class="tef-spinner"></div>',
+    aprovado:    '<i class="bi bi-check-circle-fill" style="font-size:3.2rem;color:#22c55e;"></i>',
+    negado:      '<i class="bi bi-x-circle-fill"     style="font-size:3.2rem;color:#ef4444;"></i>',
+    cancelado:   '<i class="bi bi-dash-circle-fill"  style="font-size:3.2rem;color:#94a3b8;"></i>',
+    erro:        '<i class="bi bi-exclamation-triangle-fill" style="font-size:3.2rem;color:#f59e0b;"></i>',
+  };
+  iconEl.innerHTML = icons[status] || icons.processando;
+  document.getElementById('tef-msg').textContent = msg || '';
+  const done = ['negado','cancelado','erro'].includes(status);
+  document.getElementById('tef-cancel-btn').style.display = done ? 'none'  : 'inline-block';
+  document.getElementById('tef-retry-btn').style.display  = done ? 'inline-block' : 'none';
+}
+
+function cancelarTEF() {
+  clearInterval(tefPoll);
+  if (tefTxId) fetch('/pdv/tef/cancelar/' + tefTxId, {method:'POST'});
+  if (tefModal) tefModal.hide();
+  tefTxId = null;
+}
+
+function retryTEF() { openTEFModal(tefMetodo); }
+// ═════════════════════════════════════════════
+
 let payModal = null;
 function openPayModal(method) {
   if (!CASH_OPEN) { alert('Abra o caixa antes de finalizar uma venda.'); return; }
   if (!cart.length) { focusBi(); return; }
+  if (method === 'debito' || method === 'credito') { openTEFModal(method); return; }
   payments = []; renderPayments();
   document.getElementById('modal-total-display').textContent = fmtR(getTotal());
   payModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('payModal'));
@@ -1533,15 +2143,18 @@ function openPayModal(method) {
 }
 
 function selectPayMethod(m) {
+  if (m === 'debito' || m === 'credito') { openTEFModal(m); return; }
   selMethod = m;
   document.querySelectorAll('.m-chip').forEach(c => c.classList.remove('active'));
   const chip = document.getElementById('pmc-'+m); if (chip) chip.classList.add('active');
 
-  const isPix = m === 'pix';
-  document.getElementById('pix-inline-section').style.display  = isPix ? 'block' : 'none';
-  document.getElementById('pay-normal-section').style.display  = isPix ? 'none'  : 'block';
-  document.getElementById('pay-footer-normal').style.display   = isPix ? 'none'  : 'flex';
-  document.getElementById('pay-footer-pix').style.display      = isPix ? 'flex'  : 'none';
+  const isPix   = m === 'pix';
+  const isFiado = m === 'fiado';
+  document.getElementById('pix-inline-section').style.display  = isPix   ? 'block' : 'none';
+  document.getElementById('fiado-section').style.display       = isFiado ? 'block' : 'none';
+  document.getElementById('pay-normal-section').style.display  = (isPix || isFiado) ? 'none' : 'block';
+  document.getElementById('pay-footer-normal').style.display   = isPix   ? 'none'  : 'flex';
+  document.getElementById('pay-footer-pix').style.display      = isPix   ? 'flex'  : 'none';
 
   if (isPix) {
     const remaining = Math.max(0, getTotal() - getPaid());
@@ -1556,9 +2169,80 @@ function selectPayMethod(m) {
     img1.alt = 'QR Code PIX';
     img1.style.cssText = 'display:block;max-width:100%;height:auto;';
     qrDiv.appendChild(img1);
+  } else if (isFiado) {
+    document.getElementById('pay-amount').value = Math.max(0, getTotal()-getPaid()).toFixed(2);
+    carregarCreditoFiado();
   } else {
     document.getElementById('pay-amount').value = Math.max(0, getTotal()-getPaid()).toFixed(2);
     calcTroco();
+  }
+}
+
+function sincronizarClienteFiado(valor) {
+  document.getElementById('customer-select').value = valor;
+  carregarCreditoFiado();
+}
+
+function popularSelectFiado() {
+  const origem  = document.getElementById('customer-select');
+  const destino = document.getElementById('fiado-cliente-select');
+  const valAtual = origem.value;
+  destino.innerHTML = '<option value="">— Selecione o cliente —</option>';
+  Array.from(origem.options).forEach(opt => {
+    if (!opt.value) return;
+    const o = document.createElement('option');
+    o.value = opt.value;
+    o.textContent = opt.textContent;
+    if (opt.value === valAtual) o.selected = true;
+    destino.appendChild(o);
+  });
+}
+
+async function carregarCreditoFiado() {
+  popularSelectFiado();
+  const clienteId = document.getElementById('fiado-cliente-select').value;
+  const loading = document.getElementById('fiado-loading');
+  const info    = document.getElementById('fiado-info');
+  const alerta  = document.getElementById('fiado-alerta');
+  const btnOk   = document.querySelector('#pay-footer-normal .btn-success');
+
+  alerta.style.display = 'none';
+  info.style.display   = 'none';
+  loading.style.display = 'block';
+  if (btnOk) btnOk.disabled = false;
+
+  if (!clienteId) {
+    loading.style.display = 'none';
+    info.style.display = 'none';
+    if (btnOk) btnOk.disabled = true;
+    return;
+  }
+
+  try {
+    const resp = await fetch(`/pdv/cliente/${clienteId}/credito`);
+    const d    = await resp.json();
+    loading.style.display = 'none';
+    info.style.display    = 'block';
+
+    document.getElementById('fiado-cliente-nome').textContent  = d.name;
+    document.getElementById('fiado-limite').textContent        = fmtR(d.credit_limit);
+    document.getElementById('fiado-saldo').textContent         = fmtR(d.balance);
+    document.getElementById('fiado-disponivel').textContent    = fmtR(d.disponivel);
+    document.getElementById('fiado-disponivel').style.color    = d.disponivel > 0 ? '#16a34a' : '#ef4444';
+
+    const valorVenda = getTotal() - getPaid();
+    if (d.credit_limit <= 0) {
+      alerta.style.display = 'flex';
+      document.getElementById('fiado-alerta-msg').textContent = 'Este cliente não possui limite de crédito cadastrado.';
+      if (btnOk) btnOk.disabled = true;
+    } else if (valorVenda > d.disponivel) {
+      alerta.style.display = 'flex';
+      document.getElementById('fiado-alerta-msg').textContent =
+        `Limite insuficiente. Disponível: ${fmtR(d.disponivel)} · Esta venda: ${fmtR(valorVenda)}`;
+      if (btnOk) btnOk.disabled = true;
+    }
+  } catch(e) {
+    loading.innerHTML = '<span class="text-danger">Erro ao consultar crédito</span>';
   }
 }
 
@@ -1727,6 +2411,33 @@ async function doFinalize() {
       new bootstrap.Modal(document.getElementById('successModal')).show();
     } else alert('Erro: '+(r.error||'Tente novamente'));
   } catch { alert('Erro de conexão.'); }
+}
+
+async function emitirNfce() {
+  const saleId = document.getElementById('s-link').href.split('/').pop();
+  const btn = document.getElementById('btn-nfce');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Emitindo...';
+  try {
+    const resp = await fetch(`/nfce/emitir/${saleId}`, {method:'POST'});
+    const d = await resp.json();
+    if (d.success) {
+      const statusIcon = d.status === 'autorizada'
+        ? '<i class="bi bi-check-circle-fill text-success me-1"></i>'
+        : '<i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>';
+      btn.innerHTML = statusIcon + d.status.toUpperCase();
+      if (d.danfe_url) {
+        window.open(d.danfe_url, '_blank', 'width=400,height=700');
+      }
+    } else {
+      btn.innerHTML = '<i class="bi bi-x-circle me-1"></i>Erro';
+      btn.disabled = false;
+      alert('Erro NFC-e: ' + (d.error || 'Tente novamente'));
+    }
+  } catch(e) {
+    btn.innerHTML = '<i class="bi bi-receipt me-1"></i>NFC-e';
+    btn.disabled = false;
+  }
 }
 
 function newSale() {

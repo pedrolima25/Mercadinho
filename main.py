@@ -37,6 +37,7 @@ from routers.cash_register import router as cash_register_router
 from routers.reports import router as reports_router
 from routers.users import router as users_router
 from routers.company import router as company_router, load_company_brand
+from routers.nfce import router as nfce_router
 from routers.catalogs import (
     categories_router, brands_router, suppliers_router,
     customers_router, employees_router
@@ -58,6 +59,7 @@ def _add_columns_if_missing(table: str, columns: dict):
 
 def ensure_schema_updates():
     _add_columns_if_missing("products", {
+        "image_url": "VARCHAR(500)",
         "ncm": "VARCHAR(8)",
         "cest": "VARCHAR(10)",
         "cfop": "VARCHAR(4)",
@@ -111,6 +113,7 @@ app.include_router(cash_register_router)
 app.include_router(reports_router)
 app.include_router(users_router)
 app.include_router(company_router)
+app.include_router(nfce_router)
 app.include_router(categories_router)
 app.include_router(brands_router)
 app.include_router(suppliers_router)

@@ -5,7 +5,8 @@ Responsabilidade: receber requisições HTTP e delegar ao ServicoProdutos.
 Não contém lógica de negócio — apenas parse do request e render da resposta.
 """
 
-from fastapi import APIRouter, Depends, Request, Query
+from fastapi import APIRouter, Depends, Request, Query, UploadFile, File
+import os, uuid, shutil
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -192,4 +193,41 @@ def api_produto_por_barcode(
         "sale_price": float(produto.sale_price),
         "stock_quantity": float(produto.stock_quantity),
         "unit": produto.unit,
+        "image_url": produto.image_url or "",
     }
+
+
+_UPLOAD_DIR = "static/uploads/products"
+_ALLOWED = {".jpg", ".jpeg", ".png", ".webp"}
+
+@router.post("/{product_id}/imagem")
+async def upload_imagem(
+    product_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth_utils.require_user),
+):
+    """Faz upload da foto de um produto e salva o caminho no banco."""
+    ext = os.path.splitext(file.filename or "")[-1].lower()
+    if ext not in _ALLOWED:
+        return JSONResponse({"error": "Formato inválido. Use JPG, PNG ou WEBP."}, status_code=400)
+
+    os.makedirs(_UPLOAD_DIR, exist_ok=True)
+    filename = f"prod-{product_id}-{uuid.uuid4().hex[:8]}{ext}"
+    dest = os.path.join(_UPLOAD_DIR, filename)
+    with open(dest, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+
+    produto = db.query(models.Product).filter(models.Product.id == product_id).first()
+    if not produto:
+        return JSONResponse({"error": "Produto não encontrado"}, status_code=404)
+
+    # Remove imagem antiga se existir
+    if produto.image_url:
+        old = produto.image_url.lstrip("/")
+        if os.path.exists(old):
+            os.remove(old)
+
+    produto.image_url = f"/static/uploads/products/{filename}"
+    db.commit()
+    return JSONResponse({"image_url": produto.image_url})
