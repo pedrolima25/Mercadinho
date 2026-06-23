@@ -1,6 +1,6 @@
 from sqlalchemy import (
     Column, Integer, String, Float, Boolean, DateTime, Date, Text,
-    ForeignKey, Enum, Numeric, BigInteger
+    ForeignKey, Enum, Numeric, BigInteger, UniqueConstraint
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -96,6 +96,25 @@ class User(Base):
     sales = relationship("Sale", back_populates="user")
     cash_registers = relationship("CashRegister", back_populates="user")
     stock_movements = relationship("StockMovement", back_populates="user")
+    permissions = relationship("UserPermission", back_populates="user", cascade="all, delete-orphan")
+
+    def has_permission(self, key: str) -> bool:
+        """Admin e Gerente têm acesso total; demais perfis dependem de permissão explícita."""
+        if self.role in (UserRole.admin, UserRole.gerente):
+            return True
+        return any(p.permission_key == key for p in self.permissions)
+
+
+class UserPermission(Base):
+    """Permissão extra de tela/módulo concedida a um usuário sem perfil gerente/admin."""
+    __tablename__ = "user_permissions"
+    __table_args__ = (UniqueConstraint("user_id", "permission_key", name="uq_user_permission"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    permission_key = Column(String(50), nullable=False)
+
+    user = relationship("User", back_populates="permissions")
 
 
 class Employee(Base):

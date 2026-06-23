@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Permissões — {{ user.full_name }}{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-4 gap-3">
+  <a href="/usuarios" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+  <h4 class="fw-bold mb-0"><i class="bi bi-key me-2"></i>Permissões de {{ user.full_name }}</h4>
+</div>
+
+{% if request.query_params.get('ok') == '1' %}
+<div class="alert alert-success"><i class="bi bi-check-circle-fill me-2"></i>Permissões salvas.</div>
+{% endif %}
+
+<div class="alert alert-light border small">
+  Perfil atual: <strong>{{ {'caixa':'Operador de Caixa','estoquista':'Estoquista','financeiro':'Financeiro'}.get(user.role.value, user.role.value) }}</strong>.
+  Marque abaixo as telas extras que esse usuário pode acessar, além do que o perfil já libera.
+</div>
+
+<div class="card border-0 shadow-sm" style="max-width:600px;">
+  <div class="card-body">
+    <form method="post" action="/usuarios/{{ user.id }}/permissoes">
+      {% for key, label in permissions %}
+      <div class="form-check form-switch mb-3">
+        <input type="checkbox" name="permissions" value="{{ key }}" class="form-check-input" id="perm-{{ key }}"
+               {% if key in granted %}checked{% endif %}>
+        <label class="form-check-label fw-semibold" for="perm-{{ key }}">{{ label }}</label>
+      </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary w-100 mt-2"><i class="bi bi-check-lg me-1"></i>Salvar Permissões</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -89,6 +89,45 @@ async def atualizar_usuario(
     return RedirectResponse("/usuarios", status_code=302)
 
 
+@router.get("/{user_id}/permissoes", response_class=HTMLResponse)
+def permissoes_usuario(
+    user_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth_utils.require_user),
+):
+    """Exibe as permissões de tela concedidas a um usuário."""
+    if current_user.role != models.UserRole.admin:
+        raise HTTPException(status_code=403, detail="Sem permissão")
+    from permissions import PERMISSIONS
+    servico = ServicoUsuarios(db)
+    usuario = servico.obter_ou_erro(user_id)
+    concedidas = {p.permission_key for p in usuario.permissions}
+    return templates.TemplateResponse(
+        request, "users/permissions.html",
+        {
+            "user": usuario,
+            "permissions": PERMISSIONS,
+            "granted": concedidas,
+            "current_user": current_user,
+        },
+    )
+
+
+@router.post("/{user_id}/permissoes")
+async def salvar_permissoes_usuario(
+    user_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth_utils.require_user),
+):
+    """Salva as permissões de tela concedidas a um usuário."""
+    form = await request.form()
+    chaves = form.getlist("permissions")
+    ServicoUsuarios(db).salvar_permissoes(user_id, chaves, current_user)
+    return RedirectResponse(f"/usuarios/{user_id}/permissoes?ok=1", status_code=302)
+
+
 @router.post("/{user_id}/excluir")
 def excluir_usuario(
     user_id: int,

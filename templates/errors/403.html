@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Acesso negado{% endblock %}
+{% block content %}
+<div class="d-flex flex-column align-items-center justify-content-center text-center" style="min-height:60vh;">
+  <i class="bi bi-shield-lock" style="font-size:3.5rem;color:#dc3545;"></i>
+  <h4 class="fw-bold mt-3 mb-1">Acesso negado</h4>
+  <p class="text-muted mb-4">{{ detail or "Você não tem permissão para acessar esta tela." }}</p>
+  <a href="/" class="btn btn-primary"><i class="bi bi-house-door me-1"></i>Voltar ao início</a>
+</div>
+{% endblock %}

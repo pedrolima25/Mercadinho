@@ -93,7 +93,7 @@ def save_logo(file_obj) -> str | None:
 def company_form(
     request: Request,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("empresa")),
 ):
     company = get_or_create_company(db)
     return templates.TemplateResponse(request, "company/form.html", {
@@ -107,7 +107,7 @@ def company_form(
 async def save_company(
     request: Request,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("empresa")),
 ):
     company = get_or_create_company(db)
     form = await request.form()

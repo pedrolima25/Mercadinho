@@ -1,10 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Caixa{% endblock %}
 {% block content %}
-<h4 class="fw-bold mb-4"><i class="bi bi-cash-register me-2"></i>Controle de Caixa</h4>
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="fw-bold mb-0"><i class="bi bi-cash-register me-2"></i>Controle de Caixa</h4>
+  {% if current_user and current_user.role.value in ('admin', 'gerente') %}
+  <a href="/caixa/abertos" class="btn btn-outline-primary btn-sm"><i class="bi bi-people me-1"></i>Ver Todos os Caixas Abertos</a>
+  {% endif %}
+</div>
 
 {% if open_register %}
-<div class="alert alert-success d-flex justify-content-between align-items-center">
+<div class="alert alert-success alert-permanent d-flex justify-content-between align-items-center">
   <div><i class="bi bi-check-circle-fill me-2"></i><strong>Caixa Aberto</strong> — Desde {{ open_register.opened_at.strftime('%H:%M') }} | Fundo: R$ {{ "%.2f"|format(open_register.opening_balance|float) }}</div>
   <div class="d-flex gap-2">
     <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#movModal">Sangria / Suprimento</button>
@@ -13,7 +18,7 @@
 </div>
 <a href="/caixa/{{ open_register.id }}" class="btn btn-outline-primary mb-3"><i class="bi bi-eye me-1"></i>Ver Detalhes do Caixa Atual</a>
 {% else %}
-<div class="alert alert-warning d-flex justify-content-between align-items-center">
+<div class="alert alert-warning alert-permanent d-flex justify-content-between align-items-center">
   <div><i class="bi bi-exclamation-triangle me-2"></i><strong>Caixa Fechado</strong> — Abra o caixa para realizar vendas.</div>
   <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#openModal">Abrir Caixa</button>
 </div>

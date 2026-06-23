@@ -39,6 +39,16 @@ class RepositorioCaixa(RepositorioBase):
             .all()
         )
 
+    def listar_abertos(self) -> List[models.CashRegister]:
+        """Todos os caixas abertos no momento, do mais antigo para o mais novo."""
+        return (
+            self.banco.query(self.modelo)
+            .options(joinedload(self.modelo.user))
+            .filter(self.modelo.status == models.CashRegisterStatus.aberto)
+            .order_by(self.modelo.opened_at.asc(), self.modelo.id.asc())
+            .all()
+        )
+
     def buscar_com_detalhes(self, caixa_id: int) -> Optional[models.CashRegister]:
         """Retorna caixa com vendas, pagamentos e movimentações carregados."""
         return (

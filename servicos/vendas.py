@@ -237,7 +237,20 @@ class ServicoPDV(ServicoBase):
             .all()
         )
 
-        return {"open_register": caixa_aberto, "customers": clientes}
+        # Número do caixa = posição entre os caixas abertos no momento (001, 002, ...)
+        caixa_numero = 1
+        if caixa_aberto:
+            ids_abertos = [
+                id_
+                for id_, in self.banco.query(models.CashRegister.id)
+                .filter(models.CashRegister.status == models.CashRegisterStatus.aberto)
+                .order_by(models.CashRegister.opened_at.asc(), models.CashRegister.id.asc())
+                .all()
+            ]
+            if caixa_aberto.id in ids_abertos:
+                caixa_numero = ids_abertos.index(caixa_aberto.id) + 1
+
+        return {"open_register": caixa_aberto, "customers": clientes, "caixa_numero": caixa_numero}
 
     def finalizar_venda(self, dados: dict, usuario: models.User) -> dict:
         """

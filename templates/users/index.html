@@ -26,6 +26,9 @@
           <td class="small text-muted">{{ user.created_at.strftime('%d/%m/%Y') }}</td>
           <td>
             <a href="/usuarios/{{ user.id }}/editar" class="btn btn-sm btn-outline-primary me-1"><i class="bi bi-pencil"></i></a>
+            {% if user.role.value not in ('admin', 'gerente') %}
+            <a href="/usuarios/{{ user.id }}/permissoes" class="btn btn-sm btn-outline-secondary me-1" title="Permissões de tela"><i class="bi bi-key"></i></a>
+            {% endif %}
             {% if user.id != current_user.id %}
             <form method="post" action="/usuarios/{{ user.id }}/excluir" style="display:inline" onsubmit="return confirm('Desativar usuário?')">
               <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>

@@ -31,6 +31,20 @@ def pagina_caixa(
     )
 
 
+@router.get("/abertos", response_class=HTMLResponse)
+def pagina_caixas_abertos(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth_utils.require_user),
+):
+    """Lista todos os caixas abertos no momento e quem os abriu."""
+    dados = ServicoCaixa(db).caixas_abertos(current_user)
+    return templates.TemplateResponse(
+        request, "cash_register/abertos.html",
+        {**dados, "current_user": current_user},
+    )
+
+
 @router.post("/abrir")
 async def abrir_caixa(
     request: Request,

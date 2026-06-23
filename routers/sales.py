@@ -64,7 +64,7 @@ def detalhe_venda(
 def cancelar_venda(
     sale_id: int,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("vendas")),
 ):
     """Cancela uma venda e devolve o estoque."""
     ServicoVendas(db).cancelar(sale_id, current_user)
@@ -76,7 +76,7 @@ def formulario_devolucao(
     sale_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("vendas")),
 ):
     """Formulário para registrar devolução de itens."""
     servico = ServicoVendas(db)
@@ -101,7 +101,7 @@ async def registrar_devolucao(
     sale_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("vendas")),
 ):
     """Registra devolução de itens e repõe estoque."""
     form = await request.form()

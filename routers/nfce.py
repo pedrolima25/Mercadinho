@@ -61,7 +61,7 @@ def cancelar_nfce(
     doc_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("vendas")),
 ):
     try:
         doc = ServicoNfce(db).cancelar(doc_id, "Cancelamento solicitado pelo operador")

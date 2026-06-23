@@ -82,3 +82,19 @@ def require_gerente(request: Request, db: Session = Depends(get_db)) -> models.U
     if user.role not in (models.UserRole.admin, models.UserRole.gerente):
         raise HTTPException(status_code=403, detail="Acesso restrito a gerentes e administradores")
     return user
+
+
+def require_permission(key: str):
+    """
+    Exige acesso à tela/módulo `key`.
+    Admin e Gerente sempre passam; demais perfis precisam da permissão
+    explícita concedida em /usuarios/{id}/permissoes.
+    """
+    def checker(request: Request, db: Session = Depends(get_db)) -> models.User:
+        user = get_current_user_from_cookie(request, db)
+        if not user or not user.is_active:
+            raise HTTPException(status_code=302, headers={"Location": "/login"})
+        if not user.has_permission(key):
+            raise HTTPException(status_code=403, detail="Sem permissão para acessar esta tela")
+        return user
+    return checker

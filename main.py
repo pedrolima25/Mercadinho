@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Depends, Query
+from fastapi import FastAPI, Request, Depends, Query, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, Response, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -101,6 +101,15 @@ async def on_startup():
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    if exc.status_code == 403 and "/api/" not in request.url.path:
+        return templates.TemplateResponse(
+            request, "errors/403.html", {"detail": exc.detail}, status_code=403,
+        )
+    return JSONResponse({"detail": exc.detail}, status_code=exc.status_code, headers=exc.headers)
+
 # Registrar routers
 app.include_router(auth_router)
 app.include_router(products_router)
@@ -122,10 +131,13 @@ app.include_router(employees_router)
 
 
 @app.get("/", response_class=HTMLResponse)
-def dashboard(request: Request, db: Session = Depends(get_db)):
-    current_user = auth_utils.get_current_user_from_cookie(request, db)
-    if not current_user:
-        return RedirectResponse("/login", status_code=302)
+def dashboard(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth_utils.require_user),
+):
+    if not current_user.has_permission("dashboard"):
+        return RedirectResponse("/caixa", status_code=302)
 
     today = date.today()
 

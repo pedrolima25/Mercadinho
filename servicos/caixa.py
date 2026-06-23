@@ -28,6 +28,18 @@ class ServicoCaixa(ServicoBase):
             "history": historico,
         }
 
+    def caixas_abertos(self, usuario: models.User) -> dict:
+        """Lista todos os caixas abertos no momento, numerados (001, 002, ...)."""
+        if usuario.role not in (models.UserRole.admin, models.UserRole.gerente):
+            self.erro_sem_permissao("Sem permissão para ver os caixas de outros operadores")
+
+        abertos = self.repositorio.listar_abertos()
+        linhas = [
+            {"numero": i + 1, "register": caixa}
+            for i, caixa in enumerate(abertos)
+        ]
+        return {"rows": linhas}
+
     def caixa_aberto_do_usuario(self, usuario_id: int) -> Optional[models.CashRegister]:
         """Retorna o caixa aberto do usuário, ou None se não tiver."""
         return self.repositorio.buscar_aberto_do_usuario(usuario_id)

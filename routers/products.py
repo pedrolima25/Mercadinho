@@ -29,7 +29,7 @@ def listar_produtos(
     low_stock: Optional[str] = None,      # str para aceitar "true"/"" sem erro 422
     page: int = 1,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("produtos")),
 ):
     """Lista produtos com filtros e paginação."""
     servico = ServicoProdutos(db)
@@ -73,7 +73,7 @@ def listar_produtos(
 def novo_produto(
     request: Request,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("produtos")),
 ):
     """Exibe formulário de cadastro de novo produto."""
     servico_catalogos = ServicoCatalogos(db)
@@ -94,7 +94,7 @@ def novo_produto(
 async def criar_produto(
     request: Request,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("produtos")),
 ):
     """Cria um novo produto. Validações ficam no ServiçoProdutos."""
     form = await request.form()
@@ -108,7 +108,7 @@ def editar_produto(
     request: Request,
     product_id: int,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("produtos")),
 ):
     """Exibe formulário de edição de produto."""
     servico = ServicoProdutos(db)
@@ -133,7 +133,7 @@ async def atualizar_produto(
     request: Request,
     product_id: int,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("produtos")),
 ):
     """Salva alterações de um produto existente."""
     form = await request.form()
@@ -146,7 +146,7 @@ async def atualizar_produto(
 def excluir_produto(
     product_id: int,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("produtos")),
 ):
     """Desativa um produto (mantém histórico)."""
     servico = ServicoProdutos(db)

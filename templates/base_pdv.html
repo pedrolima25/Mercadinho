@@ -143,7 +143,7 @@
   </div>
   <div class="pdv-right" style="display:flex;align-items:center;gap:10px;">
     <div style="text-align:right;">
-      <strong>Caixa 001</strong> &nbsp;·&nbsp; <span class="clk" id="pdv-clock">--:--:--</span><br>
+      <strong>Caixa {{ "%03d"|format(caixa_numero or 1) }}</strong> &nbsp;·&nbsp; <span class="clk" id="pdv-clock">--:--:--</span><br>
       Op.: {{ current_user.full_name if current_user else '' }}
     </div>
     <button class="btn-fullscreen" id="btn-fs" title="Tela cheia (F11)">⛶</button>

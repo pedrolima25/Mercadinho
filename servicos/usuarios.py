@@ -94,6 +94,21 @@ class ServicoUsuarios(ServicoBase):
         self.banco.commit()
         return usuario
 
+    def salvar_permissoes(self, usuario_id: int, chaves: list, usuario_atual: models.User) -> models.User:
+        """Define o conjunto exato de permissões de tela do usuário. Somente admin."""
+        if usuario_atual.role != models.UserRole.admin:
+            self.erro_sem_permissao("Somente administradores podem gerenciar permissões")
+
+        usuario = self.obter_ou_erro(usuario_id)
+        from permissions import PERMISSION_KEYS
+        chaves_validas = {k for k in chaves if k in PERMISSION_KEYS}
+
+        usuario.permissions = [
+            models.UserPermission(permission_key=chave) for chave in chaves_validas
+        ]
+        self.banco.commit()
+        return usuario
+
     def desativar(self, usuario_id: int, usuario_atual: models.User):
         """Desativa usuário. Não permite desativar a si mesmo."""
         if usuario_atual.role != models.UserRole.admin:

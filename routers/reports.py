@@ -13,7 +13,7 @@ templates = Jinja2Templates(directory="templates")
 
 
 @router.get("", response_class=HTMLResponse)
-def reports_home(request: Request, current_user: models.User = Depends(auth_utils.require_gerente)):
+def reports_home(request: Request, current_user: models.User = Depends(auth_utils.require_permission("relatorios"))):
     return templates.TemplateResponse(request, "reports/index.html", {"current_user": current_user})
 
 
@@ -23,7 +23,7 @@ def sales_report(
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente)
+    current_user: models.User = Depends(auth_utils.require_permission("relatorios"))
 ):
     today = date.today()
     if not date_from:
@@ -68,7 +68,7 @@ def products_report(
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente)
+    current_user: models.User = Depends(auth_utils.require_permission("relatorios"))
 ):
     today = date.today()
     if not date_from:
@@ -106,7 +106,7 @@ def financial_report(
     month: Optional[int] = None,
     year: Optional[int] = None,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente)
+    current_user: models.User = Depends(auth_utils.require_permission("relatorios"))
 ):
     today = date.today()
     month = month or today.month
@@ -146,7 +146,7 @@ def financial_report(
 
 
 @router.get("/estoque-baixo", response_class=HTMLResponse)
-def low_stock_report(request: Request, db: Session = Depends(get_db), current_user: models.User = Depends(auth_utils.require_gerente)):
+def low_stock_report(request: Request, db: Session = Depends(get_db), current_user: models.User = Depends(auth_utils.require_permission("relatorios"))):
     products = db.query(models.Product).filter(
         models.Product.is_active == True,
         models.Product.stock_quantity <= models.Product.min_stock

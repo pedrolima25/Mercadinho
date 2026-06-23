@@ -23,7 +23,7 @@ templates = Jinja2Templates(directory="templates")
 def visao_geral(
     request: Request,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("estoque")),
 ):
     """Tela principal de estoque: produtos críticos, lotes e últimas movimentações."""
     servico = ServicoEstoque(db)
@@ -35,7 +35,7 @@ def visao_geral(
 def nova_movimentacao(
     request: Request,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("estoque")),
 ):
     """Formulário para registrar movimentação de estoque."""
     servico_produtos = ServicoProdutos(db)
@@ -50,7 +50,7 @@ def nova_movimentacao(
 async def registrar_movimentacao(
     request: Request,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("estoque")),
 ):
     """Salva movimentação de estoque (entrada, saída ou ajuste)."""
     form = await request.form()
@@ -62,7 +62,7 @@ async def registrar_movimentacao(
 def lotes(
     request: Request,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("estoque")),
 ):
     """Tela de lotes e validades."""
     servico = ServicoEstoque(db)
@@ -74,7 +74,7 @@ def lotes(
 async def criar_lote(
     request: Request,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("estoque")),
 ):
     """Cria novo lote de produto."""
     form = await request.form()
@@ -89,7 +89,7 @@ def historico(
     type: Optional[str] = None,
     page: int = 1,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("estoque")),
 ):
     """Histórico completo de movimentações com filtros."""
     servico = ServicoEstoque(db)

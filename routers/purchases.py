@@ -26,7 +26,7 @@ def listar_compras(
     status: Optional[str] = None,
     page: int = 1,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("compras")),
 ):
     """Lista pedidos de compra com filtro de status."""
     compras, total = ServicoCompras(db).listar(status=status, pagina=page)
@@ -47,7 +47,7 @@ def listar_compras(
 def nova_compra(
     request: Request,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("compras")),
 ):
     """Formulário para nova compra."""
     fornecedores = ServicoCatalogos(db).listar_fornecedores()
@@ -67,7 +67,7 @@ def nova_compra(
 async def criar_compra(
     request: Request,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("compras")),
 ):
     """Cria novo pedido de compra."""
     form = await request.form()
@@ -80,7 +80,7 @@ def detalhe_compra(
     purchase_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("compras")),
 ):
     """Detalhes de uma compra."""
     compra = ServicoCompras(db).obter_ou_erro(purchase_id)
@@ -95,7 +95,7 @@ async def receber_compra(
     purchase_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("compras")),
 ):
     """Marca compra como recebida, atualiza estoque e gera conta a pagar."""
     ServicoCompras(db).receber(purchase_id, current_user)
@@ -106,7 +106,7 @@ async def receber_compra(
 def cancelar_compra(
     purchase_id: int,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("compras")),
 ):
     """Cancela compra pendente."""
     ServicoCompras(db).cancelar(purchase_id)

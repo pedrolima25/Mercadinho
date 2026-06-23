@@ -28,8 +28,21 @@
   {% set is_admin    = role == 'admin' %}
   {% set is_gerente  = role in ['admin', 'gerente'] %}
   {% set is_caixa    = role == 'caixa' %}
+  {% set p_dashboard    = current_user.has_permission('dashboard') if current_user else false %}
+  {% set p_vendas       = current_user.has_permission('vendas') if current_user else false %}
+  {% set p_produtos     = current_user.has_permission('produtos') if current_user else false %}
+  {% set p_estoque      = current_user.has_permission('estoque') if current_user else false %}
+  {% set p_compras      = current_user.has_permission('compras') if current_user else false %}
+  {% set p_empresa      = current_user.has_permission('empresa') if current_user else false %}
+  {% set p_clientes     = current_user.has_permission('clientes') if current_user else false %}
+  {% set p_fornecedores = current_user.has_permission('fornecedores') if current_user else false %}
+  {% set p_categorias   = current_user.has_permission('categorias') if current_user else false %}
+  {% set p_marcas       = current_user.has_permission('marcas') if current_user else false %}
+  {% set p_funcionarios = current_user.has_permission('funcionarios') if current_user else false %}
+  {% set p_financeiro   = current_user.has_permission('financeiro') if current_user else false %}
+  {% set p_relatorios   = current_user.has_permission('relatorios') if current_user else false %}
   <nav class="sidebar-nav">
-    {% if is_gerente %}
+    {% if p_dashboard %}
     <a href="/" class="nav-item {% if request.url.path == '/' %}active{% endif %}">
       <i class="bi bi-speedometer2"></i> Dashboard
     </a>
@@ -42,47 +55,69 @@
     <a href="/caixa" class="nav-item {% if '/caixa' in request.url.path %}active{% endif %}">
       <i class="bi bi-cash-register"></i> Caixa
     </a>
-    {% if is_gerente %}
+    {% if p_vendas %}
     <a href="/vendas" class="nav-item {% if '/vendas' in request.url.path %}active{% endif %}">
       <i class="bi bi-receipt"></i> Vendas
     </a>
     {% endif %}
 
-    {% if is_gerente %}
+    {% if p_produtos or p_estoque or p_compras %}
     <div class="nav-section">ESTOQUE</div>
+    {% if p_produtos %}
     <a href="/produtos" class="nav-item {% if '/produtos' in request.url.path %}active{% endif %}">
       <i class="bi bi-box-seam"></i> Produtos
     </a>
+    {% endif %}
+    {% if p_estoque %}
     <a href="/estoque" class="nav-item {% if '/estoque' in request.url.path %}active{% endif %}">
       <i class="bi bi-boxes"></i> Estoque
       {% if request.state.alerts and request.state.alerts.low_stock > 0 %}
       <span class="badge bg-danger ms-auto">{{ request.state.alerts.low_stock }}</span>
       {% endif %}
     </a>
+    {% endif %}
+    {% if p_compras %}
     <a href="/compras" class="nav-item {% if '/compras' in request.url.path %}active{% endif %}">
       <i class="bi bi-truck"></i> Compras
     </a>
+    {% endif %}
+    {% endif %}
 
+    {% if p_empresa or p_clientes or p_fornecedores or p_categorias or p_marcas or p_funcionarios %}
     <div class="nav-section">CADASTROS</div>
+    {% if p_empresa %}
     <a href="/empresa" class="nav-item {% if '/empresa' in request.url.path %}active{% endif %}">
       <i class="bi bi-building-gear"></i> Empresa
     </a>
+    {% endif %}
+    {% if p_clientes %}
     <a href="/clientes" class="nav-item {% if '/clientes' in request.url.path %}active{% endif %}">
       <i class="bi bi-people"></i> Clientes
     </a>
+    {% endif %}
+    {% if p_fornecedores %}
     <a href="/fornecedores" class="nav-item {% if '/fornecedores' in request.url.path %}active{% endif %}">
       <i class="bi bi-building"></i> Fornecedores
     </a>
+    {% endif %}
+    {% if p_categorias %}
     <a href="/categorias" class="nav-item {% if '/categorias' in request.url.path %}active{% endif %}">
       <i class="bi bi-tags"></i> Categorias
     </a>
+    {% endif %}
+    {% if p_marcas %}
     <a href="/marcas" class="nav-item {% if '/marcas' in request.url.path %}active{% endif %}">
       <i class="bi bi-bookmark"></i> Marcas
     </a>
+    {% endif %}
+    {% if p_funcionarios %}
     <a href="/funcionarios" class="nav-item {% if '/funcionarios' in request.url.path %}active{% endif %}">
       <i class="bi bi-person-badge"></i> Funcionários
     </a>
+    {% endif %}
+    {% endif %}
 
+    {% if p_financeiro %}
     <div class="nav-section">FINANCEIRO</div>
     <a href="/financeiro" class="nav-item {% if request.url.path == '/financeiro' %}active{% endif %}">
       <i class="bi bi-graph-up-arrow"></i> Visão Geral
@@ -102,7 +137,9 @@
     <a href="/financeiro/despesas" class="nav-item {% if 'despesas' in request.url.path %}active{% endif %}">
       <i class="bi bi-wallet2"></i> Despesas
     </a>
+    {% endif %}
 
+    {% if p_relatorios %}
     <div class="nav-section">RELATÓRIOS</div>
     <a href="/relatorios/vendas" class="nav-item {% if 'relatorios/vendas' in request.url.path %}active{% endif %}">
       <i class="bi bi-bar-chart"></i> Vendas

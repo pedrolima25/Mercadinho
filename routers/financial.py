@@ -23,7 +23,7 @@ templates = Jinja2Templates(directory="templates")
 def visao_geral(
     request: Request,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("financeiro")),
 ):
     """Dashboard financeiro: resumo de contas e despesas."""
     dados = ServicoFinanceiro(db).visao_geral()
@@ -38,7 +38,7 @@ def contas_pagar(
     status: Optional[str] = None,
     page: int = 1,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("financeiro")),
 ):
     servico = ServicoFinanceiro(db)
     fornecedores = ServicoCatalogos(db).listar_fornecedores()
@@ -58,7 +58,7 @@ def contas_pagar(
 async def criar_conta_pagar(
     request: Request,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("financeiro")),
 ):
     form = await request.form()
     ServicoFinanceiro(db).criar_conta_pagar(form)
@@ -70,7 +70,7 @@ async def pagar_conta(
     item_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("financeiro")),
 ):
     form = await request.form()
     ServicoFinanceiro(db).pagar_conta(item_id, form)
@@ -81,7 +81,7 @@ async def pagar_conta(
 def excluir_conta_pagar(
     item_id: int,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("financeiro")),
 ):
     ServicoFinanceiro(db).cancelar_conta_pagar(item_id)
     return RedirectResponse("/financeiro/contas-pagar", status_code=302)
@@ -95,7 +95,7 @@ def contas_receber(
     status: Optional[str] = None,
     page: int = 1,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("financeiro")),
 ):
     servico = ServicoFinanceiro(db)
     clientes = ServicoCatalogos(db).listar_clientes()
@@ -115,7 +115,7 @@ def contas_receber(
 async def criar_conta_receber(
     request: Request,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("financeiro")),
 ):
     form = await request.form()
     ServicoFinanceiro(db).criar_conta_receber(form)
@@ -127,7 +127,7 @@ async def receber_conta(
     item_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("financeiro")),
 ):
     form = await request.form()
     ServicoFinanceiro(db).receber_conta(item_id, form)
@@ -141,7 +141,7 @@ def despesas(
     request: Request,
     page: int = 1,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("financeiro")),
 ):
     itens, total = ServicoFinanceiro(db).listar_despesas(pagina=page)
     return templates.TemplateResponse(
@@ -158,7 +158,7 @@ def despesas(
 async def criar_despesa(
     request: Request,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("financeiro")),
 ):
     form = await request.form()
     ServicoFinanceiro(db).criar_despesa(form, current_user)
@@ -169,7 +169,7 @@ async def criar_despesa(
 def excluir_despesa(
     item_id: int,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_gerente),
+    current_user: models.User = Depends(auth_utils.require_permission("financeiro")),
 ):
     ServicoFinanceiro(db).excluir_despesa(item_id)
     return RedirectResponse("/financeiro/despesas", status_code=302)
