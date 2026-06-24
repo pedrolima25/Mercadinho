@@ -91,6 +91,28 @@ class ServicoProdutos(ServicoBase):
             }
         return {"sale_price": preco_normal, "is_promo": False, "original_price": preco_normal}
 
+    def preco_efetivo(self, produto: models.Product, quantidade: float = 0) -> float:
+        """
+        Preço unitário final automático, usado para COBRAR a venda no PDV.
+        Considera promoção, preço de campanha e a faixa de atacado vigente
+        para a quantidade informada — sempre o menor valor entre os ativos.
+        """
+        candidatos = [float(produto.sale_price)]
+
+        promo = produto.promocao_ativa()
+        if promo:
+            candidatos.append(float(promo.promo_price))
+
+        preco_campanha = produto.campanha_preco_ativo()
+        if preco_campanha is not None:
+            candidatos.append(preco_campanha)
+
+        for tier in produto.tiers_atacado_ativos():
+            if quantidade >= float(tier.min_quantity):
+                candidatos.append(float(tier.wholesale_price))
+
+        return min(candidatos)
+
     def tiers_pdv(self, produto: models.Product) -> dict:
         """Faixas de preço por quantidade (atacado) ativas, para o PDV recalcular o preço conforme a quantidade."""
         tiers = [

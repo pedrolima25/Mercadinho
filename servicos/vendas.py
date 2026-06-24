@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 import models
 from repositorios.vendas import RepositorioVendas
 from servicos.base import ServicoBase
+from servicos.produtos import ServicoProdutos
 
 
 class ServicoVendas(ServicoBase):
@@ -306,6 +307,7 @@ class ServicoPDV(ServicoBase):
                 self.erro_requisicao("Cliente inválido ou inativo")
 
         # ── Valida e calcula itens ─────────────────────────────────────────
+        servico_produtos = ServicoProdutos(self.banco)
         produtos_por_id = {}
         qtd_por_produto = {}
         itens_validados = []
@@ -334,7 +336,7 @@ class ServicoPDV(ServicoBase):
                     self.erro_requisicao("Produto inválido ou inativo")
                 produtos_por_id[produto_id] = produto
 
-            preco_unitario = float(produto.sale_price)
+            preco_unitario = servico_produtos.preco_efetivo(produto, quantidade)
             linha_subtotal = quantidade * preco_unitario
 
             if desconto_item > linha_subtotal:

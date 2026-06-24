@@ -2374,7 +2374,7 @@ async function doFinalize() {
       if (payModal) payModal.hide();
       renderSaleReceipt(r);
       new bootstrap.Modal(document.getElementById('successModal')).show();
-    } else alert('Erro: '+(r.error||'Tente novamente'));
+    } else alert('Erro: '+(r.error||r.detail||'Tente novamente'));
   } catch { alert('Erro de conexão.'); }
 }
 
