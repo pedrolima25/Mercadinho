@@ -76,7 +76,11 @@ class RepositorioProdutos(RepositorioBase):
         """Retorna produto pelo código de barras (EAN, QR Code, etc.)."""
         return (
             self.banco.query(self.modelo)
-            .options(joinedload(self.modelo.promotions), joinedload(self.modelo.wholesale_tiers))
+            .options(
+                joinedload(self.modelo.promotions),
+                joinedload(self.modelo.wholesale_tiers),
+                joinedload(self.modelo.campaign_items).joinedload(models.CampaignItem.campaign),
+            )
             .filter(
                 self.modelo.barcode == codigo,
                 self.modelo.is_active == True,
@@ -106,6 +110,7 @@ class RepositorioProdutos(RepositorioBase):
                 joinedload(self.modelo.category),
                 joinedload(self.modelo.promotions),
                 joinedload(self.modelo.wholesale_tiers),
+                joinedload(self.modelo.campaign_items).joinedload(models.CampaignItem.campaign),
             )
             .filter(self.modelo.is_active == True)
             .order_by(self.modelo.name)
@@ -117,7 +122,11 @@ class RepositorioProdutos(RepositorioBase):
         termo = f"%{texto}%"
         return (
             self.banco.query(self.modelo)
-            .options(joinedload(self.modelo.promotions), joinedload(self.modelo.wholesale_tiers))
+            .options(
+                joinedload(self.modelo.promotions),
+                joinedload(self.modelo.wholesale_tiers),
+                joinedload(self.modelo.campaign_items).joinedload(models.CampaignItem.campaign),
+            )
             .filter(
                 self.modelo.is_active == True,
                 or_(

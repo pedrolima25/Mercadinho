@@ -271,6 +271,16 @@ class Product(Base):
     batches = relationship("ProductBatch", back_populates="product")
     promotions = relationship("Promotion", back_populates="product", cascade="all, delete-orphan")
     wholesale_tiers = relationship("WholesaleTier", back_populates="product", cascade="all, delete-orphan")
+    campaign_items = relationship("CampaignItem", back_populates="product")
+
+    def campanha_preco_ativo(self):
+        """Retorna o menor preço de divulgação vigente em campanhas ativas para este produto, ou None."""
+        precos = [
+            float(item.custom_price)
+            for item in self.campaign_items
+            if item.custom_price is not None and item.campaign and item.campaign.is_active
+        ]
+        return min(precos) if precos else None
 
     def promocao_ativa(self):
         """Retorna a promoção vigente agora (dentro do período e ativa), ou None."""
@@ -352,7 +362,7 @@ class CampaignItem(Base):
     custom_price = Column(Numeric(10, 2), nullable=True)
 
     campaign = relationship("Campaign", back_populates="items")
-    product = relationship("Product")
+    product = relationship("Product", back_populates="campaign_items")
 
 
 class StockMovement(Base):

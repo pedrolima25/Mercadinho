@@ -71,12 +71,21 @@ class ServicoProdutos(ServicoBase):
         return produto
 
     def preco_pdv(self, produto: models.Product) -> dict:
-        """Preço atual do produto, já considerando promoção vigente."""
-        promo = produto.promocao_ativa()
+        """Preço atual do produto, considerando o menor entre promoção e preço de campanha vigentes."""
         preco_normal = float(produto.sale_price)
+        candidatos = []
+
+        promo = produto.promocao_ativa()
         if promo:
+            candidatos.append(float(promo.promo_price))
+
+        preco_campanha = produto.campanha_preco_ativo()
+        if preco_campanha is not None:
+            candidatos.append(preco_campanha)
+
+        if candidatos:
             return {
-                "sale_price": float(promo.promo_price),
+                "sale_price": min(candidatos),
                 "is_promo": True,
                 "original_price": preco_normal,
             }
