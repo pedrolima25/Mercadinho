@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if campaign else 'Nova' }} Campanha{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-4 gap-3">
+  <a href="/campanhas" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+  <h4 class="fw-bold mb-0">{{ 'Editar Campanha' if campaign else 'Nova Campanha' }}</h4>
+</div>
+
+<div class="row g-4">
+  <div class="col-md-{{ '5' if campaign else '12' }}">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <form method="post" action="{{ '/campanhas/' + campaign.id|string + '/editar' if campaign else '/campanhas/novo' }}">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Nome da campanha *</label>
+            <input type="text" name="name" class="form-control" required placeholder="Ex: Campanha de Natal"
+                   value="{{ campaign.name if campaign else '' }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Subtítulo</label>
+            <input type="text" name="subtitle" class="form-control" placeholder="Ex: Vem logo aproveitar!"
+                   value="{{ campaign.subtitle if campaign else '' }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Link público (slug)</label>
+            <input type="text" name="slug" class="form-control" placeholder="gerado automaticamente se vazio"
+                   value="{{ campaign.slug if campaign else '' }}">
+            <div class="form-text">Aparece em /campanhas/&lt;link&gt; — deixe em branco pra gerar a partir do nome.</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Cor principal do encarte</label>
+            <input type="color" name="color_primary" class="form-control form-control-color"
+                   value="{{ campaign.color_primary if campaign else '#17a8e8' }}">
+          </div>
+          <div class="mb-4">
+            <div class="form-check form-switch">
+              <input type="checkbox" name="is_active" class="form-check-input" id="is_active" {% if not campaign or campaign.is_active %}checked{% endif %}>
+              <label class="form-check-label fw-semibold" for="is_active">Campanha ativa (visível publicamente)</label>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary w-100"><i class="bi bi-check-lg me-1"></i>Salvar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {% if campaign %}
+  <div class="col-md-7">
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">Produtos da campanha</h6>
+        <form method="post" action="/campanhas/{{ campaign.id }}/produtos" class="row g-2 mb-3">
+          <div class="col-6">
+            <select name="product_id" class="form-select form-select-sm" required>
+              <option value="">Selecione um produto...</option>
+              {% for p in products_available %}
+              <option value="{{ p.id }}">{{ p.name }} — R$ {{ "%.2f"|format(p.sale_price|float) }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-4">
+            <input type="number" name="custom_price" class="form-control form-control-sm" step="0.01" min="0.01" placeholder="Preço de divulgação (opcional)">
+          </div>
+          <div class="col-2">
+            <button type="submit" class="btn btn-sm btn-success w-100"><i class="bi bi-plus-lg"></i></button>
+          </div>
+        </form>
+
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Produto</th><th>Preço normal</th><th>Preço divulgado</th><th></th></tr></thead>
+          <tbody>
+            {% for item in campaign.items %}
+            <tr>
+              <td>{{ item.product.name if item.product else '—' }}</td>
+              <td class="text-muted">R$ {{ "%.2f"|format(item.product.sale_price|float) if item.product else '—' }}</td>
+              <td class="fw-bold text-success">
+                {% if item.custom_price %}R$ {{ "%.2f"|format(item.custom_price|float) }}{% else %}<span class="text-muted">igual ao normal</span>{% endif %}
+              </td>
+              <td>
+                <form method="post" action="/campanhas/{{ campaign.id }}/produtos/{{ item.id }}/excluir" onsubmit="return confirm('Remover este produto da campanha?')">
+                  <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-center text-muted py-3">Nenhum produto adicionado ainda</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="alert alert-info mb-0">
+      <i class="bi bi-share me-1"></i> Link público pra divulgar:
+      <a href="/campanhas/{{ campaign.slug }}" target="_blank">{{ request.base_url }}campanhas/{{ campaign.slug }}</a>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

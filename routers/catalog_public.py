@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 import models
 from servicos.produtos import ServicoProdutos
+from servicos.campanhas import ServicoCampanhas
 
 router = APIRouter(tags=["catalogo-publico"])
 templates = Jinja2Templates(directory="templates")
@@ -61,5 +62,21 @@ def catalogo_ofertas(request: Request, db: Session = Depends(get_db)):
             "products": produtos,
             "whatsapp_digits": _whatsapp_digits(request),
             "validade_fim": validade_fim,
+        },
+    )
+
+
+@router.get("/campanhas/{slug}", response_class=HTMLResponse, name="campanha_publica")
+def campanha_publica(slug: str, request: Request, db: Session = Depends(get_db)):
+    """Página pública de uma campanha (encarte temático) — sem login."""
+    servico = ServicoCampanhas(db)
+    campanha = servico.obter_por_slug_ou_erro(slug)
+    produtos = servico.produtos_publicos(campanha)
+    return templates.TemplateResponse(
+        request, "public/campanha.html",
+        {
+            "campaign": campanha,
+            "products": produtos,
+            "whatsapp_digits": _whatsapp_digits(request),
         },
     )

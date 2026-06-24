@@ -12,6 +12,7 @@ PERMISSIONS = [
     ("produtos", "Produtos"),
     ("promocoes", "Promoções"),
     ("atacado", "Venda no Atacado"),
+    ("campanhas", "Campanhas"),
     ("estoque", "Estoque"),
     ("compras", "Compras"),
     ("empresa", "Empresa"),

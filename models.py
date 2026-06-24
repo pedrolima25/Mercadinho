@@ -327,6 +327,34 @@ class WholesaleTier(Base):
     product = relationship("Product", back_populates="wholesale_tiers")
 
 
+class Campaign(Base):
+    """Encarte temático com produtos selecionados manualmente, para divulgação (WhatsApp, redes sociais)."""
+    __tablename__ = "campaigns"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(150), nullable=False)
+    slug = Column(String(160), unique=True, nullable=False, index=True)
+    subtitle = Column(String(200), nullable=True)
+    color_primary = Column(String(7), default="#17a8e8")
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    items = relationship("CampaignItem", back_populates="campaign", cascade="all, delete-orphan")
+
+
+class CampaignItem(Base):
+    """Produto selecionado dentro de uma campanha, com preço de divulgação opcional."""
+    __tablename__ = "campaign_items"
+    __table_args__ = (UniqueConstraint("campaign_id", "product_id", name="uq_campaign_product"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    campaign_id = Column(Integer, ForeignKey("campaigns.id"), nullable=False, index=True)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False, index=True)
+    custom_price = Column(Numeric(10, 2), nullable=True)
+
+    campaign = relationship("Campaign", back_populates="items")
+    product = relationship("Product")
+
+
 class StockMovement(Base):
     __tablename__ = "stock_movements"
     id = Column(Integer, primary_key=True, index=True)

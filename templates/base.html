@@ -33,6 +33,7 @@
   {% set p_produtos     = current_user.has_permission('produtos') if current_user else false %}
   {% set p_promocoes    = current_user.has_permission('promocoes') if current_user else false %}
   {% set p_atacado      = current_user.has_permission('atacado') if current_user else false %}
+  {% set p_campanhas    = current_user.has_permission('campanhas') if current_user else false %}
   {% set p_estoque      = current_user.has_permission('estoque') if current_user else false %}
   {% set p_compras      = current_user.has_permission('compras') if current_user else false %}
   {% set p_empresa      = current_user.has_permission('empresa') if current_user else false %}
@@ -68,6 +69,11 @@
     {% if is_gerente %}
     <a href="/catalogo/ofertas" target="_blank" class="nav-item">
       <i class="bi bi-megaphone"></i> Divulgar Ofertas
+    </a>
+    {% endif %}
+    {% if p_campanhas %}
+    <a href="/campanhas" class="nav-item {% if '/campanhas' in request.url.path %}active{% endif %}">
+      <i class="bi bi-stars"></i> Campanhas
     </a>
     {% endif %}
 
