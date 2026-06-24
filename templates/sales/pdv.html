@@ -713,7 +713,7 @@
         <div class="rs-row"><span class="rl">Subtotal</span><span class="rv" id="r-subtotal">R$ 0,00</span></div>
         <div class="rs-row">
           <span class="rl">Desconto (R$)</span>
-          <input type="number" id="discount" class="ds-in" value="0" min="0" step="0.01" onchange="updateTotals()">
+          <input type="number" id="discount" class="ds-in" value="0" min="0" step="0.01" onchange="onDescontoGeralChange(this)">
         </div>
         <div class="rs-row"><span class="rl">Itens</span><span class="rv" id="r-itens">0</span></div>
         <div class="rs-row" style="margin-top:6px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.12);border-bottom:none;">
@@ -932,8 +932,8 @@
         <div style="background:#fff1f2;border:1px solid #fecdd3;border-radius:10px;padding:12px 14px;margin-bottom:18px;display:flex;align-items:flex-start;gap:10px;">
           <i class="bi bi-exclamation-triangle-fill" style="color:#dc2626;font-size:1.1rem;flex-shrink:0;margin-top:1px;"></i>
           <div>
-            <div style="font-size:0.8rem;font-weight:700;color:#7f1d1d;">Cancelar venda</div>
-            <div style="font-size:0.72rem;color:#9f1239;margin-top:2px;">Esta ação requer autorização de um supervisor (admin ou gerente).</div>
+            <div style="font-size:0.8rem;font-weight:700;color:#7f1d1d;" id="sv-title">Cancelar venda</div>
+            <div style="font-size:0.72rem;color:#9f1239;margin-top:2px;" id="sv-desc">Esta ação requer autorização de um supervisor (admin ou gerente).</div>
           </div>
         </div>
         <div style="margin-bottom:12px;">
@@ -1834,9 +1834,24 @@ function updateDiscount(i, v) {
     alert(`Desconto inválido. Máximo: ${fmtR(maxDisc)}`);
     renderCart(); return;
   }
-  cart[i].discount = disc;
-  cart[i].total = cart[i].quantity * cart[i].unit_price - disc;
-  renderCart(); updateTotals();
+  if (disc <= 0) {
+    cart[i].discount = 0;
+    cart[i].total = cart[i].quantity * cart[i].unit_price;
+    renderCart(); updateTotals();
+    return;
+  }
+  renderCart(); /* mantém o campo com o valor antigo até autorizar */
+  abrirAutorizacao({
+    title: 'Autorizar desconto',
+    desc: `Aplicar desconto de ${fmtR(disc)} em "${cart[i].name}" requer autorização de um supervisor (admin ou gerente).`,
+    btnLabel: 'Aplicar Desconto',
+    btnIcon: 'bi-percent',
+    onSuccess: () => {
+      cart[i].discount = disc;
+      cart[i].total = cart[i].quantity * cart[i].unit_price - disc;
+      renderCart(); updateTotals();
+    },
+  });
 }
 /* ════ Catálogo de Produtos ════ */
 let todosProds = [], catFiltro = 'Todos', catalogoModal = null;
@@ -1920,12 +1935,17 @@ function addFromCatalogo(p) {
 }
 /* ══════════════════════════════ */
 
-/* ════ Cancelamento com senha de supervisor ════ */
+/* ════ Autorização de supervisor (cancelamento e descontos) ════ */
 let cancelModal = null;
+let pendingAction = null;
+let pendingBtnDefaultHtml = '<i class="bi bi-shield-check me-1"></i>Autorizar';
 
-function clearCart() {
-  if (!cart.length) return;
-  /* abre modal de autorização */
+function abrirAutorizacao({ title, desc, btnLabel, btnIcon = 'bi-shield-check', onSuccess }) {
+  document.getElementById('sv-title').textContent = title;
+  document.getElementById('sv-desc').textContent = desc;
+  pendingBtnDefaultHtml = `<i class="bi ${btnIcon} me-1"></i>${btnLabel}`;
+  document.getElementById('sv-btn-confirm').innerHTML = pendingBtnDefaultHtml;
+  pendingAction = onSuccess;
   document.getElementById('sv-user').value = '';
   document.getElementById('sv-pass').value = '';
   document.getElementById('sv-error').style.display = 'none';
@@ -1935,6 +1955,21 @@ function clearCart() {
   document.getElementById('cancelModal').addEventListener('shown.bs.modal', () => {
     document.getElementById('sv-user').focus();
   }, {once: true});
+}
+
+function clearCart() {
+  if (!cart.length) return;
+  abrirAutorizacao({
+    title: 'Cancelar venda',
+    desc: 'Esta ação requer autorização de um supervisor (admin ou gerente).',
+    btnLabel: 'Cancelar Venda',
+    btnIcon: 'bi-trash',
+    onSuccess: () => {
+      cart = []; payments = [];
+      document.getElementById('last-item-bar').innerHTML = '<div class="last-empty">Aguardando leitura do produto...</div>';
+      renderCart(); updateTotals(); focusBi();
+    },
+  });
 }
 
 function fecharCancelModal() {
@@ -1965,11 +2000,10 @@ async function confirmarCancelamento() {
     });
     const r = await res.json();
     if (r.ok) {
-      /* autorizado — cancela a venda */
+      /* autorizado */
       cancelModal.hide();
-      cart = []; payments = [];
-      document.getElementById('last-item-bar').innerHTML = '<div class="last-empty">Aguardando leitura do produto...</div>';
-      renderCart(); updateTotals(); focusBi();
+      if (pendingAction) pendingAction();
+      pendingAction = null;
     } else {
       errDiv.style.display = 'block';
       document.getElementById('sv-error-msg').textContent = r.error || 'Autorização negada';
@@ -1982,7 +2016,7 @@ async function confirmarCancelamento() {
   }
 
   btn.disabled = false;
-  btn.innerHTML = '<i class="bi bi-trash me-1"></i>Cancelar Venda';
+  btn.innerHTML = pendingBtnDefaultHtml;
 }
 /* ══════════════════════════════════════════════ */
 
@@ -1991,6 +2025,34 @@ const getSub   = () => cart.reduce((s,i) => s+i.total, 0);
 const getDisc  = () => parseFloat(document.getElementById('discount').value)||0;
 const getTotal = () => Math.max(0, getSub()-getDisc());
 const getPaid  = () => payments.reduce((s,p) => s+p.amount, 0);
+
+function onDescontoGeralChange(el) {
+  const valor = parseFloat(el.value) || 0;
+  const sub = getSub();
+  if (valor <= 0) {
+    el.value = '0';
+    updateTotals();
+    return;
+  }
+  if (valor > sub) {
+    alert(`Desconto inválido. Máximo: ${fmtR(sub)}`);
+    el.value = '0';
+    updateTotals();
+    return;
+  }
+  el.value = '0'; /* só aplica de fato após autorização */
+  updateTotals();
+  abrirAutorizacao({
+    title: 'Autorizar desconto',
+    desc: `Aplicar desconto de ${fmtR(valor)} no total da venda requer autorização de um supervisor (admin ou gerente).`,
+    btnLabel: 'Aplicar Desconto',
+    btnIcon: 'bi-percent',
+    onSuccess: () => {
+      el.value = valor.toFixed(2);
+      updateTotals();
+    },
+  });
+}
 
 function updateTotals() {
   const sub = getSub(), total = getTotal(), n = cart.length;
