@@ -2044,9 +2044,21 @@ function removeAcentos(str) {
   return str.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\x20-\x7E]/g, '');
 }
 
+function normalizarPixKey(raw) {
+  const key = (raw || '').trim();
+  if (!key || key.includes('@') || /[a-zA-Z]/.test(key)) return key; /* e-mail ou chave aleatória: usa como está */
+  if (key.startsWith('+')) return '+' + key.replace(/\D/g, '');
+
+  const digitos = key.replace(/\D/g, '');
+  if (digitos.length === 12 && digitos.startsWith('0')) return '+55' + digitos.slice(1); /* telefone com "0" de tronco, sem DDI */
+  if (digitos.length === 13 && digitos.startsWith('55')) return '+' + digitos;            /* telefone com DDI mas sem "+" */
+  if (digitos.length === 10) return '+55' + digitos;                                      /* telefone fixo sem DDI */
+  return digitos || key; /* CPF (11), CNPJ (14) ou outro: usa só os dígitos */
+}
+
 function gerarPixPayload(valor) {
   const tlv = (t, v) => t + String(v.length).padStart(2,'0') + v;
-  const pixKey  = PIX_KEY || 'contato@supermercado.com';
+  const pixKey  = normalizarPixKey(PIX_KEY) || 'contato@supermercado.com';
   const amt     = valor.toFixed(2);
   const txId    = 'SMKT' + Date.now().toString().slice(-8);
   const nome    = removeAcentos(MARKET_NAME).slice(0, 25);
