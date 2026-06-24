@@ -11,6 +11,7 @@ PERMISSIONS = [
     ("vendas", "Vendas — Histórico e Detalhes"),
     ("produtos", "Produtos"),
     ("promocoes", "Promoções"),
+    ("atacado", "Venda no Atacado"),
     ("estoque", "Estoque"),
     ("compras", "Compras"),
     ("empresa", "Empresa"),

@@ -82,6 +82,14 @@ class ServicoProdutos(ServicoBase):
             }
         return {"sale_price": preco_normal, "is_promo": False, "original_price": preco_normal}
 
+    def tiers_pdv(self, produto: models.Product) -> dict:
+        """Faixas de preço por quantidade (atacado) ativas, para o PDV recalcular o preço conforme a quantidade."""
+        tiers = [
+            {"min_quantity": float(t.min_quantity), "price": float(t.wholesale_price)}
+            for t in produto.tiers_atacado_ativos()
+        ]
+        return {"wholesale_tiers": tiers}
+
     def listar_para_pdv(self) -> List[dict]:
         """
         Retorna todos os produtos ativos formatados para o catálogo do PDV.
@@ -94,6 +102,7 @@ class ServicoProdutos(ServicoBase):
                 "barcode": p.barcode or "",
                 "name": p.name,
                 **self.preco_pdv(p),
+                **self.tiers_pdv(p),
                 "stock_quantity": float(p.stock_quantity),
                 "unit": p.unit,
                 "category": p.category.name if p.category else "Sem categoria",
@@ -111,6 +120,7 @@ class ServicoProdutos(ServicoBase):
                 "barcode": p.barcode,
                 "name": p.name,
                 **self.preco_pdv(p),
+                **self.tiers_pdv(p),
                 "stock_quantity": float(p.stock_quantity),
                 "unit": p.unit,
                 "image_url": p.image_url or "",

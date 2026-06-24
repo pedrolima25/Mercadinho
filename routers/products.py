@@ -191,6 +191,7 @@ def api_produto_por_barcode(
         "barcode": produto.barcode,
         "name": produto.name,
         **servico.preco_pdv(produto),
+        **servico.tiers_pdv(produto),
         "stock_quantity": float(produto.stock_quantity),
         "unit": produto.unit,
         "image_url": produto.image_url or "",

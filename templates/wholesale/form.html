@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if tier else 'Nova' }} Faixa de Preço{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-4 gap-3">
+  <a href="/atacado" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+  <h4 class="fw-bold mb-0">{{ 'Editar Faixa de Preço' if tier else 'Nova Faixa de Preço' }}</h4>
+</div>
+
+<div class="row justify-content-center"><div class="col-md-6">
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <form method="post" action="{{ '/atacado/' + tier.id|string + '/editar' if tier else '/atacado/novo' }}">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Produto *</label>
+          <select name="product_id" class="form-select" required {% if tier %}disabled{% endif %}>
+            <option value="">Selecione...</option>
+            {% for p in products %}
+            <option value="{{ p.id }}" {% if tier and tier.product_id == p.id %}selected{% endif %}>
+              {{ p.name }} — R$ {{ "%.2f"|format(p.sale_price|float) }} / {{ p.unit }}
+            </option>
+            {% endfor %}
+          </select>
+          {% if tier %}
+          <input type="hidden" name="product_id" value="{{ tier.product_id }}">
+          <div class="form-text">Não é possível trocar o produto de uma faixa já criada — remova e crie outra.</div>
+          {% endif %}
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Quantidade mínima *</label>
+          <input type="number" name="min_quantity" class="form-control" step="0.001" min="0.001" required
+                 value="{{ tier.min_quantity if tier else '' }}">
+          <div class="form-text">A partir de quantas unidades (ou kg) o preço no atacado passa a valer automaticamente no PDV.</div>
+        </div>
+        <div class="mb-4">
+          <label class="form-label fw-semibold">Preço no atacado (R$) *</label>
+          <input type="number" name="wholesale_price" class="form-control" step="0.01" min="0.01" required
+                 value="{{ tier.wholesale_price if tier else '' }}">
+        </div>
+        <div class="mb-4">
+          <div class="form-check form-switch">
+            <input type="checkbox" name="is_active" class="form-check-input" id="is_active" {% if not tier or tier.is_active %}checked{% endif %}>
+            <label class="form-check-label fw-semibold" for="is_active">Faixa ativa</label>
+          </div>
+          <div class="form-text">Desative pra suspender essa faixa sem precisar excluir.</div>
+        </div>
+        <button type="submit" class="btn btn-primary w-100"><i class="bi bi-check-lg me-1"></i>Salvar</button>
+      </form>
+    </div>
+  </div>
+</div></div>
+{% endblock %}

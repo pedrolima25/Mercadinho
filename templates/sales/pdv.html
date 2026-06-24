@@ -488,6 +488,7 @@
   .pc-price { font-size: 1rem; font-weight: 900; color: #16a34a; margin-top: 4px; }
   .pc-promo-old { display: block; font-size: 0.7rem; color: #94a3b8; font-weight: 600; text-decoration: line-through; }
   .pc-promo-tag { font-size: 0.56rem; font-weight: 800; background: #fee2e2; color: #dc2626; border-radius: 4px; padding: 1px 5px; vertical-align: middle; }
+  .pc-atacado { font-size: 0.6rem; font-weight: 700; color: #2563eb; margin-top: 2px; }
   .pc-stock { font-size: 0.65rem; color: #94a3b8; }
   .pc-stock.low { color: #f59e0b; font-weight: 700; }
   .pc-stock.out { color: #ef4444; font-weight: 700; }
@@ -1647,6 +1648,15 @@ function showDropdown(ps) {
 function addToCartFromSearch(p) { addToCart(p); bi.value = ''; hideSearch(); }
 function hideSearch() { document.getElementById('search-results').style.display = 'none'; }
 
+function precoPorQtd(item) {
+  const tiers = item.wholesale_tiers || [];
+  let preco = item.base_price;
+  for (const t of tiers) {
+    if (item.quantity >= t.min_quantity) preco = t.price;
+  }
+  return preco;
+}
+
 function addToCart(product, quantityOverride = null) {
   if (!CASH_OPEN) {
     alert('Abra o caixa antes de iniciar uma venda.');
@@ -1670,8 +1680,20 @@ function addToCart(product, quantityOverride = null) {
     return;
   }
   const ex = cart.find(i => i.product_id === product.id);
-  if (ex) { ex.quantity = isWeightProduct(product) ? roundWeightQty(ex.quantity + qty) : ex.quantity + qty; ex.total = ex.quantity * ex.unit_price - ex.discount; }
-  else cart.push({ product_id: product.id, barcode: product.barcode||'', name: product.name, unit: product.unit, quantity: qty, unit_price: product.sale_price, stock_quantity: available, discount: 0, total: qty * product.sale_price });
+  if (ex) {
+    ex.quantity = isWeightProduct(product) ? roundWeightQty(ex.quantity + qty) : ex.quantity + qty;
+    ex.unit_price = precoPorQtd(ex);
+    ex.total = ex.quantity * ex.unit_price - ex.discount;
+  } else {
+    const item = {
+      product_id: product.id, barcode: product.barcode||'', name: product.name, unit: product.unit,
+      quantity: qty, base_price: product.sale_price, wholesale_tiers: product.wholesale_tiers || [],
+      unit_price: product.sale_price, stock_quantity: available, discount: 0, total: 0,
+    };
+    item.unit_price = precoPorQtd(item);
+    item.total = qty * item.unit_price;
+    cart.push(item);
+  }
   qi.value = 1;
   const imgHtml = product.image_url
     ? `<img class="last-img" src="${product.image_url}" alt="" onerror="this.style.display='none'">`
@@ -1779,7 +1801,7 @@ function renderCart() {
         <input type="number" class="i-qty" value="${qtyValue}" min="0.001" step="${qtyStep}" onchange="updateQty(${i},this.value)">
         <div class="i-unit">${item.unit}</div>
       </div>
-      <div class="i-val">R$ ${item.unit_price.toFixed(2).replace('.',',')}</div>
+      <div class="i-val">R$ ${item.unit_price.toFixed(2).replace('.',',')}${item.unit_price < item.base_price ? '<div class="i-disc-lbl">ATACADO</div>' : ''}</div>
       <div>
         <input type="number" class="i-disc" value="${(item.discount||0).toFixed(2)}" min="0" step="0.01" placeholder="0,00" onchange="updateDiscount(${i},this.value)" title="Desconto em R$">
         ${item.discount > 0 ? `<div class="i-disc-lbl">-${fmtR(item.discount)}</div>` : ''}
@@ -1799,6 +1821,7 @@ function updateQty(i, v) {
     return;
   }
   cart[i].quantity = qty > 0 ? qty : 1;
+  cart[i].unit_price = precoPorQtd(cart[i]);
   cart[i].total = cart[i].quantity * cart[i].unit_price - cart[i].discount;
   renderCart(); updateTotals();
 }
@@ -1886,6 +1909,7 @@ function renderCatalogo(lista) {
         <span class="pc-stock ${stClass}">${stTxt}</span>
         ${weight ? '<span class="weight-badge"><i class="bi bi-speedometer2"></i>KG</span>' : ''}
       </div>
+      ${(p.wholesale_tiers && p.wholesale_tiers.length) ? `<div class="pc-atacado">A partir de ${p.wholesale_tiers[0].min_quantity} ${p.unit}: R$ ${p.wholesale_tiers[0].price.toFixed(2).replace('.',',')}</div>` : ''}
     </div>`;
   }).join('');
 }

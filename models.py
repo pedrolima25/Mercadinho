@@ -270,6 +270,7 @@ class Product(Base):
     stock_movements = relationship("StockMovement", back_populates="product")
     batches = relationship("ProductBatch", back_populates="product")
     promotions = relationship("Promotion", back_populates="product", cascade="all, delete-orphan")
+    wholesale_tiers = relationship("WholesaleTier", back_populates="product", cascade="all, delete-orphan")
 
     def promocao_ativa(self):
         """Retorna a promoção vigente agora (dentro do período e ativa), ou None."""
@@ -278,6 +279,13 @@ class Product(Base):
             if promo.is_active and promo.start_at <= agora <= promo.end_at:
                 return promo
         return None
+
+    def tiers_atacado_ativos(self):
+        """Faixas de preço por quantidade ativas, ordenadas pela quantidade mínima."""
+        return sorted(
+            [t for t in self.wholesale_tiers if t.is_active],
+            key=lambda t: float(t.min_quantity),
+        )
 
 
 class ProductBatch(Base):
@@ -304,6 +312,19 @@ class Promotion(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     product = relationship("Product", back_populates="promotions")
+
+
+class WholesaleTier(Base):
+    """Faixa de preço por quantidade (venda no atacado), aplicada automaticamente no PDV."""
+    __tablename__ = "wholesale_tiers"
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False, index=True)
+    min_quantity = Column(Numeric(10, 3), nullable=False)
+    wholesale_price = Column(Numeric(10, 2), nullable=False)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    product = relationship("Product", back_populates="wholesale_tiers")
 
 
 class StockMovement(Base):
