@@ -544,14 +544,6 @@
   .bc-error { border-color: #ef4444 !important; background: rgba(239,68,68,0.08) !important; animation: shake 0.3s ease; }
   @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
 
-  /* TEF spinner */
-  .tef-spinner {
-    width:52px;height:52px;border-radius:50%;
-    border:5px solid #e2e8f0;border-top-color:#1e3a8a;
-    animation:tef-spin .8s linear infinite;
-  }
-  @keyframes tef-spin { to { transform:rotate(360deg); } }
-
   @media (max-width: 900px) {
     .pdv-layout {
       height: auto;
@@ -1165,32 +1157,6 @@
         style="flex:2;padding:8px;background:#1e3a8a;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.85rem;">
         <i class="bi bi-cart-plus me-1"></i>Adicionar
       </button>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ Modal TEF ═══ -->
-<div class="modal fade" id="tefModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
-  <div class="modal-dialog modal-dialog-centered" style="max-width:340px;">
-    <div class="modal-content" style="border-radius:16px;overflow:hidden;">
-      <div class="modal-header" style="background:#1e3a8a;color:#fff;border:none;padding:14px 20px;">
-        <span class="modal-title fw-bold fs-6"><i class="bi bi-credit-card me-2"></i>Pagamento TEF</span>
-      </div>
-      <div class="modal-body text-center py-4 px-4">
-        <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;color:#94a3b8;margin-bottom:4px;" id="tef-metodo-label">DÉBITO</div>
-        <div style="font-size:2rem;font-weight:800;color:#1e3a8a;margin-bottom:24px;" id="tef-valor-label">R$ 0,00</div>
-        <div id="tef-icon" style="margin-bottom:16px;min-height:56px;display:flex;align-items:center;justify-content:center;"></div>
-        <div id="tef-msg" style="font-size:0.88rem;color:#475569;font-weight:500;min-height:36px;line-height:1.4;"></div>
-        <div id="tef-nsu" style="display:none;margin-top:10px;font-size:0.7rem;color:#94a3b8;"></div>
-      </div>
-      <div class="modal-footer border-0 justify-content-center gap-2 pb-4">
-        <button id="tef-cancel-btn" class="btn btn-outline-danger btn-sm px-4" onclick="cancelarTEF()">
-          <i class="bi bi-x-circle me-1"></i>Cancelar
-        </button>
-        <button id="tef-retry-btn" class="btn btn-primary btn-sm px-4" style="display:none;" onclick="retryTEF()">
-          <i class="bi bi-arrow-clockwise me-1"></i>Tentar Novamente
-        </button>
-      </div>
     </div>
   </div>
 </div>
@@ -2128,105 +2094,10 @@ function confirmPixPayment() {
 }
 /* ════════════════════ */
 
-// ════════════════════ TEF ════════════════════
-let tefModal = null, tefTxId = null, tefMetodo = null, tefValor = 0, tefPoll = null;
-
-function openTEFModal(metodo) {
-  if (!CASH_OPEN) { alert('Abra o caixa antes de finalizar uma venda.'); return; }
-  if (!cart.length) { focusBi(); return; }
-  if (payModal) payModal.hide();
-  tefMetodo = metodo;
-  tefValor  = Math.max(0, getTotal() - getPaid());
-  tefTxId   = null;
-  clearInterval(tefPoll);
-  document.getElementById('tef-metodo-label').textContent = metodo === 'debito' ? 'DÉBITO' : 'CRÉDITO';
-  document.getElementById('tef-valor-label').textContent  = fmtR(tefValor);
-  document.getElementById('tef-nsu').style.display = 'none';
-  setTEFStatus('processando', 'Iniciando transação TEF...');
-  tefModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('tefModal'));
-  tefModal.show();
-  iniciarTEF();
-}
-
-async function iniciarTEF() {
-  try {
-    const resp = await fetch('/pdv/tef/iniciar', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({valor: tefValor, metodo: tefMetodo, parcelas: 1}),
-    });
-    if (!resp.ok) {
-      setTEFStatus('erro', `Erro HTTP ${resp.status} — reinicie o servidor`);
-      return;
-    }
-    const data = await resp.json();
-    if (data.id) {
-      tefTxId = data.id;
-      setTEFStatus(data.status, data.mensagem);
-      tefPoll = setInterval(pollTEF, 1500);
-    } else {
-      setTEFStatus('erro', data.error || 'Erro ao iniciar transação');
-    }
-  } catch(e) {
-    setTEFStatus('erro', 'Erro de conexão: ' + e.message);
-  }
-}
-
-async function pollTEF() {
-  if (!tefTxId) return;
-  try {
-    const resp = await fetch('/pdv/tef/status/' + tefTxId);
-    const data = await resp.json();
-    setTEFStatus(data.status, data.mensagem);
-    if (data.status === 'aprovado') {
-      clearInterval(tefPoll);
-      if (data.nsu) {
-        const nsuEl = document.getElementById('tef-nsu');
-        nsuEl.textContent = `NSU: ${data.nsu}  |  Aut: ${data.autorizacao}`;
-        nsuEl.style.display = 'block';
-      }
-      setTimeout(() => {
-        tefModal.hide();
-        payments.push({method: tefMetodo, amount: tefValor});
-        doFinalize();
-      }, 1800);
-    } else if (['negado','cancelado','erro'].includes(data.status)) {
-      clearInterval(tefPoll);
-    }
-  } catch { /* ignora falhas de poll */ }
-}
-
-function setTEFStatus(status, msg) {
-  const iconEl = document.getElementById('tef-icon');
-  const icons  = {
-    processando: '<div class="tef-spinner"></div>',
-    aprovado:    '<i class="bi bi-check-circle-fill" style="font-size:3.2rem;color:#22c55e;"></i>',
-    negado:      '<i class="bi bi-x-circle-fill"     style="font-size:3.2rem;color:#ef4444;"></i>',
-    cancelado:   '<i class="bi bi-dash-circle-fill"  style="font-size:3.2rem;color:#94a3b8;"></i>',
-    erro:        '<i class="bi bi-exclamation-triangle-fill" style="font-size:3.2rem;color:#f59e0b;"></i>',
-  };
-  iconEl.innerHTML = icons[status] || icons.processando;
-  document.getElementById('tef-msg').textContent = msg || '';
-  const done = ['negado','cancelado','erro'].includes(status);
-  document.getElementById('tef-cancel-btn').style.display = done ? 'none'  : 'inline-block';
-  document.getElementById('tef-retry-btn').style.display  = done ? 'inline-block' : 'none';
-}
-
-function cancelarTEF() {
-  clearInterval(tefPoll);
-  if (tefTxId) fetch('/pdv/tef/cancelar/' + tefTxId, {method:'POST'});
-  if (tefModal) tefModal.hide();
-  tefTxId = null;
-}
-
-function retryTEF() { openTEFModal(tefMetodo); }
-// ═════════════════════════════════════════════
-
 let payModal = null;
 function openPayModal(method) {
   if (!CASH_OPEN) { alert('Abra o caixa antes de finalizar uma venda.'); return; }
   if (!cart.length) { focusBi(); return; }
-  if (method === 'debito' || method === 'credito') { openTEFModal(method); return; }
   payments = []; renderPayments();
   document.getElementById('modal-total-display').textContent = fmtR(getTotal());
   payModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('payModal'));
@@ -2238,7 +2109,6 @@ function openPayModal(method) {
 }
 
 function selectPayMethod(m) {
-  if (m === 'debito' || m === 'credito') { openTEFModal(m); return; }
   selMethod = m;
   document.querySelectorAll('.m-chip').forEach(c => c.classList.remove('active'));
   const chip = document.getElementById('pmc-'+m); if (chip) chip.classList.add('active');

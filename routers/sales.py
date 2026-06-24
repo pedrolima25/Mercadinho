@@ -163,53 +163,6 @@ def credito_cliente(
     })
 
 
-@pdv_router.post("/tef/iniciar")
-async def tef_iniciar(
-    request: Request,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_user),
-):
-    """Inicia uma transação TEF (débito ou crédito) na maquininha."""
-    from servicos.tef import get_tef
-    dados = await request.json()
-    valor    = float(dados.get("valor", 0))
-    metodo   = dados.get("metodo", "debito")
-    parcelas = int(dados.get("parcelas", 1))
-    tx = get_tef().iniciar(valor, metodo, parcelas)
-    return JSONResponse({"id": tx.id, "status": tx.status, "mensagem": tx.mensagem})
-
-
-@pdv_router.get("/tef/status/{tx_id}")
-def tef_status(
-    tx_id: str,
-    request: Request,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_user),
-):
-    """Consulta o status de uma transação TEF."""
-    from servicos.tef import get_tef
-    tx = get_tef().obter(tx_id)
-    if not tx:
-        return JSONResponse({"error": "Transação não encontrada"}, status_code=404)
-    return JSONResponse({
-        "id": tx.id, "status": tx.status, "mensagem": tx.mensagem,
-        "nsu": tx.nsu, "autorizacao": tx.autorizacao,
-    })
-
-
-@pdv_router.post("/tef/cancelar/{tx_id}")
-def tef_cancelar(
-    tx_id: str,
-    request: Request,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth_utils.require_user),
-):
-    """Cancela uma transação TEF em andamento."""
-    from servicos.tef import get_tef
-    ok = get_tef().cancelar(tx_id)
-    return JSONResponse({"cancelado": ok})
-
-
 @pdv_router.post("/verificar-supervisor")
 async def verificar_supervisor(
     request: Request,
