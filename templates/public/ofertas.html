@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ofertas — {{ request.app.state.market_name }}</title>
+  <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/static/css/bootstrap-icons.css">
+  <style>
+    body { background: #f1f5f9; }
+    .pub-header { background: linear-gradient(135deg, #b91c1c 0%, #f97316 100%); color: #fff; padding: 1.5rem 1rem 4rem; text-align: center; }
+    .pub-logo { width: 64px; height: 64px; border-radius: 12px; background: #fff; padding: 6px; object-fit: contain; margin-bottom: 0.5rem; }
+    .pub-tabs { display: flex; justify-content: center; gap: 0.5rem; margin-top: 1rem; }
+    .pub-tab { background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 6px 16px; font-size: 0.85rem; font-weight: 600; text-decoration: none; }
+    .pub-tab.active { background: #fff; color: #b91c1c; }
+    .pub-share { margin-top: 1rem; }
+    .pub-share a { background: #25d366; color: #fff; border-radius: 20px; padding: 8px 18px; font-weight: 700; font-size: 0.85rem; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+    .pub-wrap { max-width: 1100px; margin: -3rem auto 0; padding: 0 1rem 2rem; }
+    .prod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; }
+    .prod-card { background: #fff; border-radius: 14px; box-shadow: 0 4px 14px rgba(0,0,0,0.06); overflow: hidden; display: flex; flex-direction: column; border: 2px solid #fee2e2; }
+    .prod-img-wrap { aspect-ratio: 1; background: #f8fafc; display: flex; align-items: center; justify-content: center; }
+    .prod-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
+    .prod-img-wrap i { font-size: 2rem; color: #cbd5e1; }
+    .prod-body { padding: 10px 12px 12px; flex: 1; display: flex; flex-direction: column; }
+    .prod-cat { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #94a3b8; }
+    .prod-name { font-size: 0.85rem; font-weight: 700; color: #1e293b; line-height: 1.25; margin: 2px 0 6px; flex: 1; }
+    .prod-old { font-size: 0.72rem; color: #94a3b8; text-decoration: line-through; }
+    .prod-price { font-size: 1.05rem; font-weight: 900; color: #16a34a; }
+    .prod-tag { font-size: 0.55rem; font-weight: 800; background: #fee2e2; color: #dc2626; border-radius: 4px; padding: 1px 5px; margin-left: 4px; vertical-align: middle; }
+    .prod-atacado { font-size: 0.62rem; font-weight: 700; color: #2563eb; margin-top: 2px; }
+    .prod-whats { margin-top: 8px; background: #25d366; color: #fff; border: none; border-radius: 8px; padding: 6px; font-size: 0.72rem; font-weight: 700; text-decoration: none; text-align: center; }
+    .empty-st { text-align: center; color: #94a3b8; padding: 3rem 0; }
+  </style>
+</head>
+<body>
+  <div class="pub-header">
+    <img class="pub-logo" src="{{ request.app.state.market_logo_url }}" alt="">
+    <h3 class="fw-bold mb-0">{{ request.app.state.market_name }}</h3>
+    <p class="mb-0" style="opacity:0.9;font-size:0.9rem;">🔥 Ofertas e promoções de hoje</p>
+    <div class="pub-tabs">
+      <a href="/catalogo" class="pub-tab">Todos os produtos</a>
+      <a href="/catalogo/ofertas" class="pub-tab active">🔥 Ofertas</a>
+    </div>
+    <div class="pub-share">
+      <a href="https://wa.me/?text={{ ('🔥 Confira as ofertas de hoje: ' + request.base_url|string + 'catalogo/ofertas')|urlencode }}" target="_blank">
+        <i class="bi bi-whatsapp"></i> Compartilhar ofertas
+      </a>
+    </div>
+  </div>
+
+  <div class="pub-wrap">
+    {% if products %}
+    <div class="prod-grid">
+      {% for p in products %}
+      <div class="prod-card">
+        <div class="prod-img-wrap">
+          {% if p.image_url %}
+          <img src="{{ p.image_url }}" alt="">
+          {% else %}
+          <i class="bi bi-image"></i>
+          {% endif %}
+        </div>
+        <div class="prod-body">
+          <div class="prod-cat">{{ p.category }}</div>
+          <div class="prod-name">{{ p.name }}</div>
+          <div>
+            {% if p.is_promo %}<div class="prod-old">R$ {{ "%.2f"|format(p.original_price) }}</div>{% endif %}
+            <span class="prod-price">R$ {{ "%.2f"|format(p.sale_price) }}</span>
+            {% if p.is_promo %}<span class="prod-tag">PROMO</span>{% endif %}
+          </div>
+          {% if p.wholesale_tiers %}
+          <div class="prod-atacado">A partir de {{ p.wholesale_tiers[0].min_quantity }} {{ p.unit }}: R$ {{ "%.2f"|format(p.wholesale_tiers[0].price) }}</div>
+          {% endif %}
+          {% if whatsapp_digits %}
+          <a class="prod-whats" target="_blank"
+             href="https://wa.me/{{ whatsapp_digits }}?text={{ ('Olá! Tenho interesse na oferta: ' + p.name)|urlencode }}">
+            <i class="bi bi-whatsapp"></i> Pedir
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-st"><i class="bi bi-emoji-frown fs-1 d-block mb-2"></i>Nenhuma oferta no momento. Volte mais tarde!</div>
+    {% endif %}
+  </div>
+</body>
+</html>

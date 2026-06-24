@@ -62,6 +62,14 @@
       <i class="bi bi-receipt"></i> Vendas
     </a>
     {% endif %}
+    <a href="/catalogo" target="_blank" class="nav-item">
+      <i class="bi bi-share"></i> Catálogo Público
+    </a>
+    {% if is_gerente %}
+    <a href="/catalogo/ofertas" target="_blank" class="nav-item">
+      <i class="bi bi-megaphone"></i> Divulgar Ofertas
+    </a>
+    {% endif %}
 
     {% if p_produtos or p_promocoes or p_atacado or p_estoque or p_compras %}
     <div class="nav-section">ESTOQUE</div>

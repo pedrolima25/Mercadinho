@@ -34,6 +34,7 @@ from routers.sales import router as sales_router, pdv_router
 from routers.purchases import router as purchases_router
 from routers.promotions import router as promotions_router
 from routers.wholesale import router as wholesale_router
+from routers.catalog_public import router as catalog_public_router
 from routers.financial import router as financial_router
 from routers.cash_register import router as cash_register_router
 from routers.reports import router as reports_router
@@ -121,6 +122,7 @@ app.include_router(pdv_router)
 app.include_router(purchases_router)
 app.include_router(promotions_router)
 app.include_router(wholesale_router)
+app.include_router(catalog_public_router)
 app.include_router(financial_router)
 app.include_router(cash_register_router)
 app.include_router(reports_router)
@@ -267,7 +269,7 @@ _SKIP_ALERTS = {"/login", "/logout", "/api/alerts"}
 @app.middleware("http")
 async def inject_alerts(request: Request, call_next):
     path = request.url.path
-    skip = (path.startswith("/static") or path.startswith("/api/")
+    skip = (path.startswith("/static") or path.startswith("/api/") or path.startswith("/catalogo")
             or path in _SKIP_ALERTS or request.method != "GET")
     if skip:
         request.state.alerts = {"low_stock": 0, "overdue_payable": 0,

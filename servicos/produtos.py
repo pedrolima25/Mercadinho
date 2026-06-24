@@ -90,6 +90,31 @@ class ServicoProdutos(ServicoBase):
         ]
         return {"wholesale_tiers": tiers}
 
+    def listar_publico(self, somente_ofertas: bool = False) -> List[dict]:
+        """
+        Catálogo público (sem login) para divulgação — ex: link de WhatsApp.
+        Não inclui dados sensíveis como estoque ou código de barras.
+        """
+        produtos = self.repositorio.buscar_ativos_ordenados()
+        resultado = []
+        for p in produtos:
+            preco = self.preco_pdv(p)
+            tiers = self.tiers_pdv(p)["wholesale_tiers"]
+            tem_oferta = preco["is_promo"] or bool(tiers)
+            if somente_ofertas and not tem_oferta:
+                continue
+            resultado.append({
+                "id": p.id,
+                "name": p.name,
+                "image_url": p.image_url or "",
+                "category": p.category.name if p.category else "Outros",
+                "unit": p.unit,
+                "wholesale_tiers": tiers,
+                "tem_oferta": tem_oferta,
+                **preco,
+            })
+        return resultado
+
     def listar_para_pdv(self) -> List[dict]:
         """
         Retorna todos os produtos ativos formatados para o catálogo do PDV.
