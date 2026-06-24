@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Promoções{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="fw-bold mb-0"><i class="bi bi-percent me-2"></i>Promoções</h4>
+  <a href="/promocoes/novo" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Nova Promoção</a>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr><th>Produto</th><th>Preço normal</th><th>Preço promocional</th><th>Período</th><th>Status</th><th>Ações</th></tr>
+      </thead>
+      <tbody>
+        {% for promo in promotions %}
+        <tr>
+          <td class="fw-semibold">{{ promo.product.name if promo.product else '—' }}</td>
+          <td class="text-muted"><s>R$ {{ "%.2f"|format(promo.product.sale_price|float) }}</s></td>
+          <td class="fw-bold text-success">R$ {{ "%.2f"|format(promo.promo_price|float) }}</td>
+          <td class="small text-muted">{{ promo.start_at.strftime('%d/%m/%Y %H:%M') }} até {{ promo.end_at.strftime('%d/%m/%Y %H:%M') }}</td>
+          <td>
+            {% if promo.product and promo.product.promocao_ativa() and promo.product.promocao_ativa().id == promo.id %}
+            <span class="badge bg-success">Vigente</span>
+            {% elif promo.is_active %}
+            <span class="badge bg-secondary">Fora do período</span>
+            {% else %}
+            <span class="badge bg-secondary">Desativada</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="/promocoes/{{ promo.id }}/editar" class="btn btn-sm btn-outline-primary me-1"><i class="bi bi-pencil"></i></a>
+            <form method="post" action="/promocoes/{{ promo.id }}/excluir" style="display:inline" onsubmit="return confirm('Remover esta promoção?')">
+              <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-center text-muted py-4">Nenhuma promoção cadastrada</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

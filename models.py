@@ -4,6 +4,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+from datetime import datetime, timezone
 import enum
 from database import Base
 
@@ -268,6 +269,15 @@ class Product(Base):
     purchase_items = relationship("PurchaseItem", back_populates="product")
     stock_movements = relationship("StockMovement", back_populates="product")
     batches = relationship("ProductBatch", back_populates="product")
+    promotions = relationship("Promotion", back_populates="product", cascade="all, delete-orphan")
+
+    def promocao_ativa(self):
+        """Retorna a promoção vigente agora (dentro do período e ativa), ou None."""
+        agora = datetime.now(timezone.utc)
+        for promo in self.promotions:
+            if promo.is_active and promo.start_at <= agora <= promo.end_at:
+                return promo
+        return None
 
 
 class ProductBatch(Base):
@@ -280,6 +290,20 @@ class ProductBatch(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     product = relationship("Product", back_populates="batches")
+
+
+class Promotion(Base):
+    """Preço promocional temporário de um produto, aplicado automaticamente no PDV."""
+    __tablename__ = "promotions"
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False, index=True)
+    promo_price = Column(Numeric(10, 2), nullable=False)
+    start_at = Column(DateTime(timezone=True), nullable=False)
+    end_at = Column(DateTime(timezone=True), nullable=False)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    product = relationship("Product", back_populates="promotions")
 
 
 class StockMovement(Base):

@@ -32,6 +32,7 @@ from routers.products import router as products_router
 from routers.stock import router as stock_router
 from routers.sales import router as sales_router, pdv_router
 from routers.purchases import router as purchases_router
+from routers.promotions import router as promotions_router
 from routers.financial import router as financial_router
 from routers.cash_register import router as cash_register_router
 from routers.reports import router as reports_router
@@ -117,6 +118,7 @@ app.include_router(stock_router)
 app.include_router(sales_router)
 app.include_router(pdv_router)
 app.include_router(purchases_router)
+app.include_router(promotions_router)
 app.include_router(financial_router)
 app.include_router(cash_register_router)
 app.include_router(reports_router)

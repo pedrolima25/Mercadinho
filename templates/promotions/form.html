@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if promotion else 'Nova' }} Promoção{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-4 gap-3">
+  <a href="/promocoes" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+  <h4 class="fw-bold mb-0">{{ 'Editar Promoção' if promotion else 'Nova Promoção' }}</h4>
+</div>
+
+<div class="row justify-content-center"><div class="col-md-6">
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <form method="post" action="{{ '/promocoes/' + promotion.id|string + '/editar' if promotion else '/promocoes/novo' }}">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Produto *</label>
+          <select name="product_id" class="form-select" required {% if promotion %}disabled{% endif %}>
+            <option value="">Selecione...</option>
+            {% for p in products %}
+            <option value="{{ p.id }}" {% if promotion and promotion.product_id == p.id %}selected{% endif %}>
+              {{ p.name }} — R$ {{ "%.2f"|format(p.sale_price|float) }}
+            </option>
+            {% endfor %}
+          </select>
+          {% if promotion %}
+          <input type="hidden" name="product_id" value="{{ promotion.product_id }}">
+          <div class="form-text">Não é possível trocar o produto de uma promoção já criada — remova e crie outra.</div>
+          {% endif %}
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Preço promocional (R$) *</label>
+          <input type="number" name="promo_price" class="form-control" step="0.01" min="0.01" required
+                 value="{{ promotion.promo_price if promotion else '' }}">
+        </div>
+        <div class="row">
+          <div class="col-6 mb-3">
+            <label class="form-label fw-semibold">Início *</label>
+            <input type="datetime-local" name="start_at" class="form-control" required
+                   value="{{ promotion.start_at.strftime('%Y-%m-%dT%H:%M') if promotion else '' }}">
+          </div>
+          <div class="col-6 mb-3">
+            <label class="form-label fw-semibold">Fim *</label>
+            <input type="datetime-local" name="end_at" class="form-control" required
+                   value="{{ promotion.end_at.strftime('%Y-%m-%dT%H:%M') if promotion else '' }}">
+          </div>
+        </div>
+        <div class="mb-4">
+          <div class="form-check form-switch">
+            <input type="checkbox" name="is_active" class="form-check-input" id="is_active" {% if not promotion or promotion.is_active %}checked{% endif %}>
+            <label class="form-check-label fw-semibold" for="is_active">Promoção ativa</label>
+          </div>
+          <div class="form-text">Desative pra suspender a promoção sem precisar excluir.</div>
+        </div>
+        <button type="submit" class="btn btn-primary w-100"><i class="bi bi-check-lg me-1"></i>Salvar</button>
+      </form>
+    </div>
+  </div>
+</div></div>
+{% endblock %}

@@ -97,6 +97,7 @@
   .sr-name { font-size: 0.85rem; color: #1e3a8a; font-weight: 700; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .sr-sub  { font-size: 0.68rem; color: #94a3b8; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .sr-price{ font-size: 0.92rem; color: #16a34a; font-weight: 800; white-space: nowrap; text-align: right; }
+  .sr-promo-old { display: block; font-size: 0.68rem; color: #94a3b8; font-weight: 600; text-decoration: line-through; }
 
   .qty-row { display: flex; gap: 7px; margin-top: 6px; align-items: center; }
   .qty-lbl { font-size: 0.7rem; color: rgba(255,255,255,0.5); font-weight: 600; white-space: nowrap; }
@@ -485,6 +486,8 @@
   .pc-cat { font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; }
   .pc-name { font-size: 0.8rem; font-weight: 700; color: #1e3a8a; line-height: 1.2; }
   .pc-price { font-size: 1rem; font-weight: 900; color: #16a34a; margin-top: 4px; }
+  .pc-promo-old { display: block; font-size: 0.7rem; color: #94a3b8; font-weight: 600; text-decoration: line-through; }
+  .pc-promo-tag { font-size: 0.56rem; font-weight: 800; background: #fee2e2; color: #dc2626; border-radius: 4px; padding: 1px 5px; vertical-align: middle; }
   .pc-stock { font-size: 0.65rem; color: #94a3b8; }
   .pc-stock.low { color: #f59e0b; font-weight: 700; }
   .pc-stock.out { color: #ef4444; font-weight: 700; }
@@ -1631,7 +1634,7 @@ function showDropdown(ps) {
     return `
     <div class="sr-item" onclick='addToCartFromSearch(${JSON.stringify(p).replace(/'/g,"&#39;")})'>
       <div><div class="sr-name">${p.name}${weightBadge}</div><div class="sr-sub">${p.barcode||'—'} · Estoque: ${p.stock_quantity} ${p.unit}</div></div>
-      <div class="sr-price">R$ ${p.sale_price.toFixed(2).replace('.',',')}</div>
+      <div class="sr-price">${p.is_promo ? `<span class="sr-promo-old">R$ ${p.original_price.toFixed(2).replace('.',',')}</span>` : ''}R$ ${p.sale_price.toFixed(2).replace('.',',')}</div>
     </div>`;
   }).join('');
 
@@ -1878,7 +1881,7 @@ function renderCatalogo(lista) {
       ${imgHtml}
       <div class="pc-cat">${p.category}</div>
       <div class="pc-name">${p.name}</div>
-      <div class="pc-price">R$ ${p.sale_price.toFixed(2).replace('.',',')}</div>
+      <div class="pc-price">${p.is_promo ? `<span class="pc-promo-old">R$ ${p.original_price.toFixed(2).replace('.',',')}</span>` : ''}R$ ${p.sale_price.toFixed(2).replace('.',',')}${p.is_promo ? ' <span class="pc-promo-tag">PROMO</span>' : ''}</div>
       <div class="pc-meta">
         <span class="pc-stock ${stClass}">${stTxt}</span>
         ${weight ? '<span class="weight-badge"><i class="bi bi-speedometer2"></i>KG</span>' : ''}

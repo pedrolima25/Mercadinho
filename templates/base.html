@@ -31,6 +31,7 @@
   {% set p_dashboard    = current_user.has_permission('dashboard') if current_user else false %}
   {% set p_vendas       = current_user.has_permission('vendas') if current_user else false %}
   {% set p_produtos     = current_user.has_permission('produtos') if current_user else false %}
+  {% set p_promocoes    = current_user.has_permission('promocoes') if current_user else false %}
   {% set p_estoque      = current_user.has_permission('estoque') if current_user else false %}
   {% set p_compras      = current_user.has_permission('compras') if current_user else false %}
   {% set p_empresa      = current_user.has_permission('empresa') if current_user else false %}
@@ -61,11 +62,16 @@
     </a>
     {% endif %}
 
-    {% if p_produtos or p_estoque or p_compras %}
+    {% if p_produtos or p_promocoes or p_estoque or p_compras %}
     <div class="nav-section">ESTOQUE</div>
     {% if p_produtos %}
     <a href="/produtos" class="nav-item {% if '/produtos' in request.url.path %}active{% endif %}">
       <i class="bi bi-box-seam"></i> Produtos
+    </a>
+    {% endif %}
+    {% if p_promocoes %}
+    <a href="/promocoes" class="nav-item {% if '/promocoes' in request.url.path %}active{% endif %}">
+      <i class="bi bi-percent"></i> Promoções
     </a>
     {% endif %}
     {% if p_estoque %}

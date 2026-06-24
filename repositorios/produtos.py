@@ -76,6 +76,7 @@ class RepositorioProdutos(RepositorioBase):
         """Retorna produto pelo código de barras (EAN, QR Code, etc.)."""
         return (
             self.banco.query(self.modelo)
+            .options(joinedload(self.modelo.promotions))
             .filter(
                 self.modelo.barcode == codigo,
                 self.modelo.is_active == True,
@@ -101,7 +102,7 @@ class RepositorioProdutos(RepositorioBase):
         """Todos os produtos ativos ordenados por nome — usado no PDV."""
         return (
             self.banco.query(self.modelo)
-            .options(joinedload(self.modelo.category))
+            .options(joinedload(self.modelo.category), joinedload(self.modelo.promotions))
             .filter(self.modelo.is_active == True)
             .order_by(self.modelo.name)
             .all()
@@ -112,6 +113,7 @@ class RepositorioProdutos(RepositorioBase):
         termo = f"%{texto}%"
         return (
             self.banco.query(self.modelo)
+            .options(joinedload(self.modelo.promotions))
             .filter(
                 self.modelo.is_active == True,
                 or_(

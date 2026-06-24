@@ -10,6 +10,7 @@ PERMISSIONS = [
     ("dashboard", "Dashboard"),
     ("vendas", "Vendas — Histórico e Detalhes"),
     ("produtos", "Produtos"),
+    ("promocoes", "Promoções"),
     ("estoque", "Estoque"),
     ("compras", "Compras"),
     ("empresa", "Empresa"),

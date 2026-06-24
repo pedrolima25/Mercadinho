@@ -70,6 +70,18 @@ class ServicoProdutos(ServicoBase):
             self.erro_nao_encontrado(f"Produto com código '{codigo}' não encontrado")
         return produto
 
+    def preco_pdv(self, produto: models.Product) -> dict:
+        """Preço atual do produto, já considerando promoção vigente."""
+        promo = produto.promocao_ativa()
+        preco_normal = float(produto.sale_price)
+        if promo:
+            return {
+                "sale_price": float(promo.promo_price),
+                "is_promo": True,
+                "original_price": preco_normal,
+            }
+        return {"sale_price": preco_normal, "is_promo": False, "original_price": preco_normal}
+
     def listar_para_pdv(self) -> List[dict]:
         """
         Retorna todos os produtos ativos formatados para o catálogo do PDV.
@@ -81,7 +93,7 @@ class ServicoProdutos(ServicoBase):
                 "id": p.id,
                 "barcode": p.barcode or "",
                 "name": p.name,
-                "sale_price": float(p.sale_price),
+                **self.preco_pdv(p),
                 "stock_quantity": float(p.stock_quantity),
                 "unit": p.unit,
                 "category": p.category.name if p.category else "Sem categoria",
@@ -98,7 +110,7 @@ class ServicoProdutos(ServicoBase):
                 "id": p.id,
                 "barcode": p.barcode,
                 "name": p.name,
-                "sale_price": float(p.sale_price),
+                **self.preco_pdv(p),
                 "stock_quantity": float(p.stock_quantity),
                 "unit": p.unit,
                 "image_url": p.image_url or "",
