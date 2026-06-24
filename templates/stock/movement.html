@@ -21,16 +21,20 @@
             <label class="form-label fw-semibold">Tipo de Movimentação <span class="text-danger">*</span></label>
             <div class="d-flex gap-2">
               <div class="form-check flex-fill border rounded p-3 text-center">
-                <input type="radio" name="type" value="entrada" class="form-check-input" id="t-entrada" required>
+                <input type="radio" name="type" value="entrada" class="form-check-input" id="t-entrada" required onchange="toggleMotivoPerda()">
                 <label class="form-check-label d-block" for="t-entrada"><i class="bi bi-arrow-down-circle-fill text-success fs-3 d-block"></i>Entrada</label>
               </div>
               <div class="form-check flex-fill border rounded p-3 text-center">
-                <input type="radio" name="type" value="saida" class="form-check-input" id="t-saida">
+                <input type="radio" name="type" value="saida" class="form-check-input" id="t-saida" onchange="toggleMotivoPerda()">
                 <label class="form-check-label d-block" for="t-saida"><i class="bi bi-arrow-up-circle-fill text-danger fs-3 d-block"></i>Saída</label>
               </div>
               <div class="form-check flex-fill border rounded p-3 text-center">
-                <input type="radio" name="type" value="ajuste" class="form-check-input" id="t-ajuste">
+                <input type="radio" name="type" value="ajuste" class="form-check-input" id="t-ajuste" onchange="toggleMotivoPerda()">
                 <label class="form-check-label d-block" for="t-ajuste"><i class="bi bi-arrow-left-right text-warning fs-3 d-block"></i>Ajuste</label>
+              </div>
+              <div class="form-check flex-fill border rounded p-3 text-center">
+                <input type="radio" name="type" value="perda" class="form-check-input" id="t-perda" onchange="toggleMotivoPerda()">
+                <label class="form-check-label d-block" for="t-perda"><i class="bi bi-exclamation-triangle-fill text-secondary fs-3 d-block"></i>Perda</label>
               </div>
             </div>
           </div>
@@ -38,9 +42,18 @@
             <label class="form-label fw-semibold">Quantidade <span class="text-danger">*</span></label>
             <input type="number" name="quantity" class="form-control" step="0.001" min="0.001" required placeholder="0">
           </div>
+          <div class="mb-3" id="motivo-perda-box" style="display:none;">
+            <label class="form-label fw-semibold">Motivo da Perda <span class="text-danger">*</span></label>
+            <select class="form-select" id="motivo-perda-select" onchange="document.getElementById('reason-input').value = this.value">
+              <option value="Vencido">Vencido</option>
+              <option value="Avariado">Avariado (quebrou, molhou, etc.)</option>
+              <option value="Furto">Furto</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </div>
           <div class="mb-4">
             <label class="form-label fw-semibold">Motivo / Observação</label>
-            <input type="text" name="reason" class="form-control" placeholder="Ex: Reposição, Quebra, Inventário...">
+            <input type="text" name="reason" id="reason-input" class="form-control" placeholder="Ex: Reposição, Quebra, Inventário...">
           </div>
           <button type="submit" class="btn btn-primary w-100 fw-semibold">
             <i class="bi bi-check-lg me-1"></i>Registrar Movimentação
@@ -50,4 +63,13 @@
     </div>
   </div>
 </div>
+<script>
+function toggleMotivoPerda() {
+  const isPerda = document.getElementById('t-perda').checked;
+  document.getElementById('motivo-perda-box').style.display = isPerda ? 'block' : 'none';
+  if (isPerda) {
+    document.getElementById('reason-input').value = document.getElementById('motivo-perda-select').value;
+  }
+}
+</script>
 {% endblock %}

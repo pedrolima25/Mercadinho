@@ -43,6 +43,7 @@ class MovementType(str, enum.Enum):
     entrada = "entrada"
     saida = "saida"
     ajuste = "ajuste"
+    perda = "perda"
 
 
 class PaymentMethod(str, enum.Enum):

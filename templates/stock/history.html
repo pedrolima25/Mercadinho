@@ -22,6 +22,7 @@
           <option value="entrada" {% if type == 'entrada' %}selected{% endif %}>Entrada</option>
           <option value="saida" {% if type == 'saida' %}selected{% endif %}>Saída</option>
           <option value="ajuste" {% if type == 'ajuste' %}selected{% endif %}>Ajuste</option>
+          <option value="perda" {% if type == 'perda' %}selected{% endif %}>Perda</option>
         </select>
       </div>
       <div class="col-md-2">
@@ -43,6 +44,7 @@
           <td>
             {% if mv.type.value == 'entrada' %}<span class="badge bg-success">Entrada</span>
             {% elif mv.type.value == 'saida' %}<span class="badge bg-danger">Saída</span>
+            {% elif mv.type.value == 'perda' %}<span class="badge bg-dark">Perda</span>
             {% else %}<span class="badge bg-warning text-dark">Ajuste</span>{% endif %}
           </td>
           <td class="fw-semibold">{{ mv.quantity }}</td>

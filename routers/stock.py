@@ -82,6 +82,19 @@ async def criar_lote(
     return RedirectResponse("/estoque/lotes", status_code=302)
 
 
+@router.post("/lotes/{lote_id}/perda")
+async def registrar_perda_lote(
+    lote_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth_utils.require_permission("estoque")),
+):
+    """Dá baixa (perda) de um lote — vencido ou avaria."""
+    form = await request.form()
+    ServicoEstoque(db).registrar_perda_lote(lote_id, form, current_user)
+    return RedirectResponse("/estoque/lotes", status_code=302)
+
+
 @router.get("/historico", response_class=HTMLResponse)
 def historico(
     request: Request,

@@ -61,7 +61,13 @@ def _add_columns_if_missing(table: str, columns: dict):
                 conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {safe_type}"))
 
 
+def _add_enum_value_if_missing(enum_name: str, value: str):
+    with engine.begin() as conn:
+        conn.execute(text(f"ALTER TYPE {enum_name} ADD VALUE IF NOT EXISTS '{value}'"))
+
+
 def ensure_schema_updates():
+    _add_enum_value_if_missing("movementtype", "perda")
     _add_columns_if_missing("products", {
         "image_url": "VARCHAR(500)",
         "ncm": "VARCHAR(8)",

@@ -71,7 +71,7 @@ class ServicoEstoque(ServicoBase):
         # Aplica a movimentação no estoque
         if tipo == "entrada":
             produto.stock_quantity = float(produto.stock_quantity) + quantidade
-        elif tipo == "saida":
+        elif tipo in ("saida", "perda"):
             if float(produto.stock_quantity) < quantidade:
                 self.erro_requisicao(
                     f"Estoque insuficiente. Disponível: {float(produto.stock_quantity):.3f} {produto.unit}"
@@ -129,3 +129,46 @@ class ServicoEstoque(ServicoBase):
         self.banco.add(lote)
         self.banco.commit()
         return lote
+
+    def registrar_perda_lote(self, lote_id: int, dados_form, usuario: models.User) -> models.StockMovement:
+        """
+        Dá baixa (perda) de um lote — usado pra vencido ou avaria vinculados a um lote.
+        Desconta a quantidade do estoque do produto e do próprio lote.
+        """
+        lote = self.lotes.buscar_por_id(lote_id)
+        if not lote:
+            self.erro_nao_encontrado("Lote não encontrado")
+
+        motivo = dados_form.get("reason") or "Vencido"
+        quantidade = float(dados_form.get("quantity") or lote.quantity or 0)
+
+        if quantidade <= 0:
+            self.erro_requisicao("Quantidade inválida")
+        if quantidade > float(lote.quantity):
+            self.erro_requisicao(
+                f"Quantidade maior que o saldo do lote. Disponível: {float(lote.quantity):.3f}"
+            )
+
+        produto = self.produtos.buscar_por_id(lote.product_id)
+        if not produto:
+            self.erro_nao_encontrado("Produto do lote não encontrado")
+        if float(produto.stock_quantity) < quantidade:
+            self.erro_requisicao(
+                f"Estoque insuficiente. Disponível: {float(produto.stock_quantity):.3f} {produto.unit}"
+            )
+
+        produto.stock_quantity = float(produto.stock_quantity) - quantidade
+        lote.quantity = float(lote.quantity) - quantidade
+
+        movimentacao = models.StockMovement(
+            product_id=produto.id,
+            type=models.MovementType.perda,
+            quantity=quantidade,
+            reason=f"{motivo} (Lote {lote.batch_number or lote.id})",
+            reference_id=lote.id,
+            reference_type="lote",
+            user_id=usuario.id,
+        )
+        self.banco.add(movimentacao)
+        self.banco.commit()
+        return movimentacao

@@ -80,6 +80,7 @@
               <td>
                 {% if mv.type.value == 'entrada' %}<span class="badge bg-success-subtle text-success">Entrada</span>
                 {% elif mv.type.value == 'saida' %}<span class="badge bg-danger-subtle text-danger">Saída</span>
+                {% elif mv.type.value == 'perda' %}<span class="badge bg-secondary-subtle text-secondary">Perda</span>
                 {% else %}<span class="badge bg-warning-subtle text-warning">Ajuste</span>{% endif %}
               </td>
               <td class="fw-semibold">{{ mv.quantity }}</td>
