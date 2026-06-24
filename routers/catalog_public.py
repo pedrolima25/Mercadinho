@@ -6,11 +6,13 @@ Não expõem dados sensíveis: nada de estoque, custo ou código de barras.
 """
 
 import re
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from database import get_db
+import models
 from servicos.produtos import ServicoProdutos
 
 router = APIRouter(tags=["catalogo-publico"])
@@ -44,7 +46,20 @@ def catalogo_publico(request: Request, categoria: str = None, db: Session = Depe
 def catalogo_ofertas(request: Request, db: Session = Depends(get_db)):
     """Catálogo público só com produtos em promoção ou com preço de atacado."""
     produtos = ServicoProdutos(db).listar_publico(somente_ofertas=True)
+
+    agora = datetime.now(timezone.utc)
+    promos_ativas = db.query(models.Promotion).filter(
+        models.Promotion.is_active == True,
+        models.Promotion.start_at <= agora,
+        models.Promotion.end_at >= agora,
+    ).all()
+    validade_fim = min((p.end_at for p in promos_ativas), default=None)
+
     return templates.TemplateResponse(
         request, "public/ofertas.html",
-        {"products": produtos, "whatsapp_digits": _whatsapp_digits(request)},
+        {
+            "products": produtos,
+            "whatsapp_digits": _whatsapp_digits(request),
+            "validade_fim": validade_fim,
+        },
     )

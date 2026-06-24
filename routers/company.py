@@ -52,6 +52,7 @@ def apply_company_to_app(app, company: models.CompanyProfile) -> None:
     app.state.company_cnpj = company.cnpj or ""
     app.state.company_phone = company.phone or company.whatsapp or ""
     app.state.company_email = company.email or ""
+    app.state.company_slogan = company.slogan or ""
     app.state.pix_key = company.pix_key or settings.pix_key or ""
     app.state.pix_city = (company.pix_city or settings.pix_city or "MANAUS").upper()
     address_parts = [
