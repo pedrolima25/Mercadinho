@@ -15,7 +15,12 @@
           <div class="row g-3">
             <div class="col-md-4">
               <label class="form-label fw-semibold">Código de Barras</label>
-              <input type="text" name="barcode" class="form-control" value="{{ product.barcode or '' if product else '' }}" placeholder="EAN-13, QR Code...">
+              <div class="input-group">
+                <input type="text" name="barcode" id="barcode-input" class="form-control" value="{{ product.barcode or '' if product else '' }}" placeholder="EAN-13, QR Code...">
+                <button type="button" class="btn btn-outline-secondary" onclick="abrirScannerCodigoBarras()" title="Escanear com a câmera">
+                  <i class="bi bi-upc-scan"></i>
+                </button>
+              </div>
             </div>
             <div class="col-md-8">
               <label class="form-label fw-semibold">Nome do Produto <span class="text-danger">*</span></label>
@@ -175,6 +180,71 @@
     </div>
   </div>
 </form>
+
+<!-- Modal Escanear Código de Barras -->
+<div class="modal fade" id="scannerModal" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-upc-scan me-1"></i>Escanear Código de Barras</h5>
+        <button type="button" class="btn-close" onclick="fecharScannerCodigoBarras()"></button>
+      </div>
+      <div class="modal-body">
+        <div id="scanner-reader" style="width:100%;"></div>
+        <div id="scanner-status" class="text-center text-muted small mt-2">Aponte a câmera para o código de barras...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/html5-qrcode.min.js"></script>
+<script>
+let scannerModalInstance = null;
+let html5QrCode = null;
+
+function abrirScannerCodigoBarras() {
+  scannerModalInstance = bootstrap.Modal.getOrCreateInstance(document.getElementById('scannerModal'));
+  scannerModalInstance.show();
+  document.getElementById('scannerModal').addEventListener('shown.bs.modal', iniciarScanner, {once: true});
+  document.getElementById('scannerModal').addEventListener('hidden.bs.modal', pararScanner, {once: true});
+}
+
+function fecharScannerCodigoBarras() {
+  if (scannerModalInstance) scannerModalInstance.hide();
+}
+
+function iniciarScanner() {
+  html5QrCode = new Html5Qrcode('scanner-reader');
+  const config = {
+    fps: 10,
+    qrbox: { width: 280, height: 140 },
+    formatsToSupport: [
+      Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
+      Html5QrcodeSupportedFormats.UPC_A, Html5QrcodeSupportedFormats.UPC_E,
+      Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39,
+      Html5QrcodeSupportedFormats.ITF, Html5QrcodeSupportedFormats.QR_CODE,
+    ],
+  };
+  html5QrCode.start({ facingMode: 'environment' }, config, onCodigoLido, () => {})
+    .catch(() => {
+      document.getElementById('scanner-status').innerHTML =
+        '<span class="text-danger">Não foi possível acessar a câmera. Verifique a permissão no navegador.</span>';
+    });
+}
+
+function onCodigoLido(codigo) {
+  document.getElementById('barcode-input').value = codigo;
+  document.getElementById('scanner-status').innerHTML = `<span class="text-success"><i class="bi bi-check-circle me-1"></i>Código lido: ${codigo}</span>`;
+  setTimeout(fecharScannerCodigoBarras, 700);
+}
+
+function pararScanner() {
+  if (html5QrCode) {
+    html5QrCode.stop().catch(() => {}).finally(() => { html5QrCode = null; });
+  }
+  document.getElementById('scanner-status').textContent = 'Aponte a câmera para o código de barras...';
+}
+</script>
 
 <script>
 function updateMargin() {
