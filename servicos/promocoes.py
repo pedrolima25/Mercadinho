@@ -36,6 +36,12 @@ class ServicoPromocoes(ServicoBase):
         if promo_price <= 0:
             self.erro_requisicao("O preço promocional deve ser maior que zero")
 
+        produto = self.banco.query(models.Product).filter(models.Product.id == int(product_id)).first()
+        if not produto:
+            self.erro_requisicao("Produto não encontrado")
+        if promo_price >= float(produto.sale_price):
+            self.erro_requisicao("O preço promocional deve ser menor que o preço normal do produto")
+
         start_at = dados_form.get("start_at")
         end_at = dados_form.get("end_at")
         if not start_at or not end_at:
@@ -56,11 +62,7 @@ class ServicoPromocoes(ServicoBase):
 
     def criar(self, dados_form) -> models.Promotion:
         """Cria uma nova promoção para um produto."""
-        dados = self._validar(dados_form)
-        produto = self.banco.query(models.Product).filter(models.Product.id == dados["product_id"]).first()
-        if not produto:
-            self.erro_requisicao("Produto não encontrado")
-        return self.repositorio.criar(dados)
+        return self.repositorio.criar(self._validar(dados_form))
 
     def atualizar(self, promocao_id: int, dados_form) -> models.Promotion:
         """Atualiza uma promoção existente."""
