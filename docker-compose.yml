@@ -26,6 +26,7 @@ services:
       - "${APP_PORT:-8000}:8000"
     volumes:
       - ./static/uploads:/app/static/uploads
+      - ./fiscal:/app/fiscal
     env_file:
       - .env
     environment:

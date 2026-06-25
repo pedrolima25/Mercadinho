@@ -50,14 +50,73 @@ _T_PAG = {
 }
 
 
+_CIDADES_SUPORTADAS = {"MANAUS", "PARINTINS", "ITACOATIARA", "MANACAPURU"}
+
+
+def checklist_fiscal(db: Session) -> dict:
+    """Diagnostico do que falta para emitir NFC-e de verdade (nao simulado)."""
+    empresa = db.query(models.CompanyProfile).first()
+
+    cert_path = (empresa and empresa.nfce_cert_path) or os.getenv("NFCE_CERT_PATH", "")
+    cert_pass = (empresa and empresa.nfce_cert_pass) or os.getenv("NFCE_CERT_PASS", "")
+    csc       = (empresa and empresa.nfce_csc) or os.getenv("NFCE_CSC", "")
+    csc_id    = (empresa and empresa.nfce_csc_id) or os.getenv("NFCE_CSC_ID", "")
+    ambiente  = (empresa and empresa.nfce_ambiente) or os.getenv("NFCE_AMBIENTE", "")
+    cert_existe = bool(cert_path) and Path(cert_path).exists()
+
+    total_produtos = db.query(models.Product).count()
+    sem_ncm = db.query(models.Product).filter(
+        (models.Product.ncm.is_(None)) | (models.Product.ncm == "")
+    ).count()
+    sem_cfop = db.query(models.Product).filter(
+        (models.Product.cfop.is_(None)) | (models.Product.cfop == "")
+    ).count()
+
+    cidade = (empresa.city or "").upper().strip() if empresa else ""
+
+    itens = [
+        {"grupo": "Cadastro", "item": "CNPJ preenchido",
+         "ok": bool(empresa and empresa.cnpj)},
+        {"grupo": "Cadastro", "item": "Inscricao Estadual preenchida",
+         "ok": bool(empresa and empresa.state_registration)},
+        {"grupo": "Cadastro", "item": "Endereco completo (rua, numero, bairro, cidade, UF, CEP)",
+         "ok": bool(empresa and empresa.street and empresa.number and
+                     empresa.neighborhood and empresa.city and empresa.state and empresa.zip_code)},
+        {"grupo": "Cadastro", "item": "Regime tributario definido",
+         "ok": bool(empresa and empresa.tax_regime)},
+        {"grupo": "Cadastro", "item": f"Cidade suportada no mapeamento IBGE ({cidade or 'nao definida'})",
+         "ok": cidade in _CIDADES_SUPORTADAS},
+        {"grupo": "Tecnico", "item": "Certificado digital A1 configurado",
+         "ok": cert_existe},
+        {"grupo": "Tecnico", "item": "Senha do certificado configurada",
+         "ok": bool(cert_pass)},
+        {"grupo": "Tecnico", "item": "CSC (Codigo de Seguranca do Contribuinte) configurado",
+         "ok": bool(csc and csc_id)},
+        {"grupo": "Tecnico", "item": "Ambiente definido (homologacao/producao)",
+         "ok": bool(ambiente)},
+        {"grupo": "Produtos", "item": f"Produtos com NCM preenchido ({total_produtos - sem_ncm}/{total_produtos})",
+         "ok": total_produtos > 0 and sem_ncm == 0},
+        {"grupo": "Produtos", "item": f"Produtos com CFOP preenchido ({total_produtos - sem_cfop}/{total_produtos})",
+         "ok": total_produtos > 0 and sem_cfop == 0},
+    ]
+
+    prontos = sum(1 for i in itens if i["ok"])
+    return {"itens": itens, "prontos": prontos, "total": len(itens)}
+
+
 class ServicoNfce:
     def __init__(self, db: Session):
-        self.db       = db
-        self.ambiente = os.getenv("NFCE_AMBIENTE", "2")   # 2=homolog
-        self.serie    = os.getenv("NFCE_SERIE", "001").zfill(3)
-        self.cert_path = os.getenv("NFCE_CERT_PATH", "")
-        self.cert_pass = os.getenv("NFCE_CERT_PASS", "")
-        self.xml_dir  = Path(os.getenv("NFCE_XML_DIR", "fiscal/xml"))
+        self.db = db
+        empresa = db.query(models.CompanyProfile).first()
+
+        # Config prioriza o cadastro da empresa (tela /nfce/configuracao); cai para o .env se vazio
+        self.ambiente  = (empresa and empresa.nfce_ambiente) or os.getenv("NFCE_AMBIENTE", "2")
+        self.serie     = ((empresa and empresa.nfce_serie) or os.getenv("NFCE_SERIE", "001")).zfill(3)
+        self.cert_path = (empresa and empresa.nfce_cert_path) or os.getenv("NFCE_CERT_PATH", "")
+        self.cert_pass = (empresa and empresa.nfce_cert_pass) or os.getenv("NFCE_CERT_PASS", "")
+        self.csc       = (empresa and empresa.nfce_csc) or os.getenv("NFCE_CSC", "")
+        self.csc_id    = (empresa and empresa.nfce_csc_id) or os.getenv("NFCE_CSC_ID", "")
+        self.xml_dir   = Path(os.getenv("NFCE_XML_DIR", "fiscal/xml"))
         self.xml_dir.mkdir(parents=True, exist_ok=True)
 
     # ── API pública ──────────────────────────────────────────────────────────
@@ -80,8 +139,9 @@ class ServicoNfce:
         numero  = self._proximo_numero()
         cnf     = str(uuid.uuid4().int)[:8].zfill(8)
         chave   = self._chave(empresa.cnpj or "00000000000000", numero, cnf)
+        dh_emi  = datetime.now(timezone(timedelta(hours=-4))).strftime("%Y-%m-%dT%H:%M:%S") + "-04:00"
 
-        xml_str = self._gerar_xml(venda, empresa, numero, chave, cnf)
+        xml_str = self._gerar_xml(venda, empresa, numero, chave, cnf, dh_emi)
 
         if doc is None:
             doc = models.FiscalDocument(
@@ -106,7 +166,7 @@ class ServicoNfce:
             resultado    = self._transmitir(xml_assinado)
             doc.protocol           = resultado.get("protocolo")
             doc.rejection_reason   = resultado.get("motivo")
-            doc.qr_code_url        = self._qrcode_url(chave, doc.protocol)
+            doc.qr_code_url        = self._qrcode_url(chave, venda, dh_emi)
             doc.status = (
                 models.FiscalDocumentStatus.autorizada
                 if resultado.get("cStat") in ("100", "150")
@@ -118,7 +178,7 @@ class ServicoNfce:
         else:
             # Sem certificado: armazena pendente (homologação visual)
             doc.status = models.FiscalDocumentStatus.pendente
-            doc.qr_code_url = self._qrcode_url_homolog(chave)
+            doc.qr_code_url = self._qrcode_url(chave, venda, dh_emi)
             doc.rejection_reason = "Certificado não configurado — pendente de assinatura"
 
         self.db.commit()
@@ -139,10 +199,8 @@ class ServicoNfce:
 
     # ── Geração do XML ───────────────────────────────────────────────────────
 
-    def _gerar_xml(self, venda, empresa, numero: int, chave: str, cnf: str) -> str:
+    def _gerar_xml(self, venda, empresa, numero: int, chave: str, cnf: str, dh_emi: str) -> str:
         ns = _NS
-        agora = datetime.now(timezone(timedelta(hours=-4)))  # AM = UTC-4
-        dh_emi = agora.strftime("%Y-%m-%dT%H:%M:%S") + "-04:00"
 
         nfe = ET.Element(f"{{{ns}}}NFe")
         inf = ET.SubElement(nfe, f"{{{ns}}}infNFe",
@@ -277,21 +335,48 @@ class ServicoNfce:
         ET.register_namespace("", ns)
         return '<?xml version="1.0" encoding="UTF-8"?>' + ET.tostring(nfe, encoding="unicode")
 
+    # ── Certificado ──────────────────────────────────────────────────────────
+
+    def _carregar_pfx(self):
+        """Le o .pfx e devolve (chave_privada, certificado, demais_certificados)."""
+        from cryptography.hazmat.primitives.serialization import pkcs12
+        cert_bytes = Path(self.cert_path).read_bytes()
+        return pkcs12.load_key_and_certificates(cert_bytes, self.cert_pass.encode())
+
+    def _cert_pem_files(self) -> Optional[tuple]:
+        """Converte o .pfx em (cert.pem, key.pem) para TLS mutuo com a SEFAZ.
+
+        httpx/ssl nao aceita PKCS12 diretamente — precisa de PEM. Os arquivos
+        derivados ficam ao lado do .pfx e sao regenerados se o .pfx mudar.
+        """
+        if not self.cert_path or not Path(self.cert_path).exists():
+            return None
+        pfx_path = Path(self.cert_path)
+        cert_pem = pfx_path.parent / f"{pfx_path.stem}.cert.pem"
+        key_pem  = pfx_path.parent / f"{pfx_path.stem}.key.pem"
+        if (not cert_pem.exists() or not key_pem.exists()
+                or pfx_path.stat().st_mtime > cert_pem.stat().st_mtime):
+            from cryptography.hazmat.primitives.serialization import (
+                Encoding, PrivateFormat, NoEncryption,
+            )
+            priv_key, cert, _ = self._carregar_pfx()
+            cert_pem.write_bytes(cert.public_bytes(Encoding.PEM))
+            key_pem.write_bytes(priv_key.private_bytes(
+                Encoding.PEM, PrivateFormat.TraditionalOpenSSL, NoEncryption()
+            ))
+        return (str(cert_pem), str(key_pem))
+
     # ── Assinatura ───────────────────────────────────────────────────────────
 
     def _assinar(self, xml_str: str, chave: str) -> str:
         """Assina o XML com o certificado A1 (.pfx)."""
         try:
-            from cryptography.hazmat.primitives.serialization import pkcs12
             from cryptography.hazmat.primitives import hashes, serialization
             from cryptography.hazmat.primitives.asymmetric import padding
             import base64
             from lxml import etree
 
-            cert_bytes = Path(self.cert_path).read_bytes()
-            priv_key, cert, _ = pkcs12.load_key_and_certificates(
-                cert_bytes, self.cert_pass.encode()
-            )
+            priv_key, cert, _ = self._carregar_pfx()
 
             tree  = etree.fromstring(xml_str.encode())
             ns    = {"nfe": _NS}
@@ -362,14 +447,14 @@ class ServicoNfce:
 
         ws_url = _WS_HOMOLOG if self.ambiente == "2" else _WS_PROD
         try:
-            # Certificado também é necessário para TLS mútuo com SEFAZ
-            cert_arg = (self.cert_path, self.cert_pass) if self.cert_path else None
+            # SEFAZ exige TLS mutuo: certificado do contribuinte convertido para PEM
             resp = httpx.post(
                 ws_url,
                 content=soap.encode("utf-8"),
                 headers={"Content-Type": "application/soap+xml; charset=utf-8",
                          "SOAPAction": ""},
                 timeout=30.0,
+                cert=self._cert_pem_files(),
             )
             return self._parsear_retorno(resp.text)
         except Exception as e:
@@ -439,14 +524,26 @@ class ServicoNfce:
         resto = soma % 11
         return 0 if resto in (0, 1) else 11 - resto
 
-    def _qrcode_url(self, chave: str, protocolo: Optional[str]) -> str:
+    def _qrcode_url(self, chave: str, venda, dh_emi: str) -> str:
+        """Monta a URL do QR Code com cHashQRCode calculado a partir do CSC (NT 2015.002)."""
+        from urllib.parse import quote
+
         base = ("https://homnfe.sefaz.am.gov.br/nfceweb/consultarNFCe.aspx"
                 if self.ambiente == "2"
                 else "https://nfe.sefaz.am.gov.br/nfceweb/consultarNFCe.aspx")
-        return f"{base}?chNFe={chave}&nVersao=100&tpAmb={self.ambiente}&cDest=&dhEmi=&vNF=&vICMS=&digVal=&cIdToken=000001&cHashQRCode="
-
-    def _qrcode_url_homolog(self, chave: str) -> str:
-        return self._qrcode_url(chave, None)
+        v_nf      = f"{float(venda.total):.2f}"
+        cid_token = (self.csc_id or "000001").zfill(6)
+        raw_query = (
+            f"chNFe={chave}&nVersao=100&tpAmb={self.ambiente}&cDest="
+            f"&dhEmi={dh_emi}&vNF={v_nf}&vICMS=0.00&digVal="
+            f"&cIdToken={cid_token}"
+        )
+        hash_hex = (
+            hashlib.sha1((raw_query + self.csc).encode()).hexdigest().upper()
+            if self.csc else ""
+        )
+        encoded_query = raw_query.replace(dh_emi, quote(dh_emi, safe=""))
+        return f"{base}?{encoded_query}&cHashQRCode={hash_hex}"
 
     @staticmethod
     def _t(parent, tag: str, text: str):

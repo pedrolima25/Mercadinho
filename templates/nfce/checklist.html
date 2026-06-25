@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Checklist Fiscal - {{ request.app.state.market_name }}{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h4 class="fw-bold mb-1"><i class="bi bi-clipboard2-check me-2"></i>Checklist Fiscal (NFC-e)</h4>
+    <div class="text-muted small">O que falta para emitir NFC-e de verdade junto a SEFAZ.</div>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="/nfce/configuracao" class="btn btn-primary"><i class="bi bi-gear-fill me-1"></i>Configurar certificado/CSC</a>
+    <a href="/empresa" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Voltar</a>
+  </div>
+</div>
+
+<div class="alert {% if prontos == total %}alert-success{% else %}alert-warning{% endif %} d-flex align-items-center gap-2">
+  <i class="bi {% if prontos == total %}bi-check-circle-fill{% else %}bi-exclamation-triangle-fill{% endif %}"></i>
+  <span><strong>{{ prontos }}/{{ total }}</strong> itens prontos.
+    {% if prontos < total %}Ainda em modo simulado (sem valor fiscal) ate completar os pendentes.{% else %}Tudo pronto para emissao real.{% endif %}
+  </span>
+</div>
+
+{% set grupos = ["Cadastro", "Tecnico", "Produtos"] %}
+{% for grupo in grupos %}
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-header bg-white border-0">
+    <h6 class="fw-bold mb-0">{{ grupo }}</h6>
+  </div>
+  <ul class="list-group list-group-flush">
+    {% for item in itens if item.grupo == grupo %}
+    <li class="list-group-item d-flex align-items-center gap-2">
+      {% if item.ok %}
+      <i class="bi bi-check-circle-fill text-success"></i>
+      {% else %}
+      <i class="bi bi-x-circle-fill text-danger"></i>
+      {% endif %}
+      <span>{{ item.item }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endfor %}
+{% endblock %}

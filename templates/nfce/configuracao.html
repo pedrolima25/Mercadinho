@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Configuracao Fiscal - {{ request.app.state.market_name }}{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h4 class="fw-bold mb-1"><i class="bi bi-gear-fill me-2"></i>Configuracao Fiscal (NFC-e)</h4>
+    <div class="text-muted small">Certificado, ambiente e CSC usados para emitir NFC-e junto a SEFAZ-AM.</div>
+  </div>
+  <a href="/nfce/checklist" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Voltar</a>
+</div>
+
+{% if success %}
+<div class="alert alert-success d-flex align-items-center gap-2">
+  <i class="bi bi-check-circle-fill"></i>
+  <span>Configuracao fiscal salva com sucesso.</span>
+</div>
+{% endif %}
+
+<form method="post" action="/nfce/configuracao" enctype="multipart/form-data">
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-0">
+          <h6 class="fw-bold mb-0">Certificado digital A1</h6>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Arquivo do certificado (.pfx)</label>
+            <input type="file" name="nfce_cert_file" class="form-control" accept=".pfx">
+            {% if empresa.nfce_cert_path %}
+            <div class="form-text text-success"><i class="bi bi-check-circle-fill"></i> Certificado configurado: {{ empresa.nfce_cert_path }}</div>
+            {% else %}
+            <div class="form-text text-danger"><i class="bi bi-x-circle-fill"></i> Nenhum certificado enviado ainda.</div>
+            {% endif %}
+          </div>
+          <div>
+            <label class="form-label fw-semibold">Senha do certificado</label>
+            <input type="password" name="nfce_cert_pass" class="form-control"
+                   placeholder="{% if empresa.nfce_cert_pass %}Deixe em branco para manter a senha atual{% else %}Senha do .pfx{% endif %}">
+          </div>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-0">
+          <h6 class="fw-bold mb-0">CSC - Codigo de Seguranca do Contribuinte</h6>
+        </div>
+        <div class="card-body">
+          <div class="text-muted small mb-3">Gerado no portal da SEFAZ-AM apos o credenciamento para NFC-e. Usado para validar o QR Code da nota.</div>
+          <div class="row g-3">
+            <div class="col-md-8">
+              <label class="form-label fw-semibold">CSC (token)</label>
+              <input type="text" name="nfce_csc" class="form-control" value="{{ empresa.nfce_csc or '' }}">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">ID do CSC</label>
+              <input type="text" name="nfce_csc_id" class="form-control" value="{{ empresa.nfce_csc_id or '' }}" placeholder="000001">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-0">
+          <h6 class="fw-bold mb-0">Ambiente e numeracao</h6>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Ambiente</label>
+            <select name="nfce_ambiente" class="form-select">
+              <option value="2" {% if empresa.nfce_ambiente != "1" %}selected{% endif %}>Homologacao (sem valor fiscal)</option>
+              <option value="1" {% if empresa.nfce_ambiente == "1" %}selected{% endif %}>Producao</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label fw-semibold">Serie</label>
+            <input type="text" name="nfce_serie" class="form-control" maxlength="3" value="{{ empresa.nfce_serie or '001' }}">
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100 fw-bold py-2">
+        <i class="bi bi-check-lg me-1"></i>Salvar Configuracao
+      </button>
+    </div>
+  </div>
+</form>
+{% endblock %}

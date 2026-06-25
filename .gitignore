@@ -22,6 +22,9 @@ static/uploads/
 uploads/
 *.log
 
+# Certificados e XMLs fiscais (NFC-e)
+fiscal/
+
 # Local databases and backups
 *.sqlite
 *.sqlite3

@@ -83,6 +83,12 @@ def ensure_schema_updates():
     _add_columns_if_missing("company_profile", {
         "pix_key": "VARCHAR(150)",
         "pix_city": "VARCHAR(80)",
+        "nfce_ambiente": "VARCHAR(1)",
+        "nfce_serie": "VARCHAR(3)",
+        "nfce_cert_path": "VARCHAR(255)",
+        "nfce_cert_pass": "VARCHAR(255)",
+        "nfce_csc": "VARCHAR(100)",
+        "nfce_csc_id": "VARCHAR(10)",
     })
 
 

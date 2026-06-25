@@ -115,6 +115,9 @@
     <a href="/empresa" class="nav-item {% if '/empresa' in request.url.path %}active{% endif %}">
       <i class="bi bi-building-gear"></i> Empresa
     </a>
+    <a href="/nfce/checklist" class="nav-item {% if '/nfce/checklist' in request.url.path %}active{% endif %}">
+      <i class="bi bi-clipboard2-check"></i> Checklist Fiscal
+    </a>
     {% endif %}
     {% if p_clientes %}
     <a href="/clientes" class="nav-item {% if '/clientes' in request.url.path %}active{% endif %}">
