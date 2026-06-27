@@ -70,6 +70,8 @@ class CashRegisterStatus(str, enum.Enum):
 class CashMovementType(str, enum.Enum):
     sangria = "sangria"
     suprimento = "suprimento"
+    despesa = "despesa"
+    vale_funcionario = "vale_funcionario"
 
 
 class FiscalDocumentStatus(str, enum.Enum):
@@ -404,6 +406,19 @@ class CashRegister(Base):
     user = relationship("User", back_populates="cash_registers")
     sales = relationship("Sale", back_populates="cash_register")
     cash_movements = relationship("CashMovement", back_populates="cash_register")
+    closing_counts = relationship("CashClosingCount", back_populates="cash_register", cascade="all, delete-orphan")
+
+
+class CashClosingCount(Base):
+    """Conferência de fechamento: valor esperado pelo sistema x valor informado pelo operador, por forma de pagamento."""
+    __tablename__ = "cash_closing_counts"
+    id = Column(Integer, primary_key=True, index=True)
+    cash_register_id = Column(Integer, ForeignKey("cash_registers.id"), nullable=False)
+    method = Column(Enum(PaymentMethod), nullable=False)
+    system_amount = Column(Numeric(10, 2), default=0)
+    informed_amount = Column(Numeric(10, 2), default=0)
+
+    cash_register = relationship("CashRegister", back_populates="closing_counts")
 
 
 class CashMovement(Base):

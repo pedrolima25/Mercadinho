@@ -59,6 +59,14 @@
       <div class="modal-body">
         <div class="mb-3"><label class="form-label">Data do Recebimento</label><input type="date" name="paid_date" class="form-control" value="{{ today }}"></div>
         <div class="mb-3"><label class="form-label">Valor Recebido (R$)</label><input type="number" name="paid_amount" id="rec-amount" class="form-control" step="0.01" required></div>
+        <div class="mb-3">
+          <label class="form-label">Forma de Recebimento</label>
+          <select name="payment_method" class="form-select">
+            <option value="dinheiro">Dinheiro</option>
+            <option value="outro">Outro (PIX, transferência, etc.)</option>
+          </select>
+          <small class="text-muted">Em dinheiro, o valor é lançado como suprimento no seu caixa aberto, pra entrar certinho na conferência do fechamento.</small>
+        </div>
       </div>
       <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-success">Confirmar</button></div>
     </form>

@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Fechamento de Caixa{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div class="d-flex align-items-center gap-3">
+    <a href="/relatorios" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+    <h4 class="fw-bold mb-0">Relatório de Fechamento de Caixa</h4>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-3"><label class="small">De</label><input type="date" name="date_from" class="form-control form-control-sm" value="{{ date_from }}"></div>
+      <div class="col-md-3"><label class="small">Até</label><input type="date" name="date_to" class="form-control form-control-sm" value="{{ date_to }}"></div>
+      <div class="col-md-3">
+        <label class="small">Caixa</label>
+        <select name="caixa_id" class="form-select form-select-sm">
+          <option value="">Todos os caixas</option>
+          {% for c in caixas_disponiveis %}
+          <option value="{{ c.id }}" {% if caixa_id == c.id %}selected{% endif %}>#{{ c.id }} — {{ c.user.full_name if c.user else '—' }} ({{ c.opened_at.strftime('%d/%m %H:%M') }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3"><button type="submit" class="btn btn-primary btn-sm w-100">Gerar</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="d-flex flex-wrap gap-2 mb-4">
+  <a class="btn btn-outline-danger btn-sm" target="_blank"
+     href="/relatorios/fechamento-caixa/pdf?formato=a4&date_from={{ date_from }}&date_to={{ date_to }}{% if caixa_id %}&caixa_id={{ caixa_id }}{% endif %}">
+    <i class="bi bi-file-earmark-pdf me-1"></i>Baixar PDF (A4)
+  </a>
+  <a class="btn btn-outline-secondary btn-sm" target="_blank"
+     href="/relatorios/fechamento-caixa/pdf?formato=cupom&date_from={{ date_from }}&date_to={{ date_to }}{% if caixa_id %}&caixa_id={{ caixa_id }}{% endif %}">
+    <i class="bi bi-receipt me-1"></i>Baixar PDF (Cupom)
+  </a>
+  <a class="btn btn-outline-success btn-sm" target="_blank"
+     href="https://wa.me/?text={{ whatsapp_texto|urlencode }}">
+    <i class="bi bi-whatsapp me-1"></i>Enviar por WhatsApp
+  </a>
+</div>
+
+{% set rotulos = {'dinheiro':'Dinheiro','debito':'Débito','credito':'Crédito','pix':'PIX','fiado':'Fiado','vale':'Vale'} %}
+
+{% macro bloco_caixa(c, titulo, subtitulo) %}
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-header bg-white border-0">
+    <h6 class="fw-bold mb-0">{{ titulo }}</h6>
+    {% if subtitulo %}<small class="text-muted">{{ subtitulo }}</small>{% endif %}
+  </div>
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <p class="fw-semibold small mb-1">Lançamentos de Caixa</p>
+        <table class="table table-sm mb-0">
+          <thead class="table-light"><tr><th>Tipo</th><th>Motivo</th><th>Entrada</th><th>Saída</th></tr></thead>
+          <tbody>
+            {% for m in c.movements %}
+            <tr><td class="small">{{ m.tipo }}</td><td class="small">{{ m.motivo }}</td><td class="small">{% if m.entrada %}{{ m.entrada|brl }}{% else %}—{% endif %}</td><td class="small">{% if m.saida %}{{ m.saida|brl }}{% else %}—{% endif %}</td></tr>
+            {% else %}
+            <tr><td colspan="4" class="text-center text-muted small py-2">Sem lançamentos</td></tr>
+            {% endfor %}
+          </tbody>
+          {% if c.movements %}
+          <tfoot><tr class="fw-bold table-light small"><td colspan="2">Total</td><td>{{ c.movements_total.entrada|brl }}</td><td>{{ c.movements_total.saida|brl }}</td></tr></tfoot>
+          {% endif %}
+        </table>
+      </div>
+      <div class="col-md-4">
+        <p class="fw-semibold small mb-1">Vendas por Forma de Pagamento <span class="text-muted">(recebido no caixa)</span></p>
+        <table class="table table-sm mb-0">
+          <tbody>
+            {% for metodo, valor in c.sales_by_method.items() %}
+            <tr><td class="small">{{ rotulos.get(metodo, metodo) }}</td><td class="small text-end">{{ valor|brl }}</td></tr>
+            {% else %}
+            <tr><td class="text-center text-muted small py-2">Sem vendas</td></tr>
+            {% endfor %}
+          </tbody>
+          {% if c.sales_by_method %}
+          <tfoot><tr class="fw-bold table-light small"><td>Total Recebido</td><td class="text-end">{{ c.sales_total|brl }}</td></tr></tfoot>
+          {% endif %}
+        </table>
+        <div class="alert alert-light alert-permanent border small py-2 px-3 mt-2 mb-0">
+          <i class="bi bi-info-circle me-1 text-muted"></i>
+          <strong>Fiado</strong> (a receber, não entra no caixa): {{ c.fiado_total|brl }}
+        </div>
+      </div>
+      <div class="col-md-4">
+        <p class="fw-semibold small mb-1">Conferência — Sistema x Informado</p>
+        <table class="table table-sm mb-0">
+          <thead class="table-light"><tr><th>Forma</th><th>Sist.</th><th>Inf.</th><th>Dif.</th></tr></thead>
+          <tbody>
+            {% for r in c.summary %}
+            <tr>
+              <td class="small">{{ rotulos.get(r.method, r.method) }}</td>
+              <td class="small">{{ r.system|brl }}</td>
+              <td class="small">{{ r.informed|brl }}</td>
+              <td class="small fw-semibold {% if r.diff > 0 %}text-success{% elif r.diff < 0 %}text-danger{% endif %}">{{ r.diff|brl_sinal }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-center text-muted small py-2">Caixa ainda não conferido</td></tr>
+            {% endfor %}
+          </tbody>
+          {% if c.summary %}
+          <tfoot>
+            <tr class="fw-bold table-light small">
+              <td>Total</td>
+              <td>{{ c.summary_total.system|brl }}</td>
+              <td>{{ c.summary_total.informed|brl }}</td>
+              <td class="{% if c.summary_total.diff > 0 %}text-success{% elif c.summary_total.diff < 0 %}text-danger{% endif %}">{{ c.summary_total.diff|brl_sinal }}</td>
+            </tr>
+          </tfoot>
+          {% endif %}
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endmacro %}
+
+{% if not dados.caixas %}
+<div class="alert alert-warning alert-permanent">Nenhum caixa encontrado no período selecionado.</div>
+{% else %}
+  {% if caixa_id is none and dados.caixas|length != 1 %}
+    {% set sub_consolidado = dados.caixas|length ~ " caixa(s) no período | Fundo total: " ~ (dados.consolidado.opening_balance|brl) %}
+    {{ bloco_caixa(dados.consolidado, "Consolidado", sub_consolidado) }}
+  {% endif %}
+  {% for c in dados.caixas %}
+    {% set periodo = "Abertura: " ~ c.opened_at.strftime('%d/%m %H:%M') ~ (" | Encerramento: " ~ c.closed_at.strftime('%d/%m %H:%M') if c.closed_at else " | Aberto") ~ " | Fundo: " ~ (c.opening_balance|brl) %}
+    {{ bloco_caixa(c, "Caixa #" ~ c.id ~ " — " ~ c.user_name, periodo) }}
+  {% endfor %}
+{% endif %}
+{% endblock %}

@@ -12,7 +12,7 @@
 <div class="alert alert-success alert-permanent d-flex justify-content-between align-items-center">
   <div><i class="bi bi-check-circle-fill me-2"></i><strong>Caixa Aberto</strong> — Desde {{ open_register.opened_at.strftime('%H:%M') }} | Fundo: R$ {{ "%.2f"|format(open_register.opening_balance|float) }}</div>
   <div class="d-flex gap-2">
-    <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#movModal">Sangria / Suprimento</button>
+    <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#movModal">Movimentação</button>
     <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#closeModal">Fechar Caixa</button>
   </div>
 </div>
@@ -65,35 +65,71 @@
 
 <!-- Modal Fechar -->
 <div class="modal fade" id="closeModal" tabindex="-1">
-  <div class="modal-dialog"><div class="modal-content">
+  <div class="modal-dialog modal-lg"><div class="modal-content">
     <div class="modal-header"><h5 class="modal-title text-danger">Fechar Caixa</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
     <form method="post" action="/caixa/fechar">
       <div class="modal-body">
-        <div class="mb-3"><label class="form-label fw-semibold">Total em Caixa (R$)</label><input type="number" name="closing_balance" class="form-control" step="0.01" min="0" value="0" required></div>
-        <div class="mb-3"><label class="form-label fw-semibold">Observações</label><textarea name="notes" class="form-control" rows="2"></textarea></div>
+        <p class="text-muted small">Confira e informe o valor de cada forma de pagamento. O valor entre parênteses é o esperado pelo sistema.</p>
+        {% if open_register_movements %}
+        <div class="mb-3">
+          <p class="fw-semibold small mb-1">Lançamentos de Caixa (já considerados no Dinheiro abaixo)</p>
+          <table class="table table-sm mb-0 border">
+            <thead class="table-light"><tr><th>Tipo</th><th>Motivo</th><th class="text-end">Valor</th></tr></thead>
+            <tbody>
+              {% for m in open_register_movements %}
+              <tr>
+                <td class="small">{{ m.tipo }}</td>
+                <td class="small">{{ m.motivo }}</td>
+                <td class="small text-end {% if m.entrada %}text-success{% else %}text-danger{% endif %}">
+                  {% if m.entrada %}+{% else %}-{% endif %}R$ {{ "%.2f"|format(m.valor) }}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+        {% set close_labels = {'dinheiro':'Dinheiro','debito':'Débito','credito':'Crédito','pix':'PIX','fiado':'Fiado (Carteira a Prazo)','vale':'Vale'} %}
+        <div class="row g-2">
+          {% for metodo, rotulo in close_labels.items() %}
+          <div class="col-md-6">
+            <label class="form-label fw-semibold mb-1">{{ rotulo }} <span class="text-muted">(R$ {{ "%.2f"|format(open_register_totals.get(metodo, 0)|float) }})</span></label>
+            <input type="number" name="informado_{{ metodo }}" class="form-control" step="0.01" min="0" placeholder="0,00" required>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="mb-3 mt-3"><label class="form-label fw-semibold">Observações</label><textarea name="notes" class="form-control" rows="2"></textarea></div>
       </div>
       <div class="modal-footer"><button type="submit" class="btn btn-danger w-100 fw-semibold"><i class="bi bi-lock me-1"></i>Fechar Caixa</button></div>
     </form>
   </div></div>
 </div>
 
-<!-- Modal Sangria/Suprimento -->
+<!-- Modal Movimentação de Caixa -->
 <div class="modal fade" id="movModal" tabindex="-1">
   <div class="modal-dialog"><div class="modal-content">
-    <div class="modal-header"><h5 class="modal-title">Sangria / Suprimento</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-header"><h5 class="modal-title">Movimentação de Caixa</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
     {% if open_register %}
     <form method="post" action="/caixa/{{ open_register.id }}/movimentacao">
       <div class="modal-body">
         <div class="mb-3">
           <label class="form-label fw-semibold">Tipo</label>
-          <div class="d-flex gap-3">
-            <div class="form-check flex-fill border rounded p-2 text-center">
+          <div class="d-flex gap-2 flex-wrap">
+            <div class="form-check flex-fill border rounded p-2 text-center" style="min-width:45%;">
               <input type="radio" name="type" value="sangria" class="form-check-input" id="t-sangria" required>
               <label class="form-check-label d-block" for="t-sangria"><i class="bi bi-arrow-up-circle text-danger fs-4"></i><br>Sangria</label>
             </div>
-            <div class="form-check flex-fill border rounded p-2 text-center">
+            <div class="form-check flex-fill border rounded p-2 text-center" style="min-width:45%;">
               <input type="radio" name="type" value="suprimento" class="form-check-input" id="t-suprimento">
               <label class="form-check-label d-block" for="t-suprimento"><i class="bi bi-arrow-down-circle text-success fs-4"></i><br>Suprimento</label>
+            </div>
+            <div class="form-check flex-fill border rounded p-2 text-center" style="min-width:45%;">
+              <input type="radio" name="type" value="despesa" class="form-check-input" id="t-despesa">
+              <label class="form-check-label d-block" for="t-despesa"><i class="bi bi-receipt text-warning fs-4"></i><br>Despesa</label>
+            </div>
+            <div class="form-check flex-fill border rounded p-2 text-center" style="min-width:45%;">
+              <input type="radio" name="type" value="vale_funcionario" class="form-check-input" id="t-vale-func">
+              <label class="form-check-label d-block" for="t-vale-func"><i class="bi bi-person-badge text-info fs-4"></i><br>Vale Funcionário</label>
             </div>
           </div>
         </div>

@@ -93,20 +93,44 @@ class ServicoFinanceiro(ServicoBase):
             "notes": dados_form.get("notes") or None,
         })
 
-    def receber_conta(self, conta_id: int, dados_form) -> models.AccountReceivable:
-        """Registra recebimento de uma conta. Atualiza saldo do cliente se fiado."""
+    def receber_conta(self, conta_id: int, dados_form, usuario: models.User = None) -> models.AccountReceivable:
+        """
+        Registra recebimento de uma conta. Atualiza saldo do cliente se fiado.
+
+        Se a forma de recebimento for "dinheiro" e o operador tiver um caixa
+        aberto, lança um suprimento nesse caixa — assim o valor entra no
+        "Sistema" do fechamento de caixa, em vez de aparecer só como sobra
+        sem explicação na conferência.
+        """
         conta = self.obter_ou_404(self.contas_receber, conta_id, "Conta não encontrada")
         conta.paid_date = dados_form.get("paid_date") or date.today()
         conta.paid_amount = float(dados_form.get("paid_amount") or conta.amount)
         conta.status = models.AccountStatus.pago
+        forma_recebimento = dados_form.get("payment_method") or "dinheiro"
 
         # Reduz o saldo devedor do cliente (para vendas fiado)
+        cliente = None
         if conta.customer_id:
             cliente = self.banco.query(models.Customer).filter(
                 models.Customer.id == conta.customer_id
             ).first()
             if cliente:
                 cliente.balance = max(0, float(cliente.balance) - float(conta.paid_amount))
+
+        if forma_recebimento == "dinheiro" and usuario:
+            caixa_aberto = self.banco.query(models.CashRegister).filter(
+                models.CashRegister.user_id == usuario.id,
+                models.CashRegister.status == models.CashRegisterStatus.aberto,
+            ).first()
+            if caixa_aberto:
+                nome_cliente = cliente.name if cliente else conta.description
+                self.banco.add(models.CashMovement(
+                    cash_register_id=caixa_aberto.id,
+                    type=models.CashMovementType.suprimento,
+                    amount=conta.paid_amount,
+                    reason=f"Recebimento Fiado - {nome_cliente}",
+                    user_id=usuario.id,
+                ))
 
         self.banco.commit()
         return conta

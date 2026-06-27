@@ -130,7 +130,7 @@ async def receber_conta(
     current_user: models.User = Depends(auth_utils.require_permission("financeiro")),
 ):
     form = await request.form()
-    ServicoFinanceiro(db).receber_conta(item_id, form)
+    ServicoFinanceiro(db).receber_conta(item_id, form, current_user)
     return RedirectResponse("/financeiro/contas-receber", status_code=302)
 
 

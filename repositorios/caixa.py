@@ -20,7 +20,11 @@ class RepositorioCaixa(RepositorioBase):
         """Retorna o caixa aberto do usuário, se existir."""
         return (
             self.banco.query(self.modelo)
-            .options(joinedload(self.modelo.user))
+            .options(
+                joinedload(self.modelo.user),
+                joinedload(self.modelo.sales).joinedload(models.Sale.payments),
+                joinedload(self.modelo.cash_movements),
+            )
             .filter(
                 self.modelo.user_id == usuario_id,
                 self.modelo.status == models.CashRegisterStatus.aberto,
@@ -57,6 +61,7 @@ class RepositorioCaixa(RepositorioBase):
                 joinedload(self.modelo.user),
                 joinedload(self.modelo.sales).joinedload(models.Sale.payments),
                 joinedload(self.modelo.cash_movements),
+                joinedload(self.modelo.closing_counts),
             )
             .filter(self.modelo.id == caixa_id)
             .first()

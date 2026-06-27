@@ -63,9 +63,11 @@
       <i class="bi bi-receipt"></i> Vendas
     </a>
     {% endif %}
+    {% if is_gerente %}
     <a href="/catalogo" target="_blank" class="nav-item">
       <i class="bi bi-share"></i> Catálogo Público
     </a>
+    {% endif %}
     {% if is_gerente %}
     <a href="/catalogo/ofertas" target="_blank" class="nav-item">
       <i class="bi bi-megaphone"></i> Divulgar Ofertas
@@ -179,6 +181,11 @@
     <a href="/relatorios/financeiro" class="nav-item {% if 'relatorios/financeiro' in request.url.path %}active{% endif %}">
       <i class="bi bi-currency-dollar"></i> Financeiro
     </a>
+    {% if is_gerente %}
+    <a href="/relatorios/fechamento-caixa" class="nav-item {% if 'relatorios/fechamento-caixa' in request.url.path %}active{% endif %}">
+      <i class="bi bi-cash-stack"></i> Fechamento de Caixa
+    </a>
+    {% endif %}
     {% endif %}
 
     {% if is_admin %}

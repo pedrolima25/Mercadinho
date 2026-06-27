@@ -4,6 +4,7 @@ Rotas de Caixa
 Responsabilidade: receber requisições HTTP e delegar ao ServicoCaixa.
 """
 
+from typing import Optional
 from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -12,6 +13,7 @@ from database import get_db
 import models
 import auth as auth_utils
 from servicos.caixa import ServicoCaixa
+from routers.company import get_or_create_company
 
 router = APIRouter(prefix="/caixa", tags=["caixa"])
 templates = Jinja2Templates(directory="templates")
@@ -73,14 +75,19 @@ async def fechar_caixa(
 def detalhe_caixa(
     register_id: int,
     request: Request,
+    recibo: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth_utils.require_user),
 ):
     """Detalhes de um caixa: vendas, movimentações e totais."""
     dados = ServicoCaixa(db).detalhe(register_id)
+    recibo_movimento = None
+    if recibo:
+        recibo_movimento = next((m for m in dados["register"].cash_movements if m.id == recibo), None)
+    empresa = get_or_create_company(db)
     return templates.TemplateResponse(
         request, "cash_register/detail.html",
-        {**dados, "current_user": current_user},
+        {**dados, "current_user": current_user, "recibo_movimento": recibo_movimento, "nome_empresa": empresa.trade_name},
     )
 
 
@@ -91,7 +98,12 @@ async def movimentacao_caixa(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth_utils.require_user),
 ):
-    """Registra sangria ou suprimento no caixa."""
+    """Registra uma movimentação no caixa (sangria, suprimento, despesa ou vale funcionário)."""
     form = await request.form()
-    ServicoCaixa(db).movimentacao(register_id, form, current_user)
-    return RedirectResponse(f"/caixa/{register_id}", status_code=302)
+    movimentacao = ServicoCaixa(db).movimentacao(register_id, form, current_user)
+
+    tipos_com_comprovante = (models.CashMovementType.despesa, models.CashMovementType.vale_funcionario)
+    destino = f"/caixa/{register_id}"
+    if movimentacao.type in tipos_com_comprovante:
+        destino += f"?recibo={movimentacao.id}"
+    return RedirectResponse(destino, status_code=302)

@@ -68,6 +68,8 @@ def _add_enum_value_if_missing(enum_name: str, value: str):
 
 def ensure_schema_updates():
     _add_enum_value_if_missing("movementtype", "perda")
+    _add_enum_value_if_missing("cashmovementtype", "despesa")
+    _add_enum_value_if_missing("cashmovementtype", "vale_funcionario")
     _add_columns_if_missing("products", {
         "image_url": "VARCHAR(500)",
         "ncm": "VARCHAR(8)",

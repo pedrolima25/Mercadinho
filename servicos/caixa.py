@@ -10,6 +10,26 @@ from sqlalchemy.orm import Session
 import models
 from repositorios.caixa import RepositorioCaixa
 from servicos.base import ServicoBase
+from servicos.relatorio_caixa import ROTULOS_MOVIMENTO
+
+
+METODOS_FECHAMENTO = [
+    models.PaymentMethod.dinheiro,
+    models.PaymentMethod.debito,
+    models.PaymentMethod.credito,
+    models.PaymentMethod.pix,
+    models.PaymentMethod.fiado,
+    models.PaymentMethod.vale,
+]
+
+# Tipos de movimentação que retiram dinheiro do caixa (saída).
+# Despesa e Vale Funcionário são variações de sangria, categorizadas
+# separadamente só para identificar o motivo no relatório.
+TIPOS_SAIDA = {
+    models.CashMovementType.sangria,
+    models.CashMovementType.despesa,
+    models.CashMovementType.vale_funcionario,
+}
 
 
 class ServicoCaixa(ServicoBase):
@@ -26,7 +46,48 @@ class ServicoCaixa(ServicoBase):
         return {
             "open_register": caixa_aberto,
             "history": historico,
+            "open_register_totals": self.totais_sistema(caixa_aberto) if caixa_aberto else {},
+            "open_register_movements": self._movimentos_para_exibir(caixa_aberto) if caixa_aberto else [],
         }
+
+    def _movimentos_para_exibir(self, caixa: models.CashRegister) -> list:
+        """Lançamentos (sangria/suprimento/despesa/vale funcionário) do caixa, para exibir antes de fechar."""
+        return [
+            {
+                "tipo": ROTULOS_MOVIMENTO.get(mv.type.value, mv.type.value),
+                "motivo": mv.reason or "—",
+                "valor": float(mv.amount),
+                "entrada": mv.type == models.CashMovementType.suprimento,
+            }
+            for mv in caixa.cash_movements
+        ]
+
+    def totais_sistema(self, caixa: models.CashRegister) -> dict:
+        """
+        Valor que o sistema espera encontrar de cada forma de pagamento no fechamento.
+
+        Dinheiro inclui o fundo de abertura e as sangrias/suprimentos, pois é o
+        único método contado fisicamente na gaveta. As demais formas (débito,
+        crédito, pix, fiado, vale) são apenas o total vendido, conferido contra
+        o extrato/comprovante de cada um.
+        """
+        por_metodo = {metodo.value: 0.0 for metodo in METODOS_FECHAMENTO}
+        for venda in caixa.sales:
+            if venda.status == models.SaleStatus.finalizada:
+                for pagamento in venda.payments:
+                    metodo = pagamento.method.value
+                    por_metodo[metodo] = por_metodo.get(metodo, 0) + float(pagamento.amount)
+
+        suprimento = sum(
+            float(m.amount) for m in caixa.cash_movements
+            if m.type == models.CashMovementType.suprimento
+        )
+        saidas = sum(
+            float(m.amount) for m in caixa.cash_movements
+            if m.type in TIPOS_SAIDA
+        )
+        por_metodo["dinheiro"] += float(caixa.opening_balance or 0) + suprimento - saidas
+        return por_metodo
 
     def caixas_abertos(self, usuario: models.User) -> dict:
         """Lista todos os caixas abertos no momento, numerados (001, 002, ...)."""
@@ -80,8 +141,20 @@ class ServicoCaixa(ServicoBase):
         if not pode_fechar:
             self.erro_sem_permissao("Sem permissão para fechar este caixa")
 
+        sistema = self.totais_sistema(caixa)
+        total_informado = 0.0
+        for metodo in METODOS_FECHAMENTO:
+            informado = float(dados_form.get(f"informado_{metodo.value}") or 0)
+            total_informado += informado
+            self.banco.add(models.CashClosingCount(
+                cash_register_id=caixa.id,
+                method=metodo,
+                system_amount=sistema.get(metodo.value, 0),
+                informed_amount=informado,
+            ))
+
         caixa.status = models.CashRegisterStatus.fechado
-        caixa.closing_balance = float(dados_form.get("closing_balance") or 0)
+        caixa.closing_balance = total_informado
         caixa.closed_at = datetime.utcnow()
         caixa.notes = dados_form.get("notes") or caixa.notes
 
@@ -108,7 +181,7 @@ class ServicoCaixa(ServicoBase):
         saidas = sum(
             float(m.amount)
             for m in caixa.cash_movements
-            if m.type == models.CashMovementType.sangria
+            if m.type in TIPOS_SAIDA
         )
 
         # Agrupa por método de pagamento
@@ -119,20 +192,41 @@ class ServicoCaixa(ServicoBase):
                     metodo = pagamento.method.value
                     por_metodo[metodo] = por_metodo.get(metodo, 0) + float(pagamento.amount)
 
+        # Conferência de fechamento (sistema x informado), se o caixa já foi fechado
+        conferencia = []
+        for contagem in sorted(caixa.closing_counts, key=lambda c: c.method.value):
+            sistema_v = float(contagem.system_amount)
+            informado_v = float(contagem.informed_amount)
+            conferencia.append({
+                "method": contagem.method.value,
+                "system": sistema_v,
+                "informed": informado_v,
+                "diff": informado_v - sistema_v,
+            })
+        conferencia_total = {
+            "system": sum(c["system"] for c in conferencia),
+            "informed": sum(c["informed"] for c in conferencia),
+            "diff": sum(c["diff"] for c in conferencia),
+        }
+
         return {
             "register": caixa,
             "sales_total": total_vendas,
             "cash_in": entradas,
             "cash_out": saidas,
             "by_method": por_metodo,
+            "closing_counts": conferencia,
+            "closing_total": conferencia_total,
         }
 
     def movimentacao(self, caixa_id: int, dados_form, usuario: models.User) -> models.CashMovement:
         """
-        Registra sangria ou suprimento de caixa.
+        Registra uma movimentação de caixa.
 
-        Sangria: retirada de dinheiro do caixa
         Suprimento: entrada de dinheiro no caixa
+        Sangria: retirada de dinheiro do caixa (genérica)
+        Despesa: retirada para pagar uma conta/compra da loja
+        Vale Funcionário: retirada referente a vale de funcionário
         """
         caixa = self.repositorio.buscar_por_id(caixa_id)
         if not caixa:
