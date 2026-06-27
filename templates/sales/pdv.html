@@ -675,14 +675,6 @@
             <i class="bi bi-tag me-1"></i>Consultar Preço F3
           </button>
         </div>
-        {% if not open_register %}
-        <div style="margin-top:8px;">
-          <button onclick="document.getElementById('modalAbrirCaixa').style.display='flex'"
-            style="width:100%;background:#16a34a;border:none;border-radius:8px;color:#fff;font-size:0.78rem;font-weight:800;padding:8px;cursor:pointer;">
-            <i class="bi bi-cash-stack me-1"></i>ABRIR CAIXA
-          </button>
-        </div>
-        {% endif %}
       </div>
 
       <!-- Catálogo -->
@@ -732,7 +724,7 @@
     <div class="left-foot">
       {% if not open_register %}
       <div style="text-align:center;padding:4px 0 2px;">
-        <a href="/caixa" style="font-size:0.72rem;color:#fbbf24;font-weight:700;text-decoration:none;">
+        <a href="#" onclick="document.getElementById('modalAbrirCaixa').style.display='flex';return false;" style="font-size:0.72rem;color:#fbbf24;font-weight:700;text-decoration:none;">
           <i class="bi bi-exclamation-triangle me-1"></i>Caixa fechado — Abrir
         </a>
       </div>
