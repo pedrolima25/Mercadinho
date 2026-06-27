@@ -52,7 +52,7 @@
         {% else %}<p class="text-muted text-center small">Sem pagamentos</p>{% endfor %}
       </div>
     </div>
-    {% if register.status.value == 'fechado' and closing_counts %}
+    {% if register.status.value == 'fechado' and closing_counts and current_user.role.value != 'caixa' %}
     <div class="card border-0 shadow-sm mb-3">
       <div class="card-header bg-white border-0"><h6 class="fw-bold mb-0">Conferência de Fechamento</h6></div>
       <div class="card-body p-0">

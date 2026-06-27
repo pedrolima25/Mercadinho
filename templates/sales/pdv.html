@@ -736,6 +736,12 @@
           <i class="bi bi-exclamation-triangle me-1"></i>Caixa fechado — Abrir
         </a>
       </div>
+      {% else %}
+      <div style="text-align:center;padding:4px 0 2px;">
+        <a href="#" onclick="document.getElementById('modalFecharCaixa').style.display='flex';return false;" style="font-size:0.72rem;color:#f87171;font-weight:700;text-decoration:none;">
+          <i class="bi bi-lock-fill me-1"></i>Fechar Caixa
+        </a>
+      </div>
       {% endif %}
       <button class="btn-fin" onclick="finalizeSale()" id="finalize-btn" {% if not open_register %}disabled{% endif %}>
         <i class="bi bi-bag-check-fill"></i> FINALIZAR <span class="fk">F4</span>
@@ -1138,6 +1144,36 @@
   </div>
 </div>
 
+<!-- ═══ Modal Fechar Caixa ═══ -->
+<div id="modalFecharCaixa" style="display:none;position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:28px 32px;min-width:320px;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <h5 style="font-weight:800;color:#7f1d1d;margin-bottom:4px;"><i class="bi bi-lock-fill me-2"></i>Fechar Caixa</h5>
+    <p style="font-size:0.8rem;color:#64748b;margin-bottom:16px;">Confira e informe o valor contado de cada forma de pagamento.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+      {% for metodo, rotulo in {'dinheiro':'Dinheiro','debito':'Débito','credito':'Crédito','pix':'PIX','fiado':'Fiado','vale':'Vale'}.items() %}
+      <div>
+        <label style="font-size:0.74rem;font-weight:700;color:#374151;display:block;margin-bottom:3px;">{{ rotulo }}</label>
+        <input type="number" id="fechar-{{ metodo }}" step="0.01" min="0" value="0.00" placeholder="0,00"
+          style="width:100%;border:1.5px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.95rem;font-weight:700;outline:none;">
+      </div>
+      {% endfor %}
+    </div>
+    <label style="font-size:0.74rem;font-weight:700;color:#374151;display:block;margin-bottom:3px;">Observações</label>
+    <textarea id="fechar-notes" rows="2" style="width:100%;border:1.5px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.85rem;outline:none;margin-bottom:16px;"></textarea>
+    <div style="display:flex;gap:8px;">
+      <button onclick="document.getElementById('modalFecharCaixa').style.display='none'"
+        style="flex:1;padding:10px;border:1.5px solid #e2e8f0;border-radius:8px;background:#fff;cursor:pointer;font-weight:600;">
+        Cancelar
+      </button>
+      <button onclick="confirmarFecharCaixa()"
+        style="flex:2;padding:10px;background:#dc2626;color:#fff;border:none;border-radius:8px;font-weight:800;cursor:pointer;font-size:0.95rem;">
+        <i class="bi bi-check-lg me-1"></i>Fechar Caixa
+      </button>
+    </div>
+    <div id="fechar-caixa-msg" style="margin-top:10px;font-size:0.78rem;display:none;"></div>
+  </div>
+</div>
+
 <!-- ═══ Modal Consulta de Preço ═══ -->
 <div id="modalConsultaPreco" style="display:none;position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;">
   <div style="background:#fff;border-radius:16px;padding:24px 28px;min-width:300px;max-width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
@@ -1271,6 +1307,7 @@ document.addEventListener('DOMContentLoaded', () => {
       Escape: () => {
         if (document.getElementById('modalConsultaPreco').style.display !== 'none') { fecharConsultaPreco(); return; }
         if (document.getElementById('modalAbrirCaixa').style.display !== 'none') { document.getElementById('modalAbrirCaixa').style.display='none'; return; }
+        if (document.getElementById('modalFecharCaixa').style.display !== 'none') { document.getElementById('modalFecharCaixa').style.display='none'; return; }
         clearCart();
       }
     };
@@ -1531,6 +1568,31 @@ async function confirmarAbrirCaixa() {
       location.reload();
     } else {
       msg.textContent = 'Erro ao abrir caixa. Tente novamente.';
+      msg.style.cssText = 'display:block;color:#dc2626;';
+    }
+  } catch(e) {
+    msg.textContent = 'Erro de conexão.';
+    msg.style.cssText = 'display:block;color:#dc2626;';
+  }
+}
+
+// ── Fechar Caixa direto do PDV ────────────────────────────────────────────────
+async function confirmarFecharCaixa() {
+  const msg = document.getElementById('fechar-caixa-msg');
+  msg.style.display = 'none';
+  try {
+    const fd = new FormData();
+    ['dinheiro','debito','credito','pix','fiado','vale'].forEach(m => {
+      const valor = parseFloat(document.getElementById(`fechar-${m}`).value) || 0;
+      fd.append(`informado_${m}`, valor.toFixed(2));
+    });
+    fd.append('notes', document.getElementById('fechar-notes').value);
+    const resp = await fetch('/caixa/fechar', {method:'POST', body: fd});
+    if (resp.ok || resp.redirected) {
+      document.getElementById('modalFecharCaixa').style.display = 'none';
+      location.href = '/caixa';
+    } else {
+      msg.textContent = 'Erro ao fechar caixa. Tente novamente.';
       msg.style.cssText = 'display:block;color:#dc2626;';
     }
   } catch(e) {

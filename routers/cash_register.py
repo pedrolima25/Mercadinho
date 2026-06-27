@@ -56,7 +56,7 @@ async def abrir_caixa(
     """Abre o caixa com saldo inicial."""
     form = await request.form()
     ServicoCaixa(db).abrir(form, current_user)
-    return RedirectResponse("/caixa", status_code=302)
+    return RedirectResponse("/pdv", status_code=302)
 
 
 @router.post("/fechar")

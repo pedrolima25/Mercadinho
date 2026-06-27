@@ -16,7 +16,7 @@
     <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#closeModal">Fechar Caixa</button>
   </div>
 </div>
-<a href="/caixa/{{ open_register.id }}" class="btn btn-outline-primary mb-3"><i class="bi bi-eye me-1"></i>Ver Detalhes do Caixa Atual</a>
+{% if current_user.role.value != 'caixa' %}<a href="/caixa/{{ open_register.id }}" class="btn btn-outline-primary mb-3"><i class="bi bi-eye me-1"></i>Ver Detalhes do Caixa Atual</a>{% endif %}
 {% else %}
 <div class="alert alert-warning alert-permanent d-flex justify-content-between align-items-center">
   <div><i class="bi bi-exclamation-triangle me-2"></i><strong>Caixa Fechado</strong> — Abra o caixa para realizar vendas.</div>
@@ -39,7 +39,7 @@
           <td>R$ {{ "%.2f"|format(r.opening_balance|float) }}</td>
           <td>{% if r.closing_balance %}R$ {{ "%.2f"|format(r.closing_balance|float) }}{% else %}—{% endif %}</td>
           <td>{% if r.status.value == 'aberto' %}<span class="badge bg-success">Aberto</span>{% else %}<span class="badge bg-secondary">Fechado</span>{% endif %}</td>
-          <td><a href="/caixa/{{ r.id }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a></td>
+          <td>{% if current_user.role.value != 'caixa' %}<a href="/caixa/{{ r.id }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>{% endif %}</td>
         </tr>
         {% else %}
         <tr><td colspan="8" class="text-center text-muted py-4">Nenhum histórico</td></tr>
