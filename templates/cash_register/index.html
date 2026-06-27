@@ -93,7 +93,7 @@
         <div class="row g-2">
           {% for metodo, rotulo in close_labels.items() %}
           <div class="col-md-6">
-            <label class="form-label fw-semibold mb-1">{{ rotulo }} <span class="text-muted">(R$ {{ "%.2f"|format(open_register_totals.get(metodo, 0)|float) }})</span></label>
+            <label class="form-label fw-semibold mb-1">{{ rotulo }}</label>
             <input type="number" name="informado_{{ metodo }}" class="form-control" step="0.01" min="0" placeholder="0,00" required>
           </div>
           {% endfor %}
