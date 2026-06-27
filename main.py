@@ -81,6 +81,23 @@ def ensure_schema_updates():
         "pis_rate": "NUMERIC(5,2)",
         "cofins_rate": "NUMERIC(5,2)",
         "tax_notes": "TEXT",
+        "old_code": "VARCHAR(20)",
+        "purchase_price": "NUMERIC(10,2)",
+        "item_type": "VARCHAR(30)",
+        "package_unit": "INTEGER",
+        "reference": "VARCHAR(50)",
+        "stock_location": "VARCHAR(50)",
+    })
+    _add_columns_if_missing("customers", {
+        "old_code": "VARCHAR(20)",
+        "person_type": "VARCHAR(1)",
+        "trade_name": "VARCHAR(150)",
+        "birth_date": "DATE",
+        "gender": "VARCHAR(20)",
+        "contact_name": "VARCHAR(100)",
+        "sales_channel": "VARCHAR(20)",
+        "first_purchase_date": "DATE",
+        "last_purchase_date": "DATE",
     })
     _add_columns_if_missing("company_profile", {
         "pix_key": "VARCHAR(150)",
