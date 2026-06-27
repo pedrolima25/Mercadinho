@@ -239,6 +239,11 @@ class ServicoProdutos(ServicoBase):
             pis_rate=float(dados_form.get("pis_rate") or 0),
             cofins_rate=float(dados_form.get("cofins_rate") or 0),
             tax_notes=dados_form.get("tax_notes") or None,
+            purchase_price=float(dados_form.get("purchase_price")) if dados_form.get("purchase_price") else None,
+            item_type=dados_form.get("item_type") or None,
+            package_unit=int(dados_form.get("package_unit")) if dados_form.get("package_unit") else None,
+            reference=dados_form.get("reference") or None,
+            stock_location=dados_form.get("stock_location") or None,
             is_active=dados_form.get("is_active") == "on",
         )
         self.banco.add(produto)
@@ -294,6 +299,11 @@ class ServicoProdutos(ServicoBase):
         produto.pis_rate = float(dados_form.get("pis_rate") or 0)
         produto.cofins_rate = float(dados_form.get("cofins_rate") or 0)
         produto.tax_notes = dados_form.get("tax_notes") or None
+        produto.purchase_price = float(dados_form.get("purchase_price")) if dados_form.get("purchase_price") else None
+        produto.item_type = dados_form.get("item_type") or None
+        produto.package_unit = int(dados_form.get("package_unit")) if dados_form.get("package_unit") else None
+        produto.reference = dados_form.get("reference") or None
+        produto.stock_location = dados_form.get("stock_location") or None
         produto.is_active = dados_form.get("is_active") == "on"
 
         self.banco.commit()

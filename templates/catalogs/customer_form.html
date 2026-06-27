@@ -4,6 +4,7 @@
 <div class="d-flex align-items-center mb-4 gap-3">
   <a href="/clientes" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
   <h4 class="fw-bold mb-0">{{ 'Editar Cliente' if item else 'Novo Cliente' }}</h4>
+  {% if item and item.old_code %}<span class="badge bg-light text-muted border">Cód. antigo: {{ item.old_code }}</span>{% endif %}
 </div>
 <div class="row justify-content-center"><div class="col-md-7">
   <div class="card border-0 shadow-sm">
@@ -14,9 +15,36 @@
           <div class="col-md-4"><label class="form-label fw-semibold">CPF</label><input type="text" name="cpf" class="form-control" value="{{ item.cpf or '' if item else '' }}" placeholder="000.000.000-00"></div>
           <div class="col-md-6"><label class="form-label fw-semibold">Email</label><input type="email" name="email" class="form-control" value="{{ item.email or '' if item else '' }}"></div>
           <div class="col-md-6"><label class="form-label fw-semibold">Telefone</label><input type="text" name="phone" class="form-control" value="{{ item.phone or '' if item else '' }}"></div>
-          <div class="col-md-6"><label class="form-label fw-semibold">Limite de Crédito (R$)</label><input type="number" name="credit_limit" class="form-control" step="0.01" min="0" value="{{ item.credit_limit if item else '0.00' }}"></div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Tipo</label>
+            <select name="person_type" class="form-select">
+              <option value="" {% if not item or not item.person_type %}selected{% endif %}>—</option>
+              <option value="F" {% if item and item.person_type == 'F' %}selected{% endif %}>Pessoa Física</option>
+              <option value="J" {% if item and item.person_type == 'J' %}selected{% endif %}>Pessoa Jurídica</option>
+            </select>
+          </div>
+          <div class="col-md-5"><label class="form-label fw-semibold">Nome Fantasia</label><input type="text" name="trade_name" class="form-control" value="{{ item.trade_name or '' if item else '' }}"></div>
+          <div class="col-md-4"><label class="form-label fw-semibold">Contato</label><input type="text" name="contact_name" class="form-control" value="{{ item.contact_name or '' if item else '' }}"></div>
+          <div class="col-md-4"><label class="form-label fw-semibold">Data de Nascimento</label><input type="date" name="birth_date" class="form-control" value="{{ item.birth_date or '' if item else '' }}"></div>
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Sexo</label>
+            <select name="gender" class="form-select">
+              <option value="" {% if not item or not item.gender %}selected{% endif %}>—</option>
+              <option value="Masculino" {% if item and item.gender == 'Masculino' %}selected{% endif %}>Masculino</option>
+              <option value="Feminino" {% if item and item.gender == 'Feminino' %}selected{% endif %}>Feminino</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Canal de Venda</label>
+            <select name="sales_channel" class="form-select">
+              <option value="" {% if not item or not item.sales_channel %}selected{% endif %}>—</option>
+              <option value="VAREJO" {% if item and item.sales_channel == 'VAREJO' %}selected{% endif %}>Varejo</option>
+              <option value="ATACADO" {% if item and item.sales_channel == 'ATACADO' %}selected{% endif %}>Atacado</option>
+            </select>
+          </div>
+          <div class="col-md-3"><label class="form-label fw-semibold">Limite de Crédito (R$)</label><input type="number" name="credit_limit" class="form-control" step="0.01" min="0" value="{{ item.credit_limit if item else '0.00' }}"></div>
           {% if item %}
-          <div class="col-md-6">
+          <div class="col-md-3">
             <label class="form-label fw-semibold">Status</label>
             <div class="form-check form-switch mt-2"><input type="checkbox" name="is_active" class="form-check-input" id="is_active" {% if item.is_active %}checked{% endif %} value="on"><label class="form-check-label" for="is_active">Ativo</label></div>
           </div>

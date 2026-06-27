@@ -4,6 +4,7 @@
 <div class="d-flex align-items-center mb-4">
   <a href="/produtos" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a>
   <h4 class="fw-bold mb-0">{{ 'Editar Produto' if product else 'Novo Produto' }}</h4>
+  {% if product and product.old_code %}<span class="badge bg-light text-muted border ms-3">Cód. antigo: {{ product.old_code }}</span>{% endif %}
 </div>
 
 <form method="post" action="{{ '/produtos/' + product.id|string + '/editar' if product else '/produtos/novo' }}">
@@ -50,6 +51,34 @@
                 <option value="">— Selecionar —</option>
                 {% for s in suppliers %}<option value="{{ s.id }}" {% if product and product.supplier_id == s.id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
               </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm mt-3">
+        <div class="card-header bg-white border-0"><h6 class="fw-bold mb-0">Dados Adicionais</h6></div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Tipo do Item</label>
+              <input type="text" name="item_type" class="form-control" value="{{ product.item_type or '' if product else '' }}" placeholder="Ex.: Item de Venda">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Embalagem (qtd./caixa)</label>
+              <input type="number" name="package_unit" class="form-control" min="0" step="1" value="{{ product.package_unit if product and product.package_unit else '' }}">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Referência</label>
+              <input type="text" name="reference" class="form-control" value="{{ product.reference or '' if product else '' }}" placeholder="Departamento/referência">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Localização no Estoque</label>
+              <input type="text" name="stock_location" class="form-control" value="{{ product.stock_location or '' if product else '' }}" placeholder="Ex.: dep, est, prat">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Preço de Compra (R$)</label>
+              <input type="number" name="purchase_price" class="form-control" step="0.01" min="0" value="{{ product.purchase_price if product and product.purchase_price is not none else '' }}">
             </div>
           </div>
         </div>

@@ -170,6 +170,12 @@ class ServicoCatalogos(ServicoBase):
             "phone": dados_form.get("phone") or None,
             "address": dados_form.get("address") or None,
             "credit_limit": float(dados_form.get("credit_limit") or 0),
+            "person_type": dados_form.get("person_type") or None,
+            "trade_name": dados_form.get("trade_name") or None,
+            "contact_name": dados_form.get("contact_name") or None,
+            "birth_date": dados_form.get("birth_date") or None,
+            "gender": dados_form.get("gender") or None,
+            "sales_channel": dados_form.get("sales_channel") or None,
         })
 
     def atualizar_cliente(self, cliente_id: int, dados_form) -> models.Customer:
@@ -182,6 +188,12 @@ class ServicoCatalogos(ServicoBase):
         cliente.address = dados_form.get("address") or None
         cliente.credit_limit = float(dados_form.get("credit_limit") or 0)
         cliente.is_active = dados_form.get("is_active") == "on"
+        cliente.person_type = dados_form.get("person_type") or None
+        cliente.trade_name = dados_form.get("trade_name") or None
+        cliente.contact_name = dados_form.get("contact_name") or None
+        cliente.birth_date = dados_form.get("birth_date") or None
+        cliente.gender = dados_form.get("gender") or None
+        cliente.sales_channel = dados_form.get("sales_channel") or None
         self.banco.commit()
         return cliente
 
