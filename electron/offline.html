@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Sem conexão</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #f8f9fa; color: #1e293b; margin: 0; }
+  h2 { font-size: 1.5rem; font-weight: 800; margin-bottom: 8px; }
+  p { color: #64748b; margin-bottom: 24px; text-align: center; }
+  button { padding: 12px 32px; background: #1e3a8a; color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; margin: 6px; }
+  button.sec { background: #fff; color: #1e3a8a; border: 2px solid #1e3a8a; }
+</style>
+</head>
+<body>
+<h2>Sem conexão com o servidor</h2>
+<p>Não foi possível conectar ao servidor do sistema.<br>Verifique a rede e tente novamente.</p>
+<button onclick="location.reload()">Tentar novamente</button>
+<button class="sec" onclick="window.electronAPI.getConfig().then(c => location.href = c.serverUrl)">Reconectar</button>
+</body>
+</html>

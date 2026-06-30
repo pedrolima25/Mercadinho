@@ -1,0 +1,31 @@
+{
+  "name": "mercadinho-pdv",
+  "version": "1.0.0",
+  "description": "PDV Desktop - Mercadinho",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win --x64"
+  },
+  "build": {
+    "appId": "com.mercadinho.pdv",
+    "productName": "Mercadinho PDV",
+    "win": {
+      "target": "nsis",
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerLanguages": ["pt_BR"],
+      "language": "1046"
+    },
+    "extraResources": [
+      { "from": "config.json", "to": "config.json" }
+    ]
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.0.0"
+  }
+}
