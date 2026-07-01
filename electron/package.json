@@ -10,15 +10,17 @@
   "build": {
     "appId": "com.mercadinho.pdv",
     "productName": "Mercadinho PDV",
-    "win": {
-      "target": "nsis",
-      "icon": "icon.ico"
+    "directories": {
+      "output": "dist"
     },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "installerLanguages": ["pt_BR"],
-      "language": "1046"
+    "win": {
+      "target": [
+        { "target": "portable", "arch": ["x64"] },
+        { "target": "zip", "arch": ["x64"] }
+      ]
+    },
+    "portable": {
+      "artifactName": "MercadinhoPDV-portable.exe"
     },
     "extraResources": [
       { "from": "config.json", "to": "config.json" }
