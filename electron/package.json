@@ -10,6 +10,7 @@
   "build": {
     "appId": "com.mercadinho.pdv",
     "productName": "Mercadinho PDV",
+    "publish": "never",
     "directories": {
       "output": "dist"
     },
