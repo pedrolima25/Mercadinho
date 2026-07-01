@@ -28,7 +28,8 @@ async def login(request: Request, username: str = Form(...), password: str = For
         {"sub": user.username},
         timedelta(minutes=settings.access_token_expire_minutes)
     )
-    response = RedirectResponse("/", status_code=302)
+    destino = "/pdv" if user.role.value == "caixa" else "/"
+    response = RedirectResponse(destino, status_code=302)
     response.set_cookie(
         "access_token",
         f"Bearer {token}",

@@ -15,6 +15,6 @@
 <h2>Sem conexão com o servidor</h2>
 <p>Não foi possível conectar ao servidor do sistema.<br>Verifique a rede e tente novamente.</p>
 <button onclick="location.reload()">Tentar novamente</button>
-<button class="sec" onclick="window.electronAPI.getConfig().then(c => location.href = c.serverUrl)">Reconectar</button>
+<button class="sec" onclick="window.electronAPI.openConfig()">Configurações</button>
 </body>
 </html>

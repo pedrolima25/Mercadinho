@@ -1,6 +1,6 @@
 {
-  "serverUrl": "http://localhost:8001",
+  "serverUrl": "http://localhost:9000",
   "printerName": "",
-  "fullscreen": false,
+  "fullscreen": true,
   "kiosk": false
 }

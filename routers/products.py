@@ -198,6 +198,41 @@ def api_produto_por_barcode(
     }
 
 
+@router.get("/api/barcode/peso/{barcode13}")
+def api_produto_por_barcode_peso(
+    barcode13: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth_utils.require_user),
+):
+    """Interpreta código EAN-13 de balança (começa com '2') e retorna produto + preço."""
+    if len(barcode13) != 13 or not barcode13.startswith("2"):
+        raise HTTPException(status_code=400, detail="Código não é EAN-13 de balança")
+    codigo_5 = barcode13[1:6]
+    preco_centavos = int(barcode13[6:11])
+    preco = round(preco_centavos / 100, 2)
+    peso = None
+    servico = ServicoProdutos(db)
+    produto = servico.repositorio.buscar_por_codigo_balanca(codigo_5)
+    if not produto:
+        raise HTTPException(status_code=404, detail="Produto não encontrado para este código de balança")
+    # Calcula peso a partir do preço se o produto tem preço cadastrado
+    preco_unit = float(produto.price)
+    if preco_unit > 0:
+        peso = round(preco / preco_unit, 3)
+    return {
+        "id": produto.id,
+        "name": produto.name,
+        "barcode": produto.barcode,
+        **servico.preco_pdv(produto),
+        **servico.tiers_pdv(produto),
+        "stock_quantity": float(produto.stock_quantity),
+        "unit": produto.unit,
+        "image_url": produto.image_url or "",
+        "preco_balanca": preco,
+        "peso_balanca": peso,
+    }
+
+
 _UPLOAD_DIR = "static/uploads/products"
 _ALLOWED = {".jpg", ".jpeg", ".png", ".webp"}
 

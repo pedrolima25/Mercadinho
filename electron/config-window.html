@@ -2,62 +2,123 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Configurações</title>
+<title>Configuracao</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8f9fa; padding: 28px; color: #1e293b; }
-  h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; }
-  p.sub { font-size: 0.78rem; color: #64748b; margin-bottom: 20px; }
-  label { display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 4px; margin-top: 14px; }
-  input, select { width: 100%; padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem; outline: none; }
-  input:focus, select:focus { border-color: #1e3a8a; }
-  small { font-size: 0.72rem; color: #94a3b8; margin-top: 3px; display: block; }
-  button { margin-top: 22px; width: 100%; padding: 11px; background: #1e3a8a; color: #fff; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
-  button:hover { background: #1e40af; }
-  #msg { margin-top: 10px; font-size: 0.78rem; color: #16a34a; text-align: center; display: none; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 32px 28px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .logo { text-align: center; margin-bottom: 20px; }
+  .logo-icon {
+    width: 56px; height: 56px;
+    background: linear-gradient(135deg, #1e3a8a, #2563eb);
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    margin-bottom: 10px;
+  }
+  h2 { font-size: 1.2rem; font-weight: 800; color: #1e293b; margin-bottom: 4px; }
+  .sub { font-size: 0.82rem; color: #64748b; margin-bottom: 24px; }
+  label { display: block; font-size: 0.8rem; font-weight: 700; color: #374151; margin-bottom: 5px; margin-top: 16px; }
+  input, select {
+    width: 100%; padding: 10px 12px;
+    border: 1.5px solid #e2e8f0; border-radius: 10px;
+    font-size: 0.9rem; outline: none; color: #1e293b;
+    transition: border-color .15s;
+  }
+  input:focus, select:focus { border-color: #2563eb; }
+  small { font-size: 0.72rem; color: #94a3b8; margin-top: 4px; display: block; }
+  button {
+    margin-top: 24px; width: 100%; padding: 12px;
+    background: #1e3a8a; color: #fff; border: none;
+    border-radius: 10px; font-size: 1rem; font-weight: 800;
+    cursor: pointer; transition: background .15s;
+  }
+  button:hover { background: #1d4ed8; }
+  button:disabled { background: #94a3b8; cursor: not-allowed; }
+  #msg { margin-top: 12px; font-size: 0.8rem; text-align: center; min-height: 18px; }
+  .ok { color: #16a34a; } .err { color: #dc2626; }
 </style>
 </head>
 <body>
-<h2>Configurações — Mercadinho PDV</h2>
-<p class="sub">Configure o endereço do servidor e a impressora padrão.</p>
+<div class="card">
+  <div class="logo">
+    <div class="logo-icon">&#x1F6D2;</div>
+    <h2>Configuracao do PDV</h2>
+    <p class="sub">Configure o servidor e a impressora para continuar.</p>
+  </div>
 
-<label>Endereço do servidor</label>
-<input type="text" id="serverUrl" placeholder="http://IP_DO_SERVIDOR:8001">
-<small>Ex: http://192.168.1.10:8001 ou http://meudominio.com.br</small>
+  <label>Endereco do servidor</label>
+  <input type="text" id="serverUrl" placeholder="http://192.168.1.10:8001">
+  <small>IP ou dominio do servidor onde o sistema esta instalado.</small>
 
-<label>Impressora padrão (para impressão automática)</label>
-<select id="printerName"><option value="">— Carregando impressoras... —</option></select>
-<small>Selecione a impressora térmica usada pelo caixa.</small>
+  <label>Impressora termica (impressao automatica)</label>
+  <select id="printerName">
+    <option value="">Carregando impressoras...</option>
+  </select>
+  <small>Impressora de cupom do caixa. Pode trocar depois com Ctrl+,</small>
 
-<button onclick="salvar()">Salvar e conectar</button>
-<div id="msg">✔ Salvo! Conectando ao servidor...</div>
-
+  <button id="btn" onclick="salvar()">Salvar e conectar</button>
+  <div id="msg"></div>
+</div>
 <script>
 async function init() {
   const cfg = await window.electronAPI.getConfig();
-  document.getElementById('serverUrl').value = cfg.serverUrl || '';
+  const url = cfg.serverUrl || '';
+  const placeholder = !url || url.includes('SEU_IP') || url === 'http://localhost:8000' || url === 'http://localhost:8001';
+  if (!placeholder) document.getElementById('serverUrl').value = url;
 
   const printers = await window.electronAPI.getPrinters();
   const sel = document.getElementById('printerName');
-  sel.innerHTML = '<option value="">Nenhuma (imprimir via diálogo)</option>';
+  sel.innerHTML = '<option value="">Nenhuma (usar padrao do Windows)</option>';
   printers.forEach(p => {
     const opt = document.createElement('option');
-    opt.value = p.name;
-    opt.textContent = p.name;
+    opt.value = p.name; opt.textContent = p.name;
     if (p.name === cfg.printerName) opt.selected = true;
     sel.appendChild(opt);
   });
 }
 
 async function salvar() {
-  const cfg = {
-    serverUrl: document.getElementById('serverUrl').value.trim() || 'http://localhost:8001',
-    printerName: document.getElementById('printerName').value,
-  };
-  document.getElementById('msg').style.display = 'block';
-  await window.electronAPI.saveConfig(cfg);
-}
+  let serverUrl = document.getElementById('serverUrl').value.trim();
+  const printerName = document.getElementById('printerName').value;
+  const msg = document.getElementById('msg');
+  const btn = document.getElementById('btn');
 
+  if (!serverUrl) { msg.className = 'err'; msg.textContent = 'Informe o endereco do servidor.'; return; }
+  // Adiciona http:// se não tiver protocolo
+  if (!serverUrl.startsWith('http://') && !serverUrl.startsWith('https://')) serverUrl = 'http://' + serverUrl;
+
+  btn.disabled = true; btn.textContent = 'Conectando...';
+  msg.className = ''; msg.textContent = '';
+
+  try {
+    const r = await fetch(serverUrl + '/login', { signal: AbortSignal.timeout(5000) });
+    if (r.ok || r.status === 302 || r.redirected) {
+      msg.className = 'ok'; msg.textContent = 'Conectado! Abrindo o sistema...';
+      await window.electronAPI.saveConfig({ serverUrl, printerName, fullscreen: true });
+    } else { throw new Error('status ' + r.status); }
+  } catch(e) {
+    msg.className = 'err'; msg.textContent = 'Nao foi possivel conectar. Verifique o IP e a rede.';
+    btn.disabled = false; btn.textContent = 'Salvar e conectar';
+  }
+}
 init();
 </script>
 </body>

@@ -645,6 +645,16 @@
       max-height: 48vh;
     }
   }
+  @media print {
+    body > *:not(#successModal) { display: none !important; }
+    .modal-backdrop { display: none !important; }
+    #successModal { position: static !important; background: none !important; }
+    #successModal .modal-dialog { position: static !important; max-width: 100% !important; box-shadow: none !important; margin: 0 !important; }
+    #successModal .modal-content { border: none !important; box-shadow: none !important; }
+    #successModal .modal-header, #successModal .receipt-actions { display: none !important; }
+    .receipt-wrap { overflow: visible !important; max-height: none !important; padding: 0 !important; }
+    @page { size: 80mm auto; margin: 4mm 2mm; }
+  }
 </style>
 {% endblock %}
 
@@ -1606,6 +1616,23 @@ async function searchByBarcode() {
     raw = qtyMatch[2].trim();
   }
 
+  /* 1a. EAN-13 de balança (começa com "2", 13 dígitos) */
+  if (/^2\d{12}$/.test(raw)) {
+    try {
+      const res = await fetch(`/produtos/api/barcode/peso/${raw}`);
+      if (res.ok) {
+        const p = await res.json();
+        if (_consultaMode) { mostrarConsultaPreco(p); return; }
+        beepOk();
+        // usa peso calculado pela balança (qtd em KG) com preço da etiqueta
+        const qty = p.peso_balanca || qtyOverride || 1;
+        const item = { ...p, price: p.preco_balanca / (p.peso_balanca || 1) };
+        addToCart(p, qty);
+        bi.value = ''; hideSearch(); return;
+      }
+    } catch {}
+  }
+
   /* 1. tenta código de barras exato */
   try {
     const res = await fetch(`/produtos/api/barcode/${encodeURIComponent(raw)}`);
@@ -2384,7 +2411,12 @@ function renderSaleReceipt(result) {
 
 let lastSaleId = 0;
 
-function printReceipt() {
+async function printReceipt() {
+  if (window.electronAPI?.isElectron) {
+    const r = await window.electronAPI.printSilent({ pageSize: { width: 80000, height: 297000 } });
+    if (!r?.success) window.print();
+    return;
+  }
   const win = window.open('', '_blank', 'width=420,height=700');
   if (!win) { window.print(); return; }
   win.document.write(`<!doctype html><html><head>
@@ -2440,6 +2472,9 @@ async function doFinalize() {
       if (payModal) payModal.hide();
       renderSaleReceipt(r);
       new bootstrap.Modal(document.getElementById('successModal')).show();
+      if (window.electronAPI?.isElectron) {
+        setTimeout(() => printReceipt(), 600);
+      }
     } else alert('Erro: '+(r.error||r.detail||'Tente novamente'));
   } catch { alert('Erro de conexão.'); }
 }

@@ -129,7 +129,7 @@
     </div>
     <div class="no-print" style="display:flex;gap:8px;padding:0 16px 16px;">
       <button onclick="document.getElementById('reciboModal').remove()" style="flex:1;padding:10px;border:1.5px solid #e2e8f0;border-radius:8px;background:#fff;cursor:pointer;font-weight:600;">Fechar</button>
-      <button onclick="window.print()" style="flex:2;padding:10px;background:#1e3a8a;color:#fff;border:none;border-radius:8px;font-weight:800;cursor:pointer;">
+      <button onclick="imprimirRecibo()" style="flex:2;padding:10px;background:#1e3a8a;color:#fff;border:none;border-radius:8px;font-weight:800;cursor:pointer;">
         <i class="bi bi-printer me-1"></i>Imprimir
       </button>
     </div>
@@ -142,5 +142,19 @@
     #recibo-print-area { position: fixed; top: 0; left: 0; width: 100%; }
   }
 </style>
+<script>
+async function imprimirRecibo() {
+  if (window.electronAPI?.isElectron) {
+    await window.electronAPI.printSilent({ pageSize: { width: 80000, height: 297000 } });
+  } else {
+    window.print();
+  }
+}
+document.addEventListener('DOMContentLoaded', function() {
+  if (window.electronAPI?.isElectron) {
+    setTimeout(() => imprimirRecibo(), 800);
+  }
+});
+</script>
 {% endif %}
 {% endblock %}

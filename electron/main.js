@@ -1,3 +1,8 @@
+// Garante que o Electron rode como processo desktop (não como Node.js puro)
+// O VSCode e alguns terminais definem ELECTRON_RUN_AS_NODE=1, o que impede
+// o modo de browser/main process de inicializar corretamente.
+delete process.env.ELECTRON_RUN_AS_NODE;
+
 const { app, BrowserWindow, ipcMain, dialog, shell, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
@@ -29,20 +34,46 @@ function createMainWindow() {
     height: 800,
     minWidth: 1024,
     minHeight: 600,
-    fullscreen: config.fullscreen || false,
     title: 'Mercadinho PDV',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
-      contextIsolation: true,
+      contextIsolation: false,
+      sandbox: false,
     },
     autoHideMenuBar: true,
   });
 
+  mainWindow.maximize();
   mainWindow.loadURL(config.serverUrl);
+
+  // Injeta o preload em todos os popups (ex: PDV abre via window.open)
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    return {
+      action: 'allow',
+      overrideBrowserWindowOptions: {
+        autoHideMenuBar: true,
+        show: false,
+        webPreferences: {
+          preload: path.join(__dirname, 'preload.js'),
+          nodeIntegration: false,
+          contextIsolation: false,
+          sandbox: false,
+        },
+      },
+    };
+  });
+
+  // Maximiza o popup ao ser criado via did-create-window
+  mainWindow.webContents.on('did-create-window', (win) => {
+    win.maximize();
+    win.show();
+  });
 
   mainWindow.webContents.on('did-fail-load', () => {
     mainWindow.loadFile(path.join(__dirname, 'offline.html'));
+    // Abre a janela de configurações automaticamente se falhar na primeira carga
+    setTimeout(() => createConfigWindow(), 800);
   });
 
   mainWindow.on('closed', () => { mainWindow = null; });
@@ -52,16 +83,16 @@ function createConfigWindow() {
   if (configWindow) { configWindow.focus(); return; }
 
   configWindow = new BrowserWindow({
-    width: 480,
-    height: 380,
+    width: 520,
+    height: 520,
     resizable: false,
     title: 'Configurações — Mercadinho PDV',
-    modal: true,
-    parent: mainWindow,
+    modal: mainWindow ? true : false,
+    parent: mainWindow || undefined,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
-      contextIsolation: true,
+      contextIsolation: false,
     },
   });
 
@@ -71,6 +102,27 @@ function createConfigWindow() {
 }
 
 // Menu simples com atalho para configurações
+// Permissão para Web Serial API (balança conectada via USB/serial)
+app.on('ready', () => {
+  const { session } = require('electron');
+  session.defaultSession.on('select-serial-port', (event, portList, webContents, callback) => {
+    event.preventDefault();
+    if (portList.length > 0) {
+      callback(portList[0].portId);
+    } else {
+      callback('');
+    }
+  });
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+    if (permission === 'serial') callback(true);
+    else callback(true);
+  });
+  session.defaultSession.setPermissionCheckHandler((webContents, permission) => {
+    if (permission === 'serial') return true;
+    return true;
+  });
+});
+
 const menu = Menu.buildFromTemplate([
   {
     label: 'PDV',
@@ -88,11 +140,16 @@ const menu = Menu.buildFromTemplate([
 ]);
 Menu.setApplicationMenu(menu);
 
+function isPrimeiraVez() {
+  const url = config.serverUrl || '';
+  return !url || url.includes('SEU_IP') || url === 'http://localhost:8000' || url === 'http://localhost:8001';
+}
+
 app.whenReady().then(() => {
   config = loadConfig();
 
-  // Primeira execução: abre config se URL ainda é localhost
-  if (!config.serverUrl || config.serverUrl === 'http://localhost:8001') {
+  if (isPrimeiraVez()) {
+    // Primeira execução ou não configurado: mostra só a tela de configuração
     createConfigWindow();
   } else {
     createMainWindow();
@@ -106,7 +163,7 @@ app.on('window-all-closed', () => {
 // ── IPC: impressão silenciosa ─────────────────────────────────────────────────
 
 ipcMain.handle('print-silent', async (event, options) => {
-  if (!mainWindow) return { success: false, error: 'Janela não encontrada' };
+  const sender = event.sender; // janela que chamou (PDV popup ou main)
   return new Promise((resolve) => {
     const printOptions = {
       silent: true,
@@ -115,22 +172,23 @@ ipcMain.handle('print-silent', async (event, options) => {
       margins: { marginType: 'none' },
       pageSize: options?.pageSize || 'A4',
     };
-    mainWindow.webContents.print(printOptions, (success, errorType) => {
+    sender.print(printOptions, (success, errorType) => {
       resolve({ success, error: errorType });
     });
   });
 });
 
-ipcMain.handle('get-printers', async () => {
-  if (!mainWindow) return [];
+ipcMain.handle('get-printers', async (event) => {
   try {
-    return await mainWindow.webContents.getPrintersAsync();
+    return await event.sender.getPrintersAsync();
   } catch {
     return [];
   }
 });
 
 ipcMain.handle('get-config', () => loadConfig());
+
+ipcMain.handle('open-config', () => createConfigWindow());
 
 ipcMain.handle('save-config', (event, newConfig) => {
   saveConfig(newConfig);

@@ -88,6 +88,36 @@ class RepositorioProdutos(RepositorioBase):
             .first()
         )
 
+    def buscar_por_codigo_balanca(self, codigo_5: str) -> Optional[models.Product]:
+        """Busca produto pelo código de 5 dígitos da balança (últimos 5 do EAN)."""
+        opts = [
+            joinedload(self.modelo.promotions),
+            joinedload(self.modelo.wholesale_tiers),
+            joinedload(self.modelo.campaign_items).joinedload(models.CampaignItem.campaign),
+        ]
+        # Tenta match exato do código de 5 dígitos no final do barcode
+        produto = (
+            self.banco.query(self.modelo)
+            .options(*opts)
+            .filter(
+                self.modelo.barcode.like(f"%{codigo_5}"),
+                self.modelo.is_active == True,
+            )
+            .first()
+        )
+        if not produto:
+            # Tenta match pelo próprio código como barcode direto
+            produto = (
+                self.banco.query(self.modelo)
+                .options(*opts)
+                .filter(
+                    self.modelo.barcode == codigo_5,
+                    self.modelo.is_active == True,
+                )
+                .first()
+            )
+        return produto
+
     def com_estoque_baixo(self, limite: int = None) -> List[models.Product]:
         """Produtos com quantidade atual abaixo do mínimo configurado."""
         consulta = (
