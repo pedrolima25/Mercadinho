@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nova Empresa — SaaS</title>
+  <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/static/css/bootstrap-icons.css">
+  <style>
+    body { background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    .form-card { background: #1e293b; border: 1px solid #334155; border-radius: 14px; }
+    label { color: #94a3b8; font-size: .85rem; }
+    .form-control, .form-select {
+      background: #0f172a; border: 1px solid #475569; color: #e2e8f0; border-radius: 8px;
+    }
+    .form-control:focus, .form-select:focus {
+      background: #0f172a; border-color: #3b82f6; color: #e2e8f0; box-shadow: none;
+    }
+    .form-select option { background: #1e293b; }
+    .section-title { color: #60a5fa; font-size: .8rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+  </style>
+</head>
+<body>
+<div class="container py-4" style="max-width:720px">
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <a href="/saas/" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+    <h5 class="mb-0 fw-bold">{{ 'Editar Empresa' if empresa else 'Nova Empresa' }}</h5>
+  </div>
+
+  {% if erro %}
+  <div class="alert alert-danger">{{ erro }}</div>
+  {% endif %}
+
+  <form method="post">
+    <div class="form-card p-4 mb-3">
+      <div class="section-title mb-3">Dados da Empresa</div>
+      <div class="row g-3">
+        <div class="col-12">
+          <label>Nome da empresa *</label>
+          <input name="nome" class="form-control" required value="{{ empresa.nome if empresa else '' }}" placeholder="Mercado do João">
+        </div>
+        <div class="col-md-6">
+          <label>CNPJ</label>
+          <input name="cnpj" class="form-control" value="{{ empresa.cnpj or '' }}" placeholder="00.000.000/0001-00">
+        </div>
+        <div class="col-md-6">
+          <label>Telefone responsável</label>
+          <input name="telefone_responsavel" class="form-control" value="{{ empresa.telefone_responsavel or '' }}" placeholder="(92) 99999-9999">
+        </div>
+        <div class="col-12">
+          <label>E-mail responsável</label>
+          <input name="email_responsavel" type="email" class="form-control" value="{{ empresa.email_responsavel or '' }}" placeholder="contato@mercado.com.br">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-card p-4 mb-3">
+      <div class="section-title mb-3">Plano e Licença</div>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label>Plano</label>
+          <select name="plano" class="form-select">
+            {% for p in ['basico', 'profissional', 'premium'] %}
+            <option value="{{ p }}" {{ 'selected' if (empresa and empresa.plano == p) or (not empresa and p == 'basico') }}>
+              {{ p|capitalize }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label>Valor mensal (R$)</label>
+          <input name="valor_mensal" type="number" step="0.01" class="form-control"
+                 value="{{ empresa.valor_mensal or '' }}" placeholder="99.90">
+        </div>
+        <div class="col-md-4">
+          <label>Vencimento da licença</label>
+          <input name="data_vencimento" type="date" class="form-control"
+                 value="{{ empresa.data_vencimento.isoformat() if empresa and empresa.data_vencimento else '' }}">
+        </div>
+      </div>
+    </div>
+
+    {% if not empresa %}
+    <div class="form-card p-4 mb-3">
+      <div class="section-title mb-3">Usuário Administrador da Loja</div>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label>Nome completo *</label>
+          <input name="admin_nome" class="form-control" required placeholder="João da Silva">
+        </div>
+        <div class="col-md-6">
+          <label>Login (username) *</label>
+          <input name="admin_username" class="form-control" required placeholder="joao.silva">
+        </div>
+        <div class="col-12">
+          <label>Senha inicial *</label>
+          <input name="admin_senha" type="password" class="form-control" required placeholder="Mínimo 6 caracteres">
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary px-4">
+        <i class="bi bi-check-lg me-1"></i>{{ 'Salvar' if empresa else 'Criar Empresa' }}
+      </button>
+      <a href="/saas/" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+</body>
+</html>

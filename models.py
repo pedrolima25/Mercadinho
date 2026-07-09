@@ -10,11 +10,33 @@ from database import Base
 
 
 class UserRole(str, enum.Enum):
+    super_administrador = "super_administrador"
     admin = "admin"
     gerente = "gerente"
     caixa = "caixa"
     estoquista = "estoquista"
     financeiro = "financeiro"
+
+
+# ─── SaaS — Empresas (multi-tenant) ──────────────────────────────────────────
+
+class Empresa(Base):
+    __tablename__ = "empresas"
+    id = Column(Integer, primary_key=True, index=True)
+    nome = Column(String(200), nullable=False)
+    cnpj = Column(String(18), nullable=True)
+    email_responsavel = Column(String(120), nullable=True)
+    telefone_responsavel = Column(String(30), nullable=True)
+    plano = Column(String(30), default="basico")        # basico | profissional | premium
+    valor_mensal = Column(Numeric(10, 2), nullable=True)
+    data_vencimento = Column(Date, nullable=True)
+    bloqueado = Column(Boolean, default=False)
+    motivo_bloqueio = Column(String(255), nullable=True)
+    chave_licenca = Column(String(50), unique=True, nullable=True, index=True)
+    ultimo_acesso = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    users = relationship("User", back_populates="empresa")
 
 
 class SaleStatus(str, enum.Enum):
@@ -94,17 +116,18 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
     role = Column(Enum(UserRole), default=UserRole.caixa, nullable=False)
     is_active = Column(Boolean, default=True)
+    company_id = Column(Integer, ForeignKey("empresas.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
+    empresa = relationship("Empresa", back_populates="users")
     sales = relationship("Sale", back_populates="user")
     cash_registers = relationship("CashRegister", back_populates="user")
     stock_movements = relationship("StockMovement", back_populates="user")
     permissions = relationship("UserPermission", back_populates="user", cascade="all, delete-orphan")
 
     def has_permission(self, key: str) -> bool:
-        """Admin e Gerente têm acesso total; demais perfis dependem de permissão explícita."""
-        if self.role in (UserRole.admin, UserRole.gerente):
+        if self.role in (UserRole.super_administrador, UserRole.admin, UserRole.gerente):
             return True
         return any(p.permission_key == key for p in self.permissions)
 

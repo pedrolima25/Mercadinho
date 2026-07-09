@@ -28,6 +28,7 @@ def wait_for_db(retries: int = 15, delay: int = 2) -> None:
 
 # Routers
 from routers.auth_router import router as auth_router
+from routers.saas import router as saas_router
 from routers.products import router as products_router
 from routers.stock import router as stock_router
 from routers.sales import router as sales_router, pdv_router
@@ -67,6 +68,8 @@ def _add_enum_value_if_missing(enum_name: str, value: str):
 
 
 def ensure_schema_updates():
+    _add_enum_value_if_missing("userrole", "super_administrador")
+    _add_columns_if_missing("users", {"company_id": "INTEGER"})
     _add_enum_value_if_missing("movementtype", "perda")
     _add_enum_value_if_missing("cashmovementtype", "despesa")
     _add_enum_value_if_missing("cashmovementtype", "vale_funcionario")
@@ -167,6 +170,17 @@ app.include_router(brands_router)
 app.include_router(suppliers_router)
 app.include_router(customers_router)
 app.include_router(employees_router)
+app.include_router(saas_router)
+
+
+@app.get("/bloqueado", response_class=HTMLResponse)
+def pagina_bloqueado(request: Request, motivo: str = "Conta bloqueada"):
+    return templates.TemplateResponse(request, "saas/bloqueado.html", {"motivo": motivo})
+
+
+@app.get("/vencido", response_class=HTMLResponse)
+def pagina_vencido(request: Request):
+    return templates.TemplateResponse(request, "saas/vencido.html", {})
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -376,8 +390,55 @@ def alerts_api(request: Request, db: Session = Depends(get_db)):
 
 
 # ─── Seed de dados iniciais ───────────────────────────────────────────────────
+def _seed_super_admin(db):
+    """Cria o super admin SaaS e a empresa padrão para dados existentes."""
+    import os, uuid as _uuid
+    sa_user = os.getenv("SUPER_ADMIN_USER", "superadmin")
+    sa_senha = os.getenv("SUPER_ADMIN_SENHA", "SuperAdmin@2025!")
+    sa_nome = os.getenv("SUPER_ADMIN_NOME", "Super Administrador")
+
+    # Empresa padrão (para dados já existentes)
+    empresa_padrao = db.query(models.Empresa).filter(models.Empresa.nome == "_padrao_").first()
+    if not empresa_padrao:
+        empresa_padrao = models.Empresa(
+            nome="_padrao_",
+            chave_licenca=str(_uuid.uuid4())[:13].upper(),
+        )
+        db.add(empresa_padrao)
+        db.flush()
+
+    # Atribui usuários existentes sem empresa à empresa padrão
+    db.query(models.User).filter(
+        models.User.company_id == None,
+        models.User.role != models.UserRole.super_administrador,
+    ).update({"company_id": empresa_padrao.id})
+
+    # Super admin
+    if not db.query(models.User).filter(models.User.username == sa_user).first():
+        super_admin = models.User(
+            username=sa_user,
+            full_name=sa_nome,
+            hashed_password=auth_utils.get_password_hash(sa_senha),
+            role=models.UserRole.super_administrador,
+            is_active=True,
+            company_id=None,
+        )
+        db.add(super_admin)
+        db.flush()
+        print(f"Super Admin criado! Login: {sa_user} / {sa_senha}")
+
+    db.commit()
+
+
 def create_initial_data():
     db = next(get_db())
+    try:
+        # Super admin SaaS (sempre executa, idempotente)
+        _seed_super_admin(db)
+    except Exception as e:
+        db.rollback()
+        print(f"Erro no seed super admin: {e}")
+
     try:
         # Admin user
         if not db.query(models.User).filter(models.User.username == "admin").first():

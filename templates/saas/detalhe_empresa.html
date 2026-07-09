@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ empresa.nome }} — SaaS</title>
+  <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/static/css/bootstrap-icons.css">
+  <style>
+    body { background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    .card-dark { background: #1e293b; border: 1px solid #334155; border-radius: 12px; }
+    label { color: #94a3b8; font-size: .85rem; }
+    .form-control, .form-select {
+      background: #0f172a; border: 1px solid #475569; color: #e2e8f0; border-radius: 8px;
+    }
+    .form-control:focus, .form-select:focus {
+      background: #0f172a; border-color: #3b82f6; color: #e2e8f0; box-shadow: none;
+    }
+    .form-select option { background: #1e293b; }
+    .badge-ativa { background:#166534;color:#bbf7d0; }
+    .badge-bloqueada { background:#7f1d1d;color:#fecaca; }
+    .badge-vencida { background:#713f12;color:#fef3c7; }
+    .badge-vencendo { background:#1e3a5f;color:#bfdbfe; }
+    .section-title { color: #60a5fa; font-size: .8rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+    .stat-box { background: #0f172a; border-radius: 10px; padding: 1rem; text-align: center; }
+  </style>
+</head>
+<body>
+<div class="container-fluid p-4" style="max-width:900px">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+    <a href="/saas/" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+    <div class="flex-grow-1">
+      <h5 class="mb-0 fw-bold">{{ empresa.nome }}</h5>
+      <span class="badge badge-{{ status }} px-2 py-1 rounded-pill small">{{ status|upper }}</span>
+      <span class="text-muted small ms-2">Chave: <code class="text-info">{{ empresa.chave_licenca or '—' }}</code></span>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <!-- Acessar como empresa -->
+      <form method="post" action="/saas/empresa/{{ empresa.id }}/acessar">
+        <button class="btn btn-warning btn-sm"><i class="bi bi-box-arrow-in-right me-1"></i>Acessar</button>
+      </form>
+      {% if empresa.bloqueado %}
+      <form method="post" action="/saas/empresa/{{ empresa.id }}/desbloquear">
+        <button class="btn btn-success btn-sm"><i class="bi bi-unlock me-1"></i>Desbloquear</button>
+      </form>
+      {% else %}
+      <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#modalBloquear">
+        <i class="bi bi-lock me-1"></i>Bloquear
+      </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- KPIs rápidos -->
+  <div class="row g-3 mb-4">
+    <div class="col-4">
+      <div class="stat-box card-dark">
+        <div class="fs-3 fw-bold text-white">{{ users }}</div>
+        <div class="text-muted small"><i class="bi bi-people"></i> Usuários</div>
+      </div>
+    </div>
+    <div class="col-4">
+      <div class="stat-box card-dark">
+        <div class="fs-3 fw-bold text-white">{{ vendas }}</div>
+        <div class="text-muted small"><i class="bi bi-cart"></i> Vendas</div>
+      </div>
+    </div>
+    <div class="col-4">
+      <div class="stat-box card-dark">
+        <div class="fs-3 fw-bold {% if empresa.data_vencimento and empresa.data_vencimento < today %}text-danger{% else %}text-success{% endif %}">
+          {{ empresa.data_vencimento.strftime('%d/%m/%y') if empresa.data_vencimento else '∞' }}
+        </div>
+        <div class="text-muted small"><i class="bi bi-calendar"></i> Vencimento</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+
+    <!-- Edição de dados -->
+    <div class="col-md-7">
+      <div class="card-dark p-4">
+        <div class="section-title mb-3">Dados e Plano</div>
+        <form method="post" action="/saas/empresa/{{ empresa.id }}/editar">
+          <div class="row g-3">
+            <div class="col-12">
+              <label>Nome</label>
+              <input name="nome" class="form-control" value="{{ empresa.nome }}" required>
+            </div>
+            <div class="col-md-6">
+              <label>CNPJ</label>
+              <input name="cnpj" class="form-control" value="{{ empresa.cnpj or '' }}">
+            </div>
+            <div class="col-md-6">
+              <label>Telefone</label>
+              <input name="telefone_responsavel" class="form-control" value="{{ empresa.telefone_responsavel or '' }}">
+            </div>
+            <div class="col-12">
+              <label>E-mail</label>
+              <input name="email_responsavel" type="email" class="form-control" value="{{ empresa.email_responsavel or '' }}">
+            </div>
+            <div class="col-md-4">
+              <label>Plano</label>
+              <select name="plano" class="form-select">
+                {% for p in ['basico', 'profissional', 'premium'] %}
+                <option value="{{ p }}" {{ 'selected' if empresa.plano == p }}>{{ p|capitalize }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label>Valor mensal</label>
+              <input name="valor_mensal" type="number" step="0.01" class="form-control" value="{{ empresa.valor_mensal or '' }}">
+            </div>
+            <div class="col-md-4">
+              <label>Vencimento</label>
+              <input name="data_vencimento" type="date" class="form-control"
+                     value="{{ empresa.data_vencimento.isoformat() if empresa.data_vencimento else '' }}">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary mt-3 w-100">Salvar alterações</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Ações rápidas -->
+    <div class="col-md-5 d-flex flex-column gap-3">
+
+      <!-- Renovar -->
+      <div class="card-dark p-4">
+        <div class="section-title mb-3">Renovar Plano</div>
+        <form method="post" action="/saas/empresa/{{ empresa.id }}/renovar" class="d-flex gap-2">
+          <select name="dias" class="form-select">
+            <option value="30">+30 dias</option>
+            <option value="60">+60 dias</option>
+            <option value="90">+90 dias</option>
+            <option value="180">+6 meses</option>
+            <option value="365">+1 ano</option>
+          </select>
+          <button class="btn btn-success flex-shrink-0"><i class="bi bi-arrow-clockwise"></i> Renovar</button>
+        </form>
+      </div>
+
+      <!-- Usuários -->
+      <div class="card-dark p-4">
+        <div class="section-title mb-3">Usuários ({{ usuarios|length }})</div>
+        {% for u in usuarios %}
+        <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-secondary">
+          <div>
+            <div class="fw-semibold small">{{ u.full_name }}</div>
+            <div class="text-muted" style="font-size:.75rem">@{{ u.username }} · {{ u.role.value }}</div>
+          </div>
+          <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal"
+                  data-bs-target="#modalSenha" data-uid="{{ u.id }}" data-nome="{{ u.full_name }}">
+            <i class="bi bi-key"></i>
+          </button>
+        </div>
+        {% endfor %}
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal bloquear -->
+<div class="modal fade" id="modalBloquear" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="background:#1e293b;border:1px solid #334155;color:#e2e8f0">
+      <div class="modal-header border-secondary">
+        <h6 class="modal-title">Bloquear empresa</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="/saas/empresa/{{ empresa.id }}/bloquear">
+        <div class="modal-body">
+          <label class="form-label">Motivo do bloqueio</label>
+          <input name="motivo" class="form-control" style="background:#0f172a;border-color:#475569;color:#e2e8f0"
+                 placeholder="Ex: Inadimplência — fatura vencida">
+        </div>
+        <div class="modal-footer border-secondary">
+          <button class="btn btn-danger">Confirmar bloqueio</button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal reset senha -->
+<div class="modal fade" id="modalSenha" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="background:#1e293b;border:1px solid #334155;color:#e2e8f0">
+      <div class="modal-header border-secondary">
+        <h6 class="modal-title">Redefinir senha — <span id="modalSenhaNome"></span></h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" id="formSenha">
+        <input type="hidden" name="user_id" id="senhaUserId">
+        <div class="modal-body">
+          <label class="form-label">Nova senha</label>
+          <input name="nova_senha" type="password" class="form-control"
+                 style="background:#0f172a;border-color:#475569;color:#e2e8f0" required placeholder="Mínimo 6 caracteres">
+        </div>
+        <div class="modal-footer border-secondary">
+          <button class="btn btn-warning">Alterar senha</button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/bootstrap.bundle.min.js"></script>
+<script>
+document.getElementById('modalSenha').addEventListener('show.bs.modal', function(e) {
+  const btn = e.relatedTarget;
+  document.getElementById('senhaUserId').value = btn.dataset.uid;
+  document.getElementById('modalSenhaNome').textContent = btn.dataset.nome;
+  document.getElementById('formSenha').action = '/saas/empresa/{{ empresa.id }}/reset-senha';
+});
+</script>
+</body>
+</html>
