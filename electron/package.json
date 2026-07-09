@@ -15,12 +15,19 @@
     },
     "win": {
       "target": [
-        { "target": "portable", "arch": ["x64"] },
-        { "target": "zip", "arch": ["x64"] }
-      ]
+        { "target": "nsis", "arch": ["x64"] }
+      ],
+      "icon": "icon.ico"
     },
-    "portable": {
-      "artifactName": "MercadinhoPDV-portable.exe"
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "Mercadinho PDV",
+      "installerLanguages": ["pt_BR"],
+      "language": "1046",
+      "artifactName": "MercadinhoPDV-setup.exe"
     },
     "extraResources": [
       { "from": "config.json", "to": "config.json" }

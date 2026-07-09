@@ -26,21 +26,14 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
-      - name: Build PDV Windows
+      - name: Build PDV Windows (instalador NSIS)
         run: npm run build
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload portable exe
+      - name: Upload instalador NSIS
         uses: actions/upload-artifact@v4
         with:
-          name: MercadinhoPDV-portable
-          path: electron/dist/MercadinhoPDV-portable.exe
-          retention-days: 30
-
-      - name: Upload zip com pasta
-        uses: actions/upload-artifact@v4
-        with:
-          name: MercadinhoPDV-zip
-          path: electron/dist/*.zip
+          name: MercadinhoPDV-setup
+          path: electron/dist/MercadinhoPDV-setup.exe
           retention-days: 30

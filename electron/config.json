@@ -1,6 +1,6 @@
 {
-  "serverUrl": "http://localhost:9000",
+  "serverUrl": "http://SEU_IP:8001",
   "printerName": "",
-  "fullscreen": true,
+  "fullscreen": false,
   "kiosk": false
 }
