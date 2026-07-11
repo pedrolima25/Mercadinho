@@ -13,6 +13,7 @@ Como usar:
             return self.repositorio.buscar_com_filtros(texto=busca)
 """
 
+from typing import Optional
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 
@@ -24,16 +25,24 @@ class ServicoBase:
     Centraliza:
     - Lançamento de erros HTTP padronizados
     - Acesso à sessão do banco
+    - Resolução da empresa (tenant) do usuário atual
     """
 
-    def __init__(self, banco: Session):
+    def __init__(self, banco: Session, current_user=None, empresa_id: Optional[int] = None):
         """
-        Inicializa o serviço com a sessão do banco.
+        Inicializa o serviço com a sessão do banco e o contexto de empresa.
 
         Args:
             banco: Sessão SQLAlchemy (recebida via Depends(get_db))
+            current_user: Usuário autenticado (fluxo normal, logado)
+            empresa_id: ID da empresa a usar diretamente (fluxo público, sem
+                usuário logado — ex.: catálogo público resolvido por slug)
         """
         self.banco = banco
+        self.current_user = current_user
+        self.empresa_id = empresa_id if empresa_id is not None else (
+            current_user.company_id if current_user is not None else None
+        )
 
     # ── Utilitários de erro ────────────────────────────────────────────────
 
@@ -86,3 +95,23 @@ class ServicoBase:
                 detail=mensagem or f"Registro #{id} não encontrado"
             )
         return objeto
+
+    def validar_pertence_a_empresa(self, modelo, id_valor, mensagem: str = "Registro inválido"):
+        """
+        Confirma que um ID de referência (categoria, marca, fornecedor, cliente,
+        produto, usuário, etc.) informado num formulário realmente pertence à
+        empresa do usuário atual — evita vincular um cadastro a um ID de outra
+        empresa (ex.: colar um category_id de outra loja no POST).
+
+        Não faz nada se id_valor for None/vazio (campo opcional não informado).
+
+        Exemplo:
+            self.validar_pertence_a_empresa(models.Category, category_id, "Categoria inválida")
+        """
+        if not id_valor:
+            return
+        existe = self.banco.query(modelo).filter(
+            modelo.id == id_valor, modelo.company_id == self.empresa_id
+        ).first()
+        if not existe:
+            self.erro_requisicao(mensagem)

@@ -5,28 +5,25 @@ Regras de negócio para campanhas (encartes temáticos) e seus produtos.
 """
 
 import re
-import unicodedata
-from typing import List
+from typing import List, Optional
 from sqlalchemy.orm import Session
 import models
 from repositorios.campanhas import RepositorioCampanhas
 from servicos.base import ServicoBase
 from servicos.produtos import ServicoProdutos
+from utils.slug import slugify as _slugify_base
 
 
 def _slugify(texto: str) -> str:
-    """Converte um texto em um slug de URL (ex: "Campanha de Natal" -> "campanha-de-natal")."""
-    texto = unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode("ascii")
-    texto = re.sub(r"[^a-zA-Z0-9]+", "-", texto).strip("-").lower()
-    return texto or "campanha"
+    return _slugify_base(texto, fallback="campanha")
 
 
 class ServicoCampanhas(ServicoBase):
     """Regras de negócio para campanhas."""
 
-    def __init__(self, banco: Session):
-        super().__init__(banco)
-        self.repositorio = RepositorioCampanhas(banco)
+    def __init__(self, banco: Session, current_user=None, empresa_id: Optional[int] = None):
+        super().__init__(banco, current_user, empresa_id)
+        self.repositorio = RepositorioCampanhas(banco, self.empresa_id)
 
     def listar(self) -> List[models.Campaign]:
         """Lista todas as campanhas, mais recentes primeiro."""
@@ -100,6 +97,7 @@ class ServicoCampanhas(ServicoBase):
         if not product_id:
             self.erro_requisicao("Selecione um produto")
         product_id = int(product_id)
+        self.validar_pertence_a_empresa(models.Product, product_id, "Produto inválido")
 
         ja_existe = self.banco.query(models.CampaignItem).filter(
             models.CampaignItem.campaign_id == campanha_id,
@@ -133,7 +131,7 @@ class ServicoCampanhas(ServicoBase):
 
     def produtos_publicos(self, campanha: models.Campaign) -> List[dict]:
         """Produtos da campanha formatados para a página pública, com preço final já calculado."""
-        servico_produtos = ServicoProdutos(self.banco)
+        servico_produtos = ServicoProdutos(self.banco, empresa_id=self.empresa_id)
         resultado = []
         for item in campanha.items:
             produto = item.product

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{ campaign.name }} — {{ request.app.state.market_name }}</title>
+  <title>{{ campaign.name }} — {{ request.state.company.market_name }}</title>
   <link rel="stylesheet" href="/static/css/bootstrap.min.css">
   <link rel="stylesheet" href="/static/css/bootstrap-icons.css">
   <style>
@@ -49,8 +49,8 @@
 <body>
   <div class="flyer-wrap">
     <div class="top-bar">
-      <a href="/catalogo" class="pub-tab">Todos os produtos</a>
-      <a href="/catalogo/ofertas" class="pub-tab">🔥 Ofertas</a>
+      <a href="/loja/{{ empresa_slug }}/catalogo" class="pub-tab">Todos os produtos</a>
+      <a href="/loja/{{ empresa_slug }}/catalogo/ofertas" class="pub-tab">🔥 Ofertas</a>
     </div>
 
     <div class="flyer-head">
@@ -59,11 +59,11 @@
         {% if campaign.subtitle %}<div class="flyer-sub">{{ campaign.subtitle }}</div>{% endif %}
       </div>
       <div class="flyer-store-card">
-        <img class="flyer-store-logo" src="{{ request.app.state.market_logo_url }}" alt="">
+        <img class="flyer-store-logo" src="{{ request.state.company.market_logo_url }}" alt="">
         <div>
-          <div class="flyer-store-name">{{ request.app.state.market_name }}</div>
-          {% if request.app.state.company_address %}
-          <div class="flyer-store-addr"><i class="bi bi-geo-alt-fill"></i> {{ request.app.state.company_address }}</div>
+          <div class="flyer-store-name">{{ request.state.company.market_name }}</div>
+          {% if request.state.company.company_address %}
+          <div class="flyer-store-addr"><i class="bi bi-geo-alt-fill"></i> {{ request.state.company.company_address }}</div>
           {% endif %}
         </div>
       </div>

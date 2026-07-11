@@ -38,7 +38,8 @@ def sales_report(
     sales = db.query(models.Sale).filter(
         models.Sale.status == models.SaleStatus.finalizada,
         func.date(models.Sale.created_at) >= date_from,
-        func.date(models.Sale.created_at) <= date_to
+        func.date(models.Sale.created_at) <= date_to,
+        models.Sale.company_id == current_user.company_id,
     ).all()
 
     total_sales = sum(float(s.total) for s in sales)
@@ -87,14 +88,16 @@ def products_report(
     ).join(models.SaleItem).join(models.Sale).filter(
         models.Sale.status == models.SaleStatus.finalizada,
         func.date(models.Sale.created_at) >= date_from,
-        func.date(models.Sale.created_at) <= date_to
+        func.date(models.Sale.created_at) <= date_to,
+        models.Sale.company_id == current_user.company_id,
     ).group_by(models.Product.id, models.Product.name).order_by(
         func.sum(models.SaleItem.total).desc()
     ).limit(20).all()
 
     low_stock = db.query(models.Product).filter(
         models.Product.is_active == True,
-        models.Product.stock_quantity <= models.Product.min_stock
+        models.Product.stock_quantity <= models.Product.min_stock,
+        models.Product.company_id == current_user.company_id,
     ).order_by(models.Product.stock_quantity).all()
 
     return templates.TemplateResponse(request, "reports/products.html", {
@@ -119,23 +122,27 @@ def financial_report(
     sales_total = db.query(func.sum(models.Sale.total)).filter(
         models.Sale.status == models.SaleStatus.finalizada,
         extract('month', models.Sale.created_at) == month,
-        extract('year', models.Sale.created_at) == year
+        extract('year', models.Sale.created_at) == year,
+        models.Sale.company_id == current_user.company_id,
     ).scalar() or 0
 
     expenses_total = db.query(func.sum(models.Expense.amount)).filter(
         extract('month', models.Expense.date) == month,
-        extract('year', models.Expense.date) == year
+        extract('year', models.Expense.date) == year,
+        models.Expense.company_id == current_user.company_id,
     ).scalar() or 0
 
     purchases_total = db.query(func.sum(models.Purchase.total)).filter(
         models.Purchase.status == models.PurchaseStatus.recebida,
         extract('month', models.Purchase.created_at) == month,
-        extract('year', models.Purchase.created_at) == year
+        extract('year', models.Purchase.created_at) == year,
+        models.Purchase.company_id == current_user.company_id,
     ).scalar() or 0
 
     expenses = db.query(models.Expense).filter(
         extract('month', models.Expense.date) == month,
-        extract('year', models.Expense.date) == year
+        extract('year', models.Expense.date) == year,
+        models.Expense.company_id == current_user.company_id,
     ).order_by(models.Expense.date).all()
 
     profit = float(sales_total) - float(expenses_total) - float(purchases_total)
@@ -153,7 +160,8 @@ def financial_report(
 def low_stock_report(request: Request, db: Session = Depends(get_db), current_user: models.User = Depends(auth_utils.require_permission("relatorios"))):
     products = db.query(models.Product).filter(
         models.Product.is_active == True,
-        models.Product.stock_quantity <= models.Product.min_stock
+        models.Product.stock_quantity <= models.Product.min_stock,
+        models.Product.company_id == current_user.company_id,
     ).order_by(models.Product.stock_quantity).all()
     return templates.TemplateResponse(request, "reports/low_stock.html", {"products": products, "current_user": current_user})
 
@@ -173,10 +181,10 @@ def cash_closing_report(
     date_to = date_to or today
     caixa_id = int(caixa_id) if caixa_id else None
 
-    dados = relatorio_caixa.montar_relatorio(db, date_from, date_to, caixa_id)
-    empresa = get_or_create_company(db)
+    dados = relatorio_caixa.montar_relatorio(db, date_from, date_to, caixa_id, current_user.company_id)
+    empresa = get_or_create_company(db, current_user.company_id)
 
-    caixas_disponiveis = relatorio_caixa.caixas_no_periodo(db, date_from, date_to)
+    caixas_disponiveis = relatorio_caixa.caixas_no_periodo(db, date_from, date_to, empresa_id=current_user.company_id)
 
     whatsapp_texto = relatorio_caixa.texto_resumo_whatsapp(dados, empresa.trade_name or "Mercadinho")
 
@@ -204,8 +212,8 @@ def cash_closing_report_pdf(
     date_to = date_to or today
     caixa_id = int(caixa_id) if caixa_id else None
 
-    dados = relatorio_caixa.montar_relatorio(db, date_from, date_to, caixa_id)
-    empresa = get_or_create_company(db)
+    dados = relatorio_caixa.montar_relatorio(db, date_from, date_to, caixa_id, current_user.company_id)
+    empresa = get_or_create_company(db, current_user.company_id)
     nome_empresa = empresa.trade_name or "Mercadinho"
 
     if formato == "cupom":

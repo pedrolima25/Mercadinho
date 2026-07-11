@@ -19,11 +19,11 @@ from servicos.base import ServicoBase
 class ServicoFinanceiro(ServicoBase):
     """Regras de negócio para o módulo financeiro."""
 
-    def __init__(self, banco: Session):
-        super().__init__(banco)
-        self.contas_pagar = RepositorioContasPagar(banco)
-        self.contas_receber = RepositorioContasReceber(banco)
-        self.despesas = RepositorioDespesas(banco)
+    def __init__(self, banco: Session, current_user=None):
+        super().__init__(banco, current_user)
+        self.contas_pagar = RepositorioContasPagar(banco, self.empresa_id)
+        self.contas_receber = RepositorioContasReceber(banco, self.empresa_id)
+        self.despesas = RepositorioDespesas(banco, self.empresa_id)
 
     # ── Visão geral ────────────────────────────────────────────────────────
 
@@ -53,8 +53,10 @@ class ServicoFinanceiro(ServicoBase):
 
     def criar_conta_pagar(self, dados_form) -> models.AccountPayable:
         """Cria nova conta a pagar."""
+        supplier_id = int(dados_form.get("supplier_id")) if dados_form.get("supplier_id") else None
+        self.validar_pertence_a_empresa(models.Supplier, supplier_id, "Fornecedor inválido")
         return self.contas_pagar.criar({
-            "supplier_id": int(dados_form.get("supplier_id")) if dados_form.get("supplier_id") else None,
+            "supplier_id": supplier_id,
             "description": dados_form.get("description"),
             "amount": float(dados_form.get("amount")),
             "due_date": dados_form.get("due_date"),
@@ -85,8 +87,10 @@ class ServicoFinanceiro(ServicoBase):
 
     def criar_conta_receber(self, dados_form) -> models.AccountReceivable:
         """Cria nova conta a receber."""
+        customer_id = int(dados_form.get("customer_id")) if dados_form.get("customer_id") else None
+        self.validar_pertence_a_empresa(models.Customer, customer_id, "Cliente inválido")
         return self.contas_receber.criar({
-            "customer_id": int(dados_form.get("customer_id")) if dados_form.get("customer_id") else None,
+            "customer_id": customer_id,
             "description": dados_form.get("description"),
             "amount": float(dados_form.get("amount")),
             "due_date": dados_form.get("due_date"),
@@ -112,7 +116,8 @@ class ServicoFinanceiro(ServicoBase):
         cliente = None
         if conta.customer_id:
             cliente = self.banco.query(models.Customer).filter(
-                models.Customer.id == conta.customer_id
+                models.Customer.id == conta.customer_id,
+                models.Customer.company_id == self.empresa_id,
             ).first()
             if cliente:
                 cliente.balance = max(0, float(cliente.balance) - float(conta.paid_amount))

@@ -29,7 +29,7 @@ def listar_categorias(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth_utils.require_permission("categorias")),
 ):
-    servico = ServicoCatalogos(db)
+    servico = ServicoCatalogos(db, current_user)
     return templates.TemplateResponse(
         request, "catalogs/categories.html",
         {"items": servico.listar_categorias(), "current_user": current_user},
@@ -43,7 +43,7 @@ async def criar_categoria(
     current_user: models.User = Depends(auth_utils.require_permission("categorias")),
 ):
     form = await request.form()
-    ServicoCatalogos(db).criar_categoria(form)
+    ServicoCatalogos(db, current_user).criar_categoria(form)
     return RedirectResponse("/categorias", status_code=302)
 
 
@@ -55,7 +55,7 @@ async def atualizar_categoria(
     current_user: models.User = Depends(auth_utils.require_permission("categorias")),
 ):
     form = await request.form()
-    ServicoCatalogos(db).atualizar_categoria(item_id, form)
+    ServicoCatalogos(db, current_user).atualizar_categoria(item_id, form)
     return RedirectResponse("/categorias", status_code=302)
 
 
@@ -65,7 +65,7 @@ def excluir_categoria(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth_utils.require_permission("categorias")),
 ):
-    ServicoCatalogos(db).desativar_categoria(item_id)
+    ServicoCatalogos(db, current_user).desativar_categoria(item_id)
     return RedirectResponse("/categorias", status_code=302)
 
 
@@ -80,7 +80,7 @@ def listar_marcas(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth_utils.require_permission("marcas")),
 ):
-    servico = ServicoCatalogos(db)
+    servico = ServicoCatalogos(db, current_user)
     return templates.TemplateResponse(
         request, "catalogs/brands.html",
         {"items": servico.listar_marcas(), "current_user": current_user},
@@ -94,7 +94,7 @@ async def criar_marca(
     current_user: models.User = Depends(auth_utils.require_permission("marcas")),
 ):
     form = await request.form()
-    ServicoCatalogos(db).criar_marca(form)
+    ServicoCatalogos(db, current_user).criar_marca(form)
     return RedirectResponse("/marcas", status_code=302)
 
 
@@ -106,7 +106,7 @@ async def atualizar_marca(
     current_user: models.User = Depends(auth_utils.require_permission("marcas")),
 ):
     form = await request.form()
-    ServicoCatalogos(db).atualizar_marca(item_id, form)
+    ServicoCatalogos(db, current_user).atualizar_marca(item_id, form)
     return RedirectResponse("/marcas", status_code=302)
 
 
@@ -116,7 +116,7 @@ def excluir_marca(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth_utils.require_permission("marcas")),
 ):
-    ServicoCatalogos(db).desativar_marca(item_id)
+    ServicoCatalogos(db, current_user).desativar_marca(item_id)
     return RedirectResponse("/marcas", status_code=302)
 
 
@@ -131,7 +131,7 @@ def listar_fornecedores(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth_utils.require_permission("fornecedores")),
 ):
-    servico = ServicoCatalogos(db)
+    servico = ServicoCatalogos(db, current_user)
     return templates.TemplateResponse(
         request, "catalogs/suppliers.html",
         {"items": servico.listar_fornecedores(), "current_user": current_user},
@@ -156,7 +156,7 @@ async def criar_fornecedor(
     current_user: models.User = Depends(auth_utils.require_permission("fornecedores")),
 ):
     form = await request.form()
-    ServicoCatalogos(db).criar_fornecedor(form)
+    ServicoCatalogos(db, current_user).criar_fornecedor(form)
     return RedirectResponse("/fornecedores", status_code=302)
 
 
@@ -167,7 +167,7 @@ def editar_fornecedor(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth_utils.require_permission("fornecedores")),
 ):
-    servico = ServicoCatalogos(db)
+    servico = ServicoCatalogos(db, current_user)
     item = servico.obter_fornecedor_ou_erro(item_id)
     return templates.TemplateResponse(
         request, "catalogs/supplier_form.html",
@@ -183,7 +183,7 @@ async def atualizar_fornecedor(
     current_user: models.User = Depends(auth_utils.require_permission("fornecedores")),
 ):
     form = await request.form()
-    ServicoCatalogos(db).atualizar_fornecedor(item_id, form)
+    ServicoCatalogos(db, current_user).atualizar_fornecedor(item_id, form)
     return RedirectResponse("/fornecedores", status_code=302)
 
 
@@ -193,7 +193,7 @@ def excluir_fornecedor(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth_utils.require_permission("fornecedores")),
 ):
-    ServicoCatalogos(db).desativar_fornecedor(item_id)
+    ServicoCatalogos(db, current_user).desativar_fornecedor(item_id)
     return RedirectResponse("/fornecedores", status_code=302)
 
 
@@ -208,7 +208,7 @@ def listar_clientes(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth_utils.require_permission("clientes")),
 ):
-    servico = ServicoCatalogos(db)
+    servico = ServicoCatalogos(db, current_user)
     return templates.TemplateResponse(
         request, "catalogs/customers.html",
         {"items": servico.listar_clientes(), "current_user": current_user},
@@ -233,7 +233,7 @@ async def criar_cliente(
     current_user: models.User = Depends(auth_utils.require_permission("clientes")),
 ):
     form = await request.form()
-    ServicoCatalogos(db).criar_cliente(form)
+    ServicoCatalogos(db, current_user).criar_cliente(form)
     return RedirectResponse("/clientes", status_code=302)
 
 
@@ -244,7 +244,7 @@ def editar_cliente(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth_utils.require_permission("clientes")),
 ):
-    servico = ServicoCatalogos(db)
+    servico = ServicoCatalogos(db, current_user)
     item = servico.obter_cliente_ou_erro(item_id)
     return templates.TemplateResponse(
         request, "catalogs/customer_form.html",
@@ -260,7 +260,7 @@ async def atualizar_cliente(
     current_user: models.User = Depends(auth_utils.require_permission("clientes")),
 ):
     form = await request.form()
-    ServicoCatalogos(db).atualizar_cliente(item_id, form)
+    ServicoCatalogos(db, current_user).atualizar_cliente(item_id, form)
     return RedirectResponse("/clientes", status_code=302)
 
 
@@ -270,7 +270,7 @@ def excluir_cliente(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth_utils.require_permission("clientes")),
 ):
-    ServicoCatalogos(db).desativar_cliente(item_id)
+    ServicoCatalogos(db, current_user).desativar_cliente(item_id)
     return RedirectResponse("/clientes", status_code=302)
 
 
@@ -285,7 +285,7 @@ def listar_funcionarios(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth_utils.require_permission("funcionarios")),
 ):
-    servico = ServicoCatalogos(db)
+    servico = ServicoCatalogos(db, current_user)
     return templates.TemplateResponse(
         request, "catalogs/employees.html",
         {"items": servico.listar_funcionarios(), "current_user": current_user},
@@ -298,7 +298,7 @@ def novo_funcionario(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth_utils.require_permission("funcionarios")),
 ):
-    servico_usuarios = ServicoUsuarios(db)
+    servico_usuarios = ServicoUsuarios(db, current_user)
     return templates.TemplateResponse(
         request, "catalogs/employee_form.html",
         {"item": None, "users": servico_usuarios.listar_todos(), "current_user": current_user},
@@ -312,7 +312,7 @@ async def criar_funcionario(
     current_user: models.User = Depends(auth_utils.require_permission("funcionarios")),
 ):
     form = await request.form()
-    ServicoCatalogos(db).criar_funcionario(form)
+    ServicoCatalogos(db, current_user).criar_funcionario(form)
     return RedirectResponse("/funcionarios", status_code=302)
 
 
@@ -323,8 +323,8 @@ def editar_funcionario(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth_utils.require_permission("funcionarios")),
 ):
-    servico = ServicoCatalogos(db)
-    servico_usuarios = ServicoUsuarios(db)
+    servico = ServicoCatalogos(db, current_user)
+    servico_usuarios = ServicoUsuarios(db, current_user)
     item = servico.obter_funcionario_ou_erro(item_id)
     return templates.TemplateResponse(
         request, "catalogs/employee_form.html",
@@ -340,5 +340,5 @@ async def atualizar_funcionario(
     current_user: models.User = Depends(auth_utils.require_permission("funcionarios")),
 ):
     form = await request.form()
-    ServicoCatalogos(db).atualizar_funcionario(item_id, form)
+    ServicoCatalogos(db, current_user).atualizar_funcionario(item_id, form)
     return RedirectResponse("/funcionarios", status_code=302)

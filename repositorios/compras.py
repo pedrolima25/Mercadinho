@@ -13,14 +13,14 @@ from repositorios.base import RepositorioBase
 class RepositorioCompras(RepositorioBase):
     """Queries de pedidos de compra a fornecedores."""
 
-    def __init__(self, banco: Session):
-        super().__init__(banco, models.Purchase)
+    def __init__(self, banco: Session, empresa_id: Optional[int] = None):
+        super().__init__(banco, models.Purchase, empresa_id)
 
     def listar_com_filtros(
         self, status: str = None, pagina: int = 1, por_pagina: int = 20
     ) -> Tuple[List[models.Purchase], int]:
         """Lista compras com filtro de status e paginação."""
-        consulta = self.banco.query(self.modelo).options(
+        consulta = self._query().options(
             joinedload(self.modelo.supplier)
         )
         if status:
@@ -39,7 +39,7 @@ class RepositorioCompras(RepositorioBase):
     def buscar_com_itens(self, compra_id: int) -> Optional[models.Purchase]:
         """Retorna compra com fornecedor e itens carregados."""
         return (
-            self.banco.query(self.modelo)
+            self._query()
             .options(
                 joinedload(self.modelo.supplier),
                 joinedload(self.modelo.items).joinedload(models.PurchaseItem.product),

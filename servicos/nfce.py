@@ -53,9 +53,9 @@ _T_PAG = {
 _CIDADES_SUPORTADAS = {"MANAUS", "PARINTINS", "ITACOATIARA", "MANACAPURU"}
 
 
-def checklist_fiscal(db: Session) -> dict:
+def checklist_fiscal(db: Session, empresa_id: Optional[int] = None) -> dict:
     """Diagnostico do que falta para emitir NFC-e de verdade (nao simulado)."""
-    empresa = db.query(models.CompanyProfile).first()
+    empresa = db.query(models.CompanyProfile).filter(models.CompanyProfile.company_id == empresa_id).first()
 
     cert_path = (empresa and empresa.nfce_cert_path) or os.getenv("NFCE_CERT_PATH", "")
     cert_pass = (empresa and empresa.nfce_cert_pass) or os.getenv("NFCE_CERT_PASS", "")
@@ -64,12 +64,14 @@ def checklist_fiscal(db: Session) -> dict:
     ambiente  = (empresa and empresa.nfce_ambiente) or os.getenv("NFCE_AMBIENTE", "")
     cert_existe = bool(cert_path) and Path(cert_path).exists()
 
-    total_produtos = db.query(models.Product).count()
+    total_produtos = db.query(models.Product).filter(models.Product.company_id == empresa_id).count()
     sem_ncm = db.query(models.Product).filter(
-        (models.Product.ncm.is_(None)) | (models.Product.ncm == "")
+        models.Product.company_id == empresa_id,
+        (models.Product.ncm.is_(None)) | (models.Product.ncm == ""),
     ).count()
     sem_cfop = db.query(models.Product).filter(
-        (models.Product.cfop.is_(None)) | (models.Product.cfop == "")
+        models.Product.company_id == empresa_id,
+        (models.Product.cfop.is_(None)) | (models.Product.cfop == ""),
     ).count()
 
     cidade = (empresa.city or "").upper().strip() if empresa else ""
@@ -105,9 +107,12 @@ def checklist_fiscal(db: Session) -> dict:
 
 
 class ServicoNfce:
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, current_user=None, empresa_id: Optional[int] = None):
         self.db = db
-        empresa = db.query(models.CompanyProfile).first()
+        self.empresa_id = empresa_id if empresa_id is not None else (
+            current_user.company_id if current_user is not None else None
+        )
+        empresa = db.query(models.CompanyProfile).filter(models.CompanyProfile.company_id == self.empresa_id).first()
 
         # Config prioriza o cadastro da empresa (tela /nfce/configuracao); cai para o .env se vazio
         self.ambiente  = (empresa and empresa.nfce_ambiente) or os.getenv("NFCE_AMBIENTE", "2")
@@ -123,7 +128,10 @@ class ServicoNfce:
 
     def emitir(self, venda_id: int) -> models.FiscalDocument:
         """Emite NFC-e para uma venda. Retorna o FiscalDocument criado."""
-        venda = self.db.query(models.Sale).filter(models.Sale.id == venda_id).first()
+        venda = self.db.query(models.Sale).filter(
+            models.Sale.id == venda_id,
+            models.Sale.company_id == self.empresa_id,
+        ).first()
         if not venda:
             raise ValueError("Venda não encontrada")
 
@@ -131,6 +139,7 @@ class ServicoNfce:
         doc = self.db.query(models.FiscalDocument).filter(
             models.FiscalDocument.sale_id == venda_id,
             models.FiscalDocument.model == "NFC-e",
+            models.FiscalDocument.company_id == self.empresa_id,
         ).first()
         if doc and doc.status == models.FiscalDocumentStatus.autorizada:
             raise ValueError("NFC-e já autorizada para esta venda")
@@ -152,6 +161,7 @@ class ServicoNfce:
                 access_key=chave,
                 status=models.FiscalDocumentStatus.pendente,
                 issued_at=datetime.now(timezone.utc),
+                company_id=self.empresa_id,
             )
             self.db.add(doc)
             self.db.flush()
@@ -187,7 +197,8 @@ class ServicoNfce:
 
     def cancelar(self, doc_id: int, motivo: str) -> models.FiscalDocument:
         doc = self.db.query(models.FiscalDocument).filter(
-            models.FiscalDocument.id == doc_id
+            models.FiscalDocument.id == doc_id,
+            models.FiscalDocument.company_id == self.empresa_id,
         ).first()
         if not doc:
             raise ValueError("Documento fiscal não encontrado")
@@ -484,7 +495,9 @@ class ServicoNfce:
     # ── Utilitários ──────────────────────────────────────────────────────────
 
     def _empresa(self) -> models.CompanyProfile:
-        emp = self.db.query(models.CompanyProfile).first()
+        emp = self.db.query(models.CompanyProfile).filter(
+            models.CompanyProfile.company_id == self.empresa_id
+        ).first()
         if not emp:
             raise ValueError("Perfil da empresa não configurado")
         return emp
@@ -493,6 +506,7 @@ class ServicoNfce:
         ultimo = self.db.query(models.FiscalDocument).filter(
             models.FiscalDocument.model == "NFC-e",
             models.FiscalDocument.series == self.serie,
+            models.FiscalDocument.company_id == self.empresa_id,
         ).order_by(models.FiscalDocument.number.desc()).first()
         return (ultimo.number or 0) + 1 if ultimo else 1
 

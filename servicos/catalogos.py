@@ -29,13 +29,13 @@ class ServicoCatalogos(ServicoBase):
     em um único serviço para facilitar o uso nos routers.
     """
 
-    def __init__(self, banco: Session):
-        super().__init__(banco)
-        self.categorias = RepositorioCategorias(banco)
-        self.marcas = RepositorioMarcas(banco)
-        self.fornecedores = RepositorioFornecedores(banco)
-        self.clientes = RepositorioClientes(banco)
-        self.funcionarios = RepositorioFuncionarios(banco)
+    def __init__(self, banco: Session, current_user=None):
+        super().__init__(banco, current_user)
+        self.categorias = RepositorioCategorias(banco, self.empresa_id)
+        self.marcas = RepositorioMarcas(banco, self.empresa_id)
+        self.fornecedores = RepositorioFornecedores(banco, self.empresa_id)
+        self.clientes = RepositorioClientes(banco, self.empresa_id)
+        self.funcionarios = RepositorioFuncionarios(banco, self.empresa_id)
 
     # ── Categorias ─────────────────────────────────────────────────────────
 
@@ -216,6 +216,8 @@ class ServicoCatalogos(ServicoBase):
         nome = (dados_form.get("name") or "").strip()
         if not nome:
             self.erro_requisicao("Nome do funcionário é obrigatório")
+        user_id = int(dados_form.get("user_id")) if dados_form.get("user_id") else None
+        self.validar_pertence_a_empresa(models.User, user_id, "Usuário inválido")
         return self.funcionarios.criar({
             "name": nome,
             "cpf": dados_form.get("cpf") or None,
@@ -224,7 +226,7 @@ class ServicoCatalogos(ServicoBase):
             "position": dados_form.get("position") or None,
             "salary": float(dados_form.get("salary") or 0) or None,
             "hire_date": dados_form.get("hire_date") or None,
-            "user_id": int(dados_form.get("user_id")) if dados_form.get("user_id") else None,
+            "user_id": user_id,
         })
 
     def atualizar_funcionario(self, funcionario_id: int, dados_form) -> models.Employee:
@@ -237,7 +239,9 @@ class ServicoCatalogos(ServicoBase):
         funcionario.position = dados_form.get("position") or None
         funcionario.salary = float(dados_form.get("salary") or 0) or None
         funcionario.hire_date = dados_form.get("hire_date") or None
-        funcionario.user_id = int(dados_form.get("user_id")) if dados_form.get("user_id") else None
+        user_id = int(dados_form.get("user_id")) if dados_form.get("user_id") else None
+        self.validar_pertence_a_empresa(models.User, user_id, "Usuário inválido")
+        funcionario.user_id = user_id
         funcionario.is_active = dados_form.get("is_active") == "on"
         self.banco.commit()
         return funcionario

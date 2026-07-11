@@ -18,7 +18,7 @@
           <td class="fw-semibold">{{ c.name }}{% if c.subtitle %}<div class="text-muted small">{{ c.subtitle }}</div>{% endif %}</td>
           <td>{{ c.items|length }}</td>
           <td>
-            <a href="/campanhas/{{ c.slug }}" target="_blank" class="small">/campanhas/{{ c.slug }} <i class="bi bi-box-arrow-up-right"></i></a>
+            <a href="/loja/{{ current_user.empresa.slug }}/campanhas/{{ c.slug }}" target="_blank" class="small">/loja/{{ current_user.empresa.slug }}/campanhas/{{ c.slug }} <i class="bi bi-box-arrow-up-right"></i></a>
           </td>
           <td>
             {% if c.is_active %}

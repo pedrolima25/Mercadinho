@@ -26,7 +26,7 @@ def visao_geral(
     current_user: models.User = Depends(auth_utils.require_permission("estoque")),
 ):
     """Tela principal de estoque: produtos críticos, lotes e últimas movimentações."""
-    servico = ServicoEstoque(db)
+    servico = ServicoEstoque(db, current_user)
     dados = servico.visao_geral()
     return templates.TemplateResponse(request, "stock/index.html", {**dados, "current_user": current_user})
 
@@ -38,7 +38,7 @@ def nova_movimentacao(
     current_user: models.User = Depends(auth_utils.require_permission("estoque")),
 ):
     """Formulário para registrar movimentação de estoque."""
-    servico_produtos = ServicoProdutos(db)
+    servico_produtos = ServicoProdutos(db, current_user)
     produtos, _ = servico_produtos.listar(por_pagina=1000)
     return templates.TemplateResponse(
         request, "stock/movement.html",
@@ -54,7 +54,7 @@ async def registrar_movimentacao(
 ):
     """Salva movimentação de estoque (entrada, saída ou ajuste)."""
     form = await request.form()
-    ServicoEstoque(db).registrar_movimentacao(form, current_user)
+    ServicoEstoque(db, current_user).registrar_movimentacao(form, current_user)
     return RedirectResponse("/estoque", status_code=302)
 
 
@@ -65,7 +65,7 @@ def lotes(
     current_user: models.User = Depends(auth_utils.require_permission("estoque")),
 ):
     """Tela de lotes e validades."""
-    servico = ServicoEstoque(db)
+    servico = ServicoEstoque(db, current_user)
     dados = servico.listar_lotes()
     return templates.TemplateResponse(request, "stock/batches.html", {**dados, "current_user": current_user})
 
@@ -78,7 +78,7 @@ async def criar_lote(
 ):
     """Cria novo lote de produto."""
     form = await request.form()
-    ServicoEstoque(db).criar_lote(form)
+    ServicoEstoque(db, current_user).criar_lote(form)
     return RedirectResponse("/estoque/lotes", status_code=302)
 
 
@@ -91,7 +91,7 @@ async def registrar_perda_lote(
 ):
     """Dá baixa (perda) de um lote — vencido ou avaria."""
     form = await request.form()
-    ServicoEstoque(db).registrar_perda_lote(lote_id, form, current_user)
+    ServicoEstoque(db, current_user).registrar_perda_lote(lote_id, form, current_user)
     return RedirectResponse("/estoque/lotes", status_code=302)
 
 
@@ -105,8 +105,8 @@ def historico(
     current_user: models.User = Depends(auth_utils.require_permission("estoque")),
 ):
     """Histórico completo de movimentações com filtros."""
-    servico = ServicoEstoque(db)
-    servico_produtos = ServicoProdutos(db)
+    servico = ServicoEstoque(db, current_user)
+    servico_produtos = ServicoProdutos(db, current_user)
 
     movimentacoes, total = servico.historico(produto_id=product_id, tipo=type, pagina=page)
     produtos, _ = servico_produtos.listar(por_pagina=1000)

@@ -774,8 +774,8 @@
       </div>
       <div class="items-body" id="items-body">
         <div class="items-watermark">
-          <img src="{{ request.app.state.market_logo_url }}" alt="">
-          <span>{{ request.app.state.market_name }}</span>
+          <img src="{{ request.state.company.market_logo_url }}" alt="">
+          <span>{{ request.state.company.market_name }}</span>
         </div>
         <div class="empty-st">
           <i class="bi bi-cart-x"></i>
@@ -1227,11 +1227,11 @@
       </div>
       <div class="receipt-wrap">
         <div class="receipt-paper" id="receipt-paper">
-          <img class="receipt-logo" id="s-logo" src="{{ request.app.state.market_logo_url }}" alt="">
-          <div class="receipt-head" id="s-market-name">{{ request.app.state.market_name }}</div>
-          <div class="receipt-sub" id="s-company-cnpj">{% if request.app.state.company_cnpj %}CNPJ: {{ request.app.state.company_cnpj }}{% endif %}</div>
-          <div class="receipt-sub" id="s-company-address">{{ request.app.state.company_address }}</div>
-          <div class="receipt-sub" id="s-company-phone">{% if request.app.state.company_phone %}Tel: {{ request.app.state.company_phone }}{% endif %}</div>
+          <img class="receipt-logo" id="s-logo" src="{{ request.state.company.market_logo_url }}" alt="">
+          <div class="receipt-head" id="s-market-name">{{ request.state.company.market_name }}</div>
+          <div class="receipt-sub" id="s-company-cnpj">{% if request.state.company.company_cnpj %}CNPJ: {{ request.state.company.company_cnpj }}{% endif %}</div>
+          <div class="receipt-sub" id="s-company-address">{{ request.state.company.company_address }}</div>
+          <div class="receipt-sub" id="s-company-phone">{% if request.state.company.company_phone %}Tel: {{ request.state.company.company_phone }}{% endif %}</div>
           <div class="receipt-sub">Comprovante de venda</div>
           <div class="receipt-line"></div>
           <div class="receipt-row"><span>Venda</span><strong id="s-sale-id">#0</strong></div>
@@ -1248,7 +1248,7 @@
           <div id="s-payments"></div>
           <div class="receipt-row"><span>Troco</span><strong id="s-troco">R$ 0,00</strong></div>
           <div class="receipt-line"></div>
-          <div class="receipt-sub" id="s-receipt-footer">{{ request.app.state.company_receipt_footer }}</div>
+          <div class="receipt-sub" id="s-receipt-footer">{{ request.state.company.company_receipt_footer }}</div>
         </div>
       </div>
       <div class="receipt-actions">
@@ -1268,14 +1268,14 @@ let cart = [], payments = [], selMethod = null, searchTimeout = null;
 let weightModal = null, pendingWeightProduct = null, weightMode = 'kg';
 let lastReceiptHtml = '';
 let bi, qi;
-const MARKET_NAME = {{ request.app.state.market_name|tojson }};
-const MARKET_LOGO_URL = {{ request.app.state.market_logo_url|tojson }};
-const COMPANY_CNPJ = {{ request.app.state.company_cnpj|tojson }};
-const COMPANY_ADDRESS = {{ request.app.state.company_address|tojson }};
-const COMPANY_PHONE = {{ request.app.state.company_phone|tojson }};
-const COMPANY_RECEIPT_FOOTER = {{ request.app.state.company_receipt_footer|tojson }};
-const PIX_KEY = {{ request.app.state.pix_key|tojson }};
-const PIX_CITY = {{ request.app.state.pix_city|tojson }};
+const MARKET_NAME = {{ request.state.company.market_name|tojson }};
+const MARKET_LOGO_URL = {{ request.state.company.market_logo_url|tojson }};
+const COMPANY_CNPJ = {{ request.state.company.company_cnpj|tojson }};
+const COMPANY_ADDRESS = {{ request.state.company.company_address|tojson }};
+const COMPANY_PHONE = {{ request.state.company.company_phone|tojson }};
+const COMPANY_RECEIPT_FOOTER = {{ request.state.company.company_receipt_footer|tojson }};
+const PIX_KEY = {{ request.state.company.pix_key|tojson }};
+const PIX_CITY = {{ request.state.company.pix_city|tojson }};
 const CASH_OPEN = {{ 'true' if open_register else 'false' }};
 const focusBi = () => { if (bi) bi.focus(); };
 

@@ -15,9 +15,9 @@ from servicos.base import ServicoBase
 class ServicoUsuarios(ServicoBase):
     """Regras de negócio para usuários do sistema."""
 
-    def __init__(self, banco: Session):
-        super().__init__(banco)
-        self.repositorio = RepositorioUsuarios(banco)
+    def __init__(self, banco: Session, current_user=None):
+        super().__init__(banco, current_user)
+        self.repositorio = RepositorioUsuarios(banco, self.empresa_id)
 
     def listar_todos(self) -> List[models.User]:
         """Retorna todos os usuários ordenados por nome."""

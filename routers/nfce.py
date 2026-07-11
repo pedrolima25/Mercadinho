@@ -24,7 +24,7 @@ def checklist(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth_utils.require_permission("empresa")),
 ):
-    dados = checklist_fiscal(db)
+    dados = checklist_fiscal(db, current_user.company_id)
     return templates.TemplateResponse(request, "nfce/checklist.html", dados)
 
 
@@ -34,7 +34,7 @@ def configuracao_form(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth_utils.require_permission("empresa")),
 ):
-    empresa = get_or_create_company(db)
+    empresa = get_or_create_company(db, current_user.company_id)
     return templates.TemplateResponse(request, "nfce/configuracao.html", {
         "empresa": empresa,
         "success": request.query_params.get("success") == "1",
@@ -47,7 +47,7 @@ async def configuracao_save(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth_utils.require_permission("empresa")),
 ):
-    empresa = get_or_create_company(db)
+    empresa = get_or_create_company(db, current_user.company_id)
     form = await request.form()
 
     empresa.nfce_ambiente = form.get("nfce_ambiente") or "2"
@@ -82,7 +82,7 @@ def emitir_nfce(
     current_user: models.User = Depends(auth_utils.require_user),
 ):
     try:
-        doc = ServicoNfce(db).emitir(sale_id)
+        doc = ServicoNfce(db, current_user).emitir(sale_id)
         return JSONResponse({
             "success": True,
             "id":       doc.id,
@@ -106,11 +106,14 @@ def danfe(
     current_user: models.User = Depends(auth_utils.require_user),
 ):
     doc = db.query(models.FiscalDocument).filter(
-        models.FiscalDocument.id == doc_id
+        models.FiscalDocument.id == doc_id,
+        models.FiscalDocument.company_id == current_user.company_id,
     ).first()
     if not doc:
         return HTMLResponse("<h3>Documento não encontrado</h3>", status_code=404)
-    empresa = db.query(models.CompanyProfile).first()
+    empresa = db.query(models.CompanyProfile).filter(
+        models.CompanyProfile.company_id == current_user.company_id
+    ).first()
     return templates.TemplateResponse(
         request, "nfce/danfe.html",
         {"doc": doc, "venda": doc.sale, "empresa": empresa}
@@ -125,7 +128,7 @@ def cancelar_nfce(
     current_user: models.User = Depends(auth_utils.require_permission("vendas")),
 ):
     try:
-        doc = ServicoNfce(db).cancelar(doc_id, "Cancelamento solicitado pelo operador")
+        doc = ServicoNfce(db, current_user).cancelar(doc_id, "Cancelamento solicitado pelo operador")
         return JSONResponse({"success": True, "status": doc.status.value})
     except Exception as e:
         return JSONResponse({"success": False, "error": str(e)}, status_code=400)
@@ -140,6 +143,7 @@ def nfce_da_venda(
     doc = db.query(models.FiscalDocument).filter(
         models.FiscalDocument.sale_id == sale_id,
         models.FiscalDocument.model == "NFC-e",
+        models.FiscalDocument.company_id == current_user.company_id,
     ).first()
     if not doc:
         return JSONResponse({"exists": False})

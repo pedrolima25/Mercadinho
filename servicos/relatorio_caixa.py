@@ -42,7 +42,7 @@ def formatar_moeda(valor: float) -> str:
     return f"R$ {formatar_valor(valor)}"
 
 
-def caixas_no_periodo(banco: Session, date_from: str, date_to: str, caixa_id: Optional[int] = None):
+def caixas_no_periodo(banco: Session, date_from: str, date_to: str, caixa_id: Optional[int] = None, empresa_id: Optional[int] = None):
     """
     Caixas fechados dentro do período (independente de quando foram abertos) +
     caixas ainda abertos que foram abertos dentro do período.
@@ -55,6 +55,7 @@ def caixas_no_periodo(banco: Session, date_from: str, date_to: str, caixa_id: Op
             joinedload(models.CashRegister.cash_movements),
             joinedload(models.CashRegister.closing_counts),
         )
+        .filter(models.CashRegister.company_id == empresa_id)
         .filter(
             or_(
                 # Caixa fechado dentro do período (independente de quando foi aberto)
@@ -142,9 +143,9 @@ def _resumo_caixa(caixa: models.CashRegister) -> dict:
     }
 
 
-def montar_relatorio(banco: Session, date_from: str, date_to: str, caixa_id: Optional[int] = None) -> dict:
+def montar_relatorio(banco: Session, date_from: str, date_to: str, caixa_id: Optional[int] = None, empresa_id: Optional[int] = None) -> dict:
     """Monta os dados do relatório de fechamento: cada caixa do período + o consolidado."""
-    caixas = caixas_no_periodo(banco, date_from, date_to, caixa_id)
+    caixas = caixas_no_periodo(banco, date_from, date_to, caixa_id, empresa_id)
     por_caixa = [_resumo_caixa(c) for c in caixas]
 
     movs_consolidado = []

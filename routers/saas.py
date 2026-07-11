@@ -9,6 +9,7 @@ from database import get_db
 import models
 import auth as auth_utils
 from auth import require_super_admin
+from utils.slug import slugify
 
 router = APIRouter(prefix="/saas", tags=["saas"])
 templates = Jinja2Templates(directory="templates")
@@ -18,6 +19,20 @@ def _stats_empresa(db: Session, empresa: models.Empresa) -> dict:
     users = db.query(func.count(models.User.id)).filter(models.User.company_id == empresa.id).scalar() or 0
     vendas = db.query(func.count(models.Sale.id)).join(models.User).filter(models.User.company_id == empresa.id).scalar() or 0
     return {"users": users, "vendas": vendas}
+
+
+def _gerar_slug_unico_empresa(db: Session, nome: str, exceto_id: int = None) -> str:
+    base = slugify(nome, fallback="loja")
+    slug = base
+    contador = 2
+    while True:
+        consulta = db.query(models.Empresa).filter(models.Empresa.slug == slug)
+        if exceto_id:
+            consulta = consulta.filter(models.Empresa.id != exceto_id)
+        if not consulta.first():
+            return slug
+        slug = f"{base}-{contador}"
+        contador += 1
 
 
 def _status_empresa(empresa: models.Empresa) -> str:
@@ -88,6 +103,7 @@ async def saas_nova_criar(
 
     empresa = models.Empresa(
         nome=nome,
+        slug=_gerar_slug_unico_empresa(db, nome),
         cnpj=cnpj or None,
         email_responsavel=email_responsavel or None,
         telefone_responsavel=telefone_responsavel or None,

@@ -1,6 +1,7 @@
 import shutil
 import time
 from pathlib import Path
+from typing import Optional
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -10,7 +11,7 @@ from sqlalchemy.orm import Session
 import auth as auth_utils
 import models
 from config import settings
-from database import SessionLocal, get_db
+from database import get_db
 
 router = APIRouter(prefix="/empresa", tags=["empresa"])
 templates = Jinja2Templates(directory="templates")
@@ -28,12 +29,14 @@ COMPANY_FIELDS = [
 ]
 
 
-def get_or_create_company(db: Session) -> models.CompanyProfile:
-    company = db.query(models.CompanyProfile).order_by(models.CompanyProfile.id).first()
+def get_or_create_company(db: Session, empresa_id: Optional[int] = None) -> models.CompanyProfile:
+    """Retorna o perfil (dados da loja, PIX, NFC-e) da empresa, criando um se ainda não existir."""
+    company = db.query(models.CompanyProfile).filter(models.CompanyProfile.company_id == empresa_id).first()
     if company:
         return company
 
     company = models.CompanyProfile(
+        company_id=empresa_id,
         trade_name=settings.market_name or "Mercadinho",
         logo_url=settings.market_logo_url or "/static/img/logo.svg",
         country="Brasil",
@@ -45,16 +48,8 @@ def get_or_create_company(db: Session) -> models.CompanyProfile:
     return company
 
 
-def apply_company_to_app(app, company: models.CompanyProfile) -> None:
-    app.state.market_name = company.trade_name or settings.market_name
-    app.state.market_logo_url = company.logo_url or settings.market_logo_url
-    app.state.company_receipt_footer = company.receipt_footer or "Obrigado pela preferencia"
-    app.state.company_cnpj = company.cnpj or ""
-    app.state.company_phone = company.phone or company.whatsapp or ""
-    app.state.company_email = company.email or ""
-    app.state.company_slogan = company.slogan or ""
-    app.state.pix_key = company.pix_key or settings.pix_key or ""
-    app.state.pix_city = (company.pix_city or settings.pix_city or "MANAUS").upper()
+def branding_from_profile(company: models.CompanyProfile) -> dict:
+    """Dados de marca (nome, logo, PIX, etc) de UMA empresa — usado por requisição, nunca global."""
     address_parts = [
         company.street,
         company.number,
@@ -62,16 +57,34 @@ def apply_company_to_app(app, company: models.CompanyProfile) -> None:
         company.city,
         company.state,
     ]
-    app.state.company_address = " - ".join([part for part in address_parts if part])
+    return {
+        "market_name": company.trade_name or settings.market_name,
+        "market_logo_url": company.logo_url or settings.market_logo_url,
+        "company_receipt_footer": company.receipt_footer or "Obrigado pela preferencia",
+        "company_cnpj": company.cnpj or "",
+        "company_phone": company.phone or company.whatsapp or "",
+        "company_email": company.email or "",
+        "company_slogan": company.slogan or "",
+        "pix_key": company.pix_key or settings.pix_key or "",
+        "pix_city": (company.pix_city or settings.pix_city or "MANAUS").upper(),
+        "company_address": " - ".join([part for part in address_parts if part]),
+    }
 
 
-def load_company_brand(app) -> None:
-    db = SessionLocal()
-    try:
-        company = get_or_create_company(db)
-        apply_company_to_app(app, company)
-    finally:
-        db.close()
+def default_branding() -> dict:
+    """Marca padrão exibida antes do login, quando ainda não se sabe de qual empresa é a requisição."""
+    return {
+        "market_name": settings.market_name or "Mercadinho",
+        "market_logo_url": settings.market_logo_url or "/static/img/logo.svg",
+        "company_receipt_footer": "Obrigado pela preferencia",
+        "company_cnpj": "",
+        "company_phone": "",
+        "company_email": "",
+        "company_slogan": "",
+        "pix_key": settings.pix_key or "",
+        "pix_city": (settings.pix_city or "MANAUS").upper(),
+        "company_address": "",
+    }
 
 
 def save_logo(file_obj) -> str | None:
@@ -96,7 +109,7 @@ def company_form(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth_utils.require_permission("empresa")),
 ):
-    company = get_or_create_company(db)
+    company = get_or_create_company(db, current_user.company_id)
     return templates.TemplateResponse(request, "company/form.html", {
         "company": company,
         "current_user": current_user,
@@ -110,7 +123,7 @@ async def save_company(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth_utils.require_permission("empresa")),
 ):
-    company = get_or_create_company(db)
+    company = get_or_create_company(db, current_user.company_id)
     form = await request.form()
 
     for field in COMPANY_FIELDS:
@@ -128,5 +141,4 @@ async def save_company(
 
     db.commit()
     db.refresh(company)
-    apply_company_to_app(request.app, company)
     return RedirectResponse("/empresa?success=1", status_code=302)

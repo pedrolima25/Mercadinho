@@ -20,9 +20,9 @@ from servicos.base import ServicoBase
 class ServicoCompras(ServicoBase):
     """Regras de negócio para compras de fornecedores."""
 
-    def __init__(self, banco: Session):
-        super().__init__(banco)
-        self.repositorio = RepositorioCompras(banco)
+    def __init__(self, banco: Session, current_user=None):
+        super().__init__(banco, current_user)
+        self.repositorio = RepositorioCompras(banco, self.empresa_id)
 
     def listar(
         self, status: str = None, pagina: int = 1
@@ -50,6 +50,11 @@ class ServicoCompras(ServicoBase):
         if not produto_ids:
             self.erro_requisicao("Adicione pelo menos um produto à compra")
 
+        supplier_id = int(dados_form.get("supplier_id")) if dados_form.get("supplier_id") else None
+        self.validar_pertence_a_empresa(models.Supplier, supplier_id, "Fornecedor inválido")
+        for pid in produto_ids:
+            self.validar_pertence_a_empresa(models.Product, int(pid), "Produto inválido na compra")
+
         # Calcula total da compra
         total = sum(
             float(q) * float(c)
@@ -58,12 +63,13 @@ class ServicoCompras(ServicoBase):
 
         # Cria o cabeçalho da compra
         compra = models.Purchase(
-            supplier_id=int(dados_form.get("supplier_id")) if dados_form.get("supplier_id") else None,
+            supplier_id=supplier_id,
             user_id=usuario.id,
             invoice_number=dados_form.get("invoice_number") or None,
             notes=dados_form.get("notes") or None,
             expected_date=dados_form.get("expected_date") or None,
             total=total,
+            company_id=self.empresa_id,
         )
         self.banco.add(compra)
         self.banco.flush()  # Obtém o ID gerado antes de criar os itens
@@ -103,7 +109,8 @@ class ServicoCompras(ServicoBase):
         # Atualiza estoque de cada item
         for item in compra.items:
             produto = self.banco.query(models.Product).filter(
-                models.Product.id == item.product_id
+                models.Product.id == item.product_id,
+                models.Product.company_id == self.empresa_id,
             ).first()
 
             if produto:
@@ -123,6 +130,7 @@ class ServicoCompras(ServicoBase):
                     reference_id=compra_id,
                     reference_type="purchase",
                     user_id=usuario.id,
+                    company_id=self.empresa_id,
                 )
                 self.banco.add(movimentacao)
 
@@ -134,6 +142,7 @@ class ServicoCompras(ServicoBase):
                 amount=float(compra.total),
                 due_date=compra.expected_date or date.today(),
                 notes=compra.invoice_number and f"NF/Documento: {compra.invoice_number}",
+                company_id=self.empresa_id,
             )
             self.banco.add(conta_pagar)
 

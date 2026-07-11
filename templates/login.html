@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - {{ request.app.state.market_name }}</title>
+  <title>Login - {{ request.state.company.market_name }}</title>
   <link rel="stylesheet" href="/static/css/bootstrap.min.css">
   <link rel="stylesheet" href="/static/css/bootstrap-icons.css">
   <style>
@@ -15,8 +15,8 @@
 </head>
 <body>
   <div class="login-card">
-    <div class="login-logo"><img src="{{ request.app.state.market_logo_url }}" alt=""></div>
-    <h4 class="text-center fw-bold mb-1">{{ request.app.state.market_name }}</h4>
+    <div class="login-logo"><img src="{{ request.state.company.market_logo_url }}" alt=""></div>
+    <h4 class="text-center fw-bold mb-1">{{ request.state.company.market_name }}</h4>
     <p class="text-center text-muted mb-4">Sistema de Gestão</p>
     {% if error %}
     <div class="alert alert-danger">{{ error }}</div>

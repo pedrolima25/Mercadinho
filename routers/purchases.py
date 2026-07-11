@@ -29,7 +29,7 @@ def listar_compras(
     current_user: models.User = Depends(auth_utils.require_permission("compras")),
 ):
     """Lista pedidos de compra com filtro de status."""
-    compras, total = ServicoCompras(db).listar(status=status, pagina=page)
+    compras, total = ServicoCompras(db, current_user).listar(status=status, pagina=page)
     return templates.TemplateResponse(
         request, "purchases/index.html",
         {
@@ -50,8 +50,8 @@ def nova_compra(
     current_user: models.User = Depends(auth_utils.require_permission("compras")),
 ):
     """Formulário para nova compra."""
-    fornecedores = ServicoCatalogos(db).listar_fornecedores()
-    produtos, _ = ServicoProdutos(db).listar(por_pagina=1000)
+    fornecedores = ServicoCatalogos(db, current_user).listar_fornecedores()
+    produtos, _ = ServicoProdutos(db, current_user).listar(por_pagina=1000)
     return templates.TemplateResponse(
         request, "purchases/form.html",
         {
@@ -71,7 +71,7 @@ async def criar_compra(
 ):
     """Cria novo pedido de compra."""
     form = await request.form()
-    compra = ServicoCompras(db).criar(form, current_user)
+    compra = ServicoCompras(db, current_user).criar(form, current_user)
     return RedirectResponse(f"/compras/{compra.id}", status_code=302)
 
 
@@ -83,7 +83,7 @@ def detalhe_compra(
     current_user: models.User = Depends(auth_utils.require_permission("compras")),
 ):
     """Detalhes de uma compra."""
-    compra = ServicoCompras(db).obter_ou_erro(purchase_id)
+    compra = ServicoCompras(db, current_user).obter_ou_erro(purchase_id)
     return templates.TemplateResponse(
         request, "purchases/detail.html",
         {"purchase": compra, "current_user": current_user},
@@ -98,7 +98,7 @@ async def receber_compra(
     current_user: models.User = Depends(auth_utils.require_permission("compras")),
 ):
     """Marca compra como recebida, atualiza estoque e gera conta a pagar."""
-    ServicoCompras(db).receber(purchase_id, current_user)
+    ServicoCompras(db, current_user).receber(purchase_id, current_user)
     return RedirectResponse(f"/compras/{purchase_id}", status_code=302)
 
 
@@ -109,5 +109,5 @@ def cancelar_compra(
     current_user: models.User = Depends(auth_utils.require_permission("compras")),
 ):
     """Cancela compra pendente."""
-    ServicoCompras(db).cancelar(purchase_id)
+    ServicoCompras(db, current_user).cancelar(purchase_id)
     return RedirectResponse(f"/compras/{purchase_id}", status_code=302)

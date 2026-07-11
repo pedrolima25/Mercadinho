@@ -41,7 +41,7 @@ from routers.financial import router as financial_router
 from routers.cash_register import router as cash_register_router
 from routers.reports import router as reports_router
 from routers.users import router as users_router
-from routers.company import router as company_router, load_company_brand
+from routers.company import router as company_router, branding_from_profile, default_branding
 from routers.nfce import router as nfce_router
 from routers.catalogs import (
     categories_router, brands_router, suppliers_router,
@@ -73,6 +73,16 @@ def ensure_schema_updates():
     _add_enum_value_if_missing("movementtype", "perda")
     _add_enum_value_if_missing("cashmovementtype", "despesa")
     _add_enum_value_if_missing("cashmovementtype", "vale_funcionario")
+    _add_columns_if_missing("empresas", {"slug": "VARCHAR(220)"})
+    # company_id (multi-tenant) nas tabelas de negócio
+    for tabela in [
+        "categories", "brands", "suppliers", "customers", "employees",
+        "products", "stock_movements", "product_batches", "cash_registers",
+        "sales", "purchases", "campaigns", "promotions", "wholesale_tiers",
+        "accounts_payable", "accounts_receivable", "expenses",
+        "fiscal_documents", "company_profile",
+    ]:
+        _add_columns_if_missing(tabela, {"company_id": "INTEGER"})
     _add_columns_if_missing("products", {
         "image_url": "VARCHAR(500)",
         "ncm": "VARCHAR(8)",
@@ -119,16 +129,6 @@ Base.metadata.create_all(bind=engine)
 ensure_schema_updates()
 
 app = FastAPI(title=settings.app_name, docs_url="/api/docs")
-app.state.market_name = settings.market_name
-app.state.market_logo_url = settings.market_logo_url
-app.state.pix_key = settings.pix_key
-app.state.pix_city = settings.pix_city
-app.state.company_receipt_footer = "Obrigado pela preferencia"
-app.state.company_cnpj = ""
-app.state.company_phone = ""
-app.state.company_email = ""
-app.state.company_address = ""
-load_company_brand(app)
 
 # Seed inicial (seguro chamar múltiplas vezes — verifica antes de criar)
 @app.on_event("startup")
@@ -194,34 +194,42 @@ def dashboard(
 
     today = date.today()
 
+    empresa_id = current_user.company_id
+
     # Estatísticas
     total_today = db.query(func.sum(models.Sale.total)).filter(
         models.Sale.status == models.SaleStatus.finalizada,
-        func.date(models.Sale.created_at) == today
+        func.date(models.Sale.created_at) == today,
+        models.Sale.company_id == empresa_id,
     ).scalar() or 0
 
     total_month = db.query(func.sum(models.Sale.total)).filter(
         models.Sale.status == models.SaleStatus.finalizada,
         extract('month', models.Sale.created_at) == today.month,
-        extract('year', models.Sale.created_at) == today.year
+        extract('year', models.Sale.created_at) == today.year,
+        models.Sale.company_id == empresa_id,
     ).scalar() or 0
 
     orders_today = db.query(func.count(models.Sale.id)).filter(
         models.Sale.status == models.SaleStatus.finalizada,
-        func.date(models.Sale.created_at) == today
+        func.date(models.Sale.created_at) == today,
+        models.Sale.company_id == empresa_id,
     ).scalar() or 0
 
     low_stock_count = db.query(func.count(models.Product.id)).filter(
         models.Product.is_active == True,
-        models.Product.stock_quantity <= models.Product.min_stock
+        models.Product.stock_quantity <= models.Product.min_stock,
+        models.Product.company_id == empresa_id,
     ).scalar() or 0
 
     open_payable = db.query(func.sum(models.AccountPayable.amount)).filter(
-        models.AccountPayable.status == models.AccountStatus.pendente
+        models.AccountPayable.status == models.AccountStatus.pendente,
+        models.AccountPayable.company_id == empresa_id,
     ).scalar() or 0
 
     open_receivable = db.query(func.sum(models.AccountReceivable.amount)).filter(
-        models.AccountReceivable.status == models.AccountStatus.pendente
+        models.AccountReceivable.status == models.AccountStatus.pendente,
+        models.AccountReceivable.company_id == empresa_id,
     ).scalar() or 0
 
     open_register = db.query(models.CashRegister).filter(
@@ -240,12 +248,14 @@ def dashboard(
     }
 
     recent_sales = db.query(models.Sale).filter(
-        func.date(models.Sale.created_at) == today
+        func.date(models.Sale.created_at) == today,
+        models.Sale.company_id == empresa_id,
     ).order_by(models.Sale.created_at.desc()).limit(8).all()
 
     low_stock = db.query(models.Product).filter(
         models.Product.is_active == True,
-        models.Product.stock_quantity <= models.Product.min_stock
+        models.Product.stock_quantity <= models.Product.min_stock,
+        models.Product.company_id == empresa_id,
     ).order_by(models.Product.stock_quantity).limit(8).all()
 
     # Gráfico: vendas por dia nos últimos 7 dias
@@ -254,7 +264,8 @@ def dashboard(
         d = today - timedelta(days=i)
         t = db.query(func.sum(models.Sale.total)).filter(
             models.Sale.status == models.SaleStatus.finalizada,
-            func.date(models.Sale.created_at) == d
+            func.date(models.Sale.created_at) == d,
+            models.Sale.company_id == empresa_id,
         ).scalar() or 0
         chart_days.append(d.strftime('%d/%m'))
         chart_totals.append(float(t))
@@ -265,7 +276,8 @@ def dashboard(
         models.Payment.method, func.sum(models.Payment.amount)
     ).join(models.Sale).filter(
         models.Sale.status == models.SaleStatus.finalizada,
-        func.date(models.Sale.created_at) >= since30
+        func.date(models.Sale.created_at) >= since30,
+        models.Sale.company_id == empresa_id,
     ).group_by(models.Payment.method).all()
     pay_labels = {"dinheiro": "Dinheiro", "pix": "PIX", "debito": "Débito",
                   "credito": "Crédito", "fiado": "Fiado", "vale": "Vale"}
@@ -277,7 +289,8 @@ def dashboard(
         models.Product.name, func.sum(models.SaleItem.total).label('rev')
     ).join(models.SaleItem).join(models.Sale).filter(
         models.Sale.status == models.SaleStatus.finalizada,
-        func.date(models.Sale.created_at) >= since30
+        func.date(models.Sale.created_at) >= since30,
+        models.Sale.company_id == empresa_id,
     ).group_by(models.Product.id, models.Product.name).order_by(
         func.sum(models.SaleItem.total).desc()
     ).limit(5).all()
@@ -317,7 +330,8 @@ _SKIP_ALERTS = {"/login", "/logout", "/api/alerts"}
 async def inject_alerts(request: Request, call_next):
     path = request.url.path
     skip = (path.startswith("/static") or path.startswith("/api/") or path.startswith("/catalogo")
-            or path in _SKIP_ALERTS or request.method != "GET")
+            or path.startswith("/loja/") or path in _SKIP_ALERTS or request.method != "GET")
+    request.state.company = default_branding()
     if skip:
         request.state.alerts = {"low_stock": 0, "overdue_payable": 0,
                                  "overdue_receivable": 0, "total": 0}
@@ -325,23 +339,38 @@ async def inject_alerts(request: Request, call_next):
         from database import SessionLocal as _SL
         _db = _SL()
         try:
-            _today = date.today()
-            ls = _db.query(func.count(models.Product.id)).filter(
-                models.Product.is_active == True,
-                models.Product.stock_quantity <= models.Product.min_stock
-            ).scalar() or 0
-            op = _db.query(func.count(models.AccountPayable.id)).filter(
-                models.AccountPayable.status == models.AccountStatus.pendente,
-                models.AccountPayable.due_date < _today
-            ).scalar() or 0
-            orec = _db.query(func.count(models.AccountReceivable.id)).filter(
-                models.AccountReceivable.status == models.AccountStatus.pendente,
-                models.AccountReceivable.due_date < _today
-            ).scalar() or 0
-            request.state.alerts = {
-                "low_stock": ls, "overdue_payable": op,
-                "overdue_receivable": orec, "total": ls + op + orec
-            }
+            _user = auth_utils.get_current_user_from_cookie(request, _db)
+            _empresa_id = _user.company_id if _user else None
+            if _empresa_id is not None:
+                _company = _db.query(models.CompanyProfile).filter(
+                    models.CompanyProfile.company_id == _empresa_id
+                ).first()
+                if _company:
+                    request.state.company = branding_from_profile(_company)
+            if _empresa_id is None:
+                request.state.alerts = {"low_stock": 0, "overdue_payable": 0,
+                                         "overdue_receivable": 0, "total": 0}
+            else:
+                _today = date.today()
+                ls = _db.query(func.count(models.Product.id)).filter(
+                    models.Product.is_active == True,
+                    models.Product.stock_quantity <= models.Product.min_stock,
+                    models.Product.company_id == _empresa_id,
+                ).scalar() or 0
+                op = _db.query(func.count(models.AccountPayable.id)).filter(
+                    models.AccountPayable.status == models.AccountStatus.pendente,
+                    models.AccountPayable.due_date < _today,
+                    models.AccountPayable.company_id == _empresa_id,
+                ).scalar() or 0
+                orec = _db.query(func.count(models.AccountReceivable.id)).filter(
+                    models.AccountReceivable.status == models.AccountStatus.pendente,
+                    models.AccountReceivable.due_date < _today,
+                    models.AccountReceivable.company_id == _empresa_id,
+                ).scalar() or 0
+                request.state.alerts = {
+                    "low_stock": ls, "overdue_payable": op,
+                    "overdue_receivable": orec, "total": ls + op + orec
+                }
         except Exception:
             request.state.alerts = {"low_stock": 0, "overdue_payable": 0,
                                      "overdue_receivable": 0, "total": 0}
@@ -356,20 +385,24 @@ def alerts_api(request: Request, db: Session = Depends(get_db)):
     if not current_user:
         return JSONResponse({"error": "unauthorized"}, status_code=401)
     today = date.today()
+    empresa_id = current_user.company_id
 
     low_stock = db.query(models.Product).filter(
         models.Product.is_active == True,
-        models.Product.stock_quantity <= models.Product.min_stock
+        models.Product.stock_quantity <= models.Product.min_stock,
+        models.Product.company_id == empresa_id,
     ).order_by(models.Product.stock_quantity).limit(8).all()
 
     overdue_pay = db.query(models.AccountPayable).filter(
         models.AccountPayable.status == models.AccountStatus.pendente,
-        models.AccountPayable.due_date < today
+        models.AccountPayable.due_date < today,
+        models.AccountPayable.company_id == empresa_id,
     ).order_by(models.AccountPayable.due_date).limit(8).all()
 
     overdue_rec = db.query(models.AccountReceivable).filter(
         models.AccountReceivable.status == models.AccountStatus.pendente,
-        models.AccountReceivable.due_date < today
+        models.AccountReceivable.due_date < today,
+        models.AccountReceivable.company_id == empresa_id,
     ).order_by(models.AccountReceivable.due_date).limit(8).all()
 
     return JSONResponse({
@@ -387,6 +420,33 @@ def alerts_api(request: Request, db: Session = Depends(get_db)):
                                  "days": (today - a.due_date).days if a.due_date else 0}
                                 for a in overdue_rec],
     })
+
+
+def _backfill_company_ids(db, empresa_padrao_id: int):
+    """Atribui à empresa padrão todo dado de negócio criado antes do sistema virar multi-tenant."""
+    tabelas = [
+        models.Category, models.Brand, models.Supplier, models.Customer,
+        models.Employee, models.Product, models.StockMovement, models.ProductBatch,
+        models.CashRegister, models.Sale, models.Purchase, models.Campaign,
+        models.Promotion, models.WholesaleTier, models.AccountPayable,
+        models.AccountReceivable, models.Expense, models.FiscalDocument,
+        models.CompanyProfile,
+    ]
+    for modelo in tabelas:
+        db.query(modelo).filter(modelo.company_id == None).update({"company_id": empresa_padrao_id})
+
+
+def _backfill_empresa_slugs(db):
+    """Gera slug para empresas já existentes que ainda não têm um."""
+    from utils.slug import slugify
+    for empresa in db.query(models.Empresa).filter(models.Empresa.slug == None).all():
+        base = slugify(empresa.nome, fallback=f"empresa-{empresa.id}")
+        slug = base
+        contador = 2
+        while db.query(models.Empresa).filter(models.Empresa.slug == slug, models.Empresa.id != empresa.id).first():
+            slug = f"{base}-{contador}"
+            contador += 1
+        empresa.slug = slug
 
 
 # ─── Seed de dados iniciais ───────────────────────────────────────────────────
@@ -412,6 +472,9 @@ def _seed_super_admin(db):
         models.User.company_id == None,
         models.User.role != models.UserRole.super_administrador,
     ).update({"company_id": empresa_padrao.id})
+
+    _backfill_company_ids(db, empresa_padrao.id)
+    _backfill_empresa_slugs(db)
 
     # Super admin
     if not db.query(models.User).filter(models.User.username == sa_user).first():
@@ -440,6 +503,9 @@ def create_initial_data():
         print(f"Erro no seed super admin: {e}")
 
     try:
+        empresa_padrao = db.query(models.Empresa).filter(models.Empresa.nome == "_padrao_").first()
+        empresa_padrao_id = empresa_padrao.id if empresa_padrao else None
+
         # Admin user
         if not db.query(models.User).filter(models.User.username == "admin").first():
             admin = models.User(
@@ -448,7 +514,8 @@ def create_initial_data():
                 full_name="Administrador",
                 hashed_password=auth_utils.get_password_hash("admin123"),
                 role=models.UserRole.admin,
-                is_active=True
+                is_active=True,
+                company_id=empresa_padrao_id,
             )
             db.add(admin)
 
@@ -459,7 +526,8 @@ def create_initial_data():
                 full_name="Operador Caixa 1",
                 hashed_password=auth_utils.get_password_hash("caixa123"),
                 role=models.UserRole.caixa,
-                is_active=True
+                is_active=True,
+                company_id=empresa_padrao_id,
             )
             db.add(caixa)
             db.flush()
@@ -469,7 +537,7 @@ def create_initial_data():
                     "Mercearia", "Limpeza", "Higiene e Beleza", "Frios e Embutidos", "Congelados"]
             cat_objs = {}
             for c in cats:
-                obj = models.Category(name=c)
+                obj = models.Category(name=c, company_id=empresa_padrao_id)
                 db.add(obj)
                 db.flush()
                 cat_objs[c] = obj
@@ -478,7 +546,7 @@ def create_initial_data():
             brands = ["Nestlé", "Unilever", "P&G", "Ambev", "Sadia", "Perdigão", "Coca-Cola", "Sem Marca"]
             brand_objs = {}
             for b in brands:
-                obj = models.Brand(name=b)
+                obj = models.Brand(name=b, company_id=empresa_padrao_id)
                 db.add(obj)
                 db.flush()
                 brand_objs[b] = obj
@@ -489,7 +557,8 @@ def create_initial_data():
                 cnpj="12.345.678/0001-90",
                 email="contato@distribuidora.com",
                 phone="(11) 3333-4444",
-                contact_name="João Silva"
+                contact_name="João Silva",
+                company_id=empresa_padrao_id,
             )
             db.add(supplier)
             db.flush()
@@ -520,19 +589,24 @@ def create_initial_data():
                     brand_id=brand_objs.get(brand_name, brand_objs["Sem Marca"]).id,
                     supplier_id=supplier.id,
                     cost_price=cost, sale_price=sale,
-                    stock_quantity=stock, min_stock=min_s, unit=unit
+                    stock_quantity=stock, min_stock=min_s, unit=unit,
+                    company_id=empresa_padrao_id,
                 )
                 db.add(p)
                 db.flush()
 
                 mv = models.StockMovement(
                     product_id=p.id, type=models.MovementType.entrada,
-                    quantity=stock, reason="Estoque inicial", user_id=admin.id
+                    quantity=stock, reason="Estoque inicial", user_id=admin.id,
+                    company_id=empresa_padrao_id,
                 )
                 db.add(mv)
 
             # Cliente de exemplo
-            cliente = models.Customer(name="Maria da Silva", cpf="123.456.789-00", phone="(11) 99999-8888", credit_limit=500)
+            cliente = models.Customer(
+                name="Maria da Silva", cpf="123.456.789-00", phone="(11) 99999-8888",
+                credit_limit=500, company_id=empresa_padrao_id,
+            )
             db.add(cliente)
 
             db.commit()

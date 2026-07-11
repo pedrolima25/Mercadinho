@@ -132,8 +132,8 @@
 
 <div class="pdv-header">
   <div class="pdv-brand">
-    <img class="pdv-logo" src="{{ request.app.state.market_logo_url }}" alt="">
-    {{ request.app.state.market_name }}
+    <img class="pdv-logo" src="{{ request.state.company.market_logo_url }}" alt="">
+    {{ request.state.company.market_name }}
   </div>
   <div class="pdv-center">
     <div class="pdv-badge">
@@ -155,7 +155,7 @@
 </div>
 
 <div class="pdv-footer">
-  <span>{{ request.app.state.market_name }} &nbsp;·&nbsp; PDV</span>
+  <span>{{ request.state.company.market_name }} &nbsp;·&nbsp; PDV</span>
   <span id="pdv-date"></span>
 </div>
 

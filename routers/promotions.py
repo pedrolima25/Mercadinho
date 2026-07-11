@@ -25,7 +25,7 @@ def listar_promocoes(
     current_user: models.User = Depends(auth_utils.require_permission("promocoes")),
 ):
     """Lista todas as promoções cadastradas."""
-    promocoes = ServicoPromocoes(db).listar()
+    promocoes = ServicoPromocoes(db, current_user).listar()
     return templates.TemplateResponse(
         request, "promotions/index.html",
         {"promotions": promocoes, "current_user": current_user},
@@ -39,7 +39,7 @@ def nova_promocao(
     current_user: models.User = Depends(auth_utils.require_permission("promocoes")),
 ):
     """Formulário de nova promoção."""
-    produtos, _ = ServicoProdutos(db).listar(por_pagina=1000)
+    produtos, _ = ServicoProdutos(db, current_user).listar(por_pagina=1000)
     return templates.TemplateResponse(
         request, "promotions/form.html",
         {"promotion": None, "products": produtos, "current_user": current_user},
@@ -54,7 +54,7 @@ async def criar_promocao(
 ):
     """Cria uma nova promoção."""
     form = await request.form()
-    ServicoPromocoes(db).criar(form)
+    ServicoPromocoes(db, current_user).criar(form)
     return RedirectResponse("/promocoes", status_code=302)
 
 
@@ -66,9 +66,9 @@ def editar_promocao(
     current_user: models.User = Depends(auth_utils.require_permission("promocoes")),
 ):
     """Formulário de edição de promoção."""
-    servico = ServicoPromocoes(db)
+    servico = ServicoPromocoes(db, current_user)
     promocao = servico.obter_ou_erro(promotion_id)
-    produtos, _ = ServicoProdutos(db).listar(por_pagina=1000)
+    produtos, _ = ServicoProdutos(db, current_user).listar(por_pagina=1000)
     return templates.TemplateResponse(
         request, "promotions/form.html",
         {"promotion": promocao, "products": produtos, "current_user": current_user},
@@ -84,7 +84,7 @@ async def atualizar_promocao(
 ):
     """Salva alterações de uma promoção."""
     form = await request.form()
-    ServicoPromocoes(db).atualizar(promotion_id, form)
+    ServicoPromocoes(db, current_user).atualizar(promotion_id, form)
     return RedirectResponse("/promocoes", status_code=302)
 
 
@@ -95,5 +95,5 @@ def excluir_promocao(
     current_user: models.User = Depends(auth_utils.require_permission("promocoes")),
 ):
     """Remove uma promoção."""
-    ServicoPromocoes(db).excluir(promotion_id)
+    ServicoPromocoes(db, current_user).excluir(promotion_id)
     return RedirectResponse("/promocoes", status_code=302)

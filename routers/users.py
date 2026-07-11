@@ -26,7 +26,7 @@ def listar_usuarios(
     """Lista todos os usuários (somente admin)."""
     if current_user.role != models.UserRole.admin:
         raise HTTPException(status_code=403, detail="Sem permissão")
-    servico = ServicoUsuarios(db)
+    servico = ServicoUsuarios(db, current_user)
     return templates.TemplateResponse(
         request, "users/index.html",
         {"users": servico.listar_todos(), "current_user": current_user},
@@ -55,7 +55,7 @@ async def criar_usuario(
 ):
     """Cria novo usuário. Validações ficam no ServicoUsuarios."""
     form = await request.form()
-    servico = ServicoUsuarios(db)
+    servico = ServicoUsuarios(db, current_user)
     servico.criar(form, current_user)
     return RedirectResponse("/usuarios", status_code=302)
 
@@ -68,7 +68,7 @@ def editar_usuario(
     current_user: models.User = Depends(auth_utils.require_user),
 ):
     """Exibe formulário de edição de usuário."""
-    servico = ServicoUsuarios(db)
+    servico = ServicoUsuarios(db, current_user)
     usuario = servico.obter_ou_erro(user_id)
     return templates.TemplateResponse(
         request, "users/form.html",
@@ -85,7 +85,7 @@ async def atualizar_usuario(
 ):
     """Salva alterações do usuário."""
     form = await request.form()
-    ServicoUsuarios(db).atualizar(user_id, form, current_user)
+    ServicoUsuarios(db, current_user).atualizar(user_id, form, current_user)
     return RedirectResponse("/usuarios", status_code=302)
 
 
@@ -100,7 +100,7 @@ def permissoes_usuario(
     if current_user.role != models.UserRole.admin:
         raise HTTPException(status_code=403, detail="Sem permissão")
     from permissions import PERMISSIONS
-    servico = ServicoUsuarios(db)
+    servico = ServicoUsuarios(db, current_user)
     usuario = servico.obter_ou_erro(user_id)
     concedidas = {p.permission_key for p in usuario.permissions}
     return templates.TemplateResponse(
@@ -124,7 +124,7 @@ async def salvar_permissoes_usuario(
     """Salva as permissões de tela concedidas a um usuário."""
     form = await request.form()
     chaves = form.getlist("permissions")
-    ServicoUsuarios(db).salvar_permissoes(user_id, chaves, current_user)
+    ServicoUsuarios(db, current_user).salvar_permissoes(user_id, chaves, current_user)
     return RedirectResponse(f"/usuarios/{user_id}/permissoes?ok=1", status_code=302)
 
 
@@ -135,5 +135,5 @@ def excluir_usuario(
     current_user: models.User = Depends(auth_utils.require_user),
 ):
     """Desativa usuário."""
-    ServicoUsuarios(db).desativar(user_id, current_user)
+    ServicoUsuarios(db, current_user).desativar(user_id, current_user)
     return RedirectResponse("/usuarios", status_code=302)

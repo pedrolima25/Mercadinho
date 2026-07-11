@@ -14,8 +14,8 @@ from repositorios.base import RepositorioBase
 class RepositorioVendas(RepositorioBase):
     """Queries de vendas."""
 
-    def __init__(self, banco: Session):
-        super().__init__(banco, models.Sale)
+    def __init__(self, banco: Session, empresa_id: Optional[int] = None):
+        super().__init__(banco, models.Sale, empresa_id)
 
     def listar_com_filtros(
         self,
@@ -26,7 +26,7 @@ class RepositorioVendas(RepositorioBase):
         por_pagina: int = 20,
     ) -> Tuple[List[models.Sale], int]:
         """Lista vendas com filtros de data, status e paginação."""
-        consulta = self.banco.query(self.modelo).options(
+        consulta = self._query().options(
             joinedload(self.modelo.customer),
             joinedload(self.modelo.user),
             joinedload(self.modelo.items),
@@ -51,7 +51,7 @@ class RepositorioVendas(RepositorioBase):
     def buscar_com_detalhes(self, venda_id: int) -> Optional[models.Sale]:
         """Retorna venda com cliente, operador, itens, pagamentos e devoluções."""
         return (
-            self.banco.query(self.modelo)
+            self._query()
             .options(
                 joinedload(self.modelo.customer),
                 joinedload(self.modelo.user),

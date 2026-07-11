@@ -24,22 +24,43 @@ class RepositorioBase:
     as operações básicas de banco de dados.
     """
 
-    def __init__(self, banco: Session, modelo: Type):
+    def __init__(self, banco: Session, modelo: Type, empresa_id: Optional[int] = None):
         """
         Inicializa o repositório.
 
         Args:
             banco: Sessão do SQLAlchemy (recebida via Depends(get_db))
             modelo: Classe do modelo SQLAlchemy (ex: models.Product)
+            empresa_id: ID da empresa (tenant) do usuário atual. Obrigatório
+                para modelos com coluna `company_id` — todas as consultas
+                deste repositório ficam restritas a essa empresa.
         """
         self.banco = banco
         self.modelo = modelo
+        self.empresa_id = empresa_id
+
+    # ── Isolamento multi-tenant ──────────────────────────────────────────────
+
+    def _query(self):
+        """
+        Ponto único de acesso ao banco: toda leitura do repositório passa por
+        aqui, para nunca esquecer o filtro por empresa.
+        """
+        consulta = self.banco.query(self.modelo)
+        if hasattr(self.modelo, "company_id"):
+            if self.empresa_id is None:
+                raise RuntimeError(
+                    f"{type(self).__name__}: empresa_id não informado para "
+                    f"consultar {self.modelo.__name__} (tabela com dados por empresa)."
+                )
+            consulta = consulta.filter(self.modelo.company_id == self.empresa_id)
+        return consulta
 
     # ── Leitura ────────────────────────────────────────────────────────────
 
     def buscar_por_id(self, id: int) -> Optional[Any]:
         """Retorna um registro pelo ID, ou None se não encontrar."""
-        return self.banco.query(self.modelo).filter(self.modelo.id == id).first()
+        return self._query().filter(self.modelo.id == id).first()
 
     def buscar_todos(self, pagina: int = 1, por_pagina: int = 20) -> List[Any]:
         """
@@ -54,7 +75,7 @@ class RepositorioBase:
         """
         deslocamento = (pagina - 1) * por_pagina
         return (
-            self.banco.query(self.modelo)
+            self._query()
             .offset(deslocamento)
             .limit(por_pagina)
             .all()
@@ -65,14 +86,14 @@ class RepositorioBase:
         if not hasattr(self.modelo, "is_active"):
             return self.buscar_todos(por_pagina=1000)
         return (
-            self.banco.query(self.modelo)
+            self._query()
             .filter(self.modelo.is_active == True)
             .all()
         )
 
     def contar(self) -> int:
         """Retorna o total de registros na tabela."""
-        return self.banco.query(self.modelo).count()
+        return self._query().count()
 
     # ── Escrita ────────────────────────────────────────────────────────────
 
@@ -86,6 +107,8 @@ class RepositorioBase:
         Returns:
             Objeto criado e salvo
         """
+        if hasattr(self.modelo, "company_id") and "company_id" not in dados:
+            dados = {**dados, "company_id": self.empresa_id}
         objeto = self.modelo(**dados)
         self.banco.add(objeto)
         self.banco.commit()

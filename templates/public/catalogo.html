@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Catálogo — {{ request.app.state.market_name }}</title>
+  <title>Catálogo — {{ request.state.company.market_name }}</title>
   <link rel="stylesheet" href="/static/css/bootstrap.min.css">
   <link rel="stylesheet" href="/static/css/bootstrap-icons.css">
   <style>
@@ -37,15 +37,15 @@
 </head>
 <body>
   <div class="pub-header">
-    <img class="pub-logo" src="{{ request.app.state.market_logo_url }}" alt="">
-    <h3 class="fw-bold mb-0">{{ request.app.state.market_name }}</h3>
+    <img class="pub-logo" src="{{ request.state.company.market_logo_url }}" alt="">
+    <h3 class="fw-bold mb-0">{{ request.state.company.market_name }}</h3>
     <p class="mb-0" style="opacity:0.85;font-size:0.9rem;">Catálogo de produtos</p>
     <div class="pub-tabs">
-      <a href="/catalogo" class="pub-tab active">Todos os produtos</a>
-      <a href="/catalogo/ofertas" class="pub-tab">🔥 Ofertas</a>
+      <a href="/loja/{{ empresa_slug }}/catalogo" class="pub-tab active">Todos os produtos</a>
+      <a href="/loja/{{ empresa_slug }}/catalogo/ofertas" class="pub-tab">🔥 Ofertas</a>
     </div>
     <div class="pub-share">
-      <a href="https://wa.me/?text={{ ('Confira nosso catálogo de produtos: ' + request.base_url|string + 'catalogo')|urlencode }}" target="_blank">
+      <a href="https://wa.me/?text={{ ('Confira nosso catálogo de produtos: ' + request.base_url|string + 'loja/' + empresa_slug + '/catalogo')|urlencode }}" target="_blank">
         <i class="bi bi-whatsapp"></i> Compartilhar catálogo
       </a>
     </div>
@@ -54,9 +54,9 @@
   <div class="pub-wrap">
     {% if categories %}
     <div class="cat-chips">
-      <a href="/catalogo" class="cat-chip {% if not categoria_atual %}active{% endif %}">Todas</a>
+      <a href="/loja/{{ empresa_slug }}/catalogo" class="cat-chip {% if not categoria_atual %}active{% endif %}">Todas</a>
       {% for c in categories %}
-      <a href="/catalogo?categoria={{ c|urlencode }}" class="cat-chip {% if categoria_atual == c %}active{% endif %}">{{ c }}</a>
+      <a href="/loja/{{ empresa_slug }}/catalogo?categoria={{ c|urlencode }}" class="cat-chip {% if categoria_atual == c %}active{% endif %}">{{ c }}</a>
       {% endfor %}
     </div>
     {% endif %}

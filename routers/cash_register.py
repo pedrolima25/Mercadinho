@@ -26,7 +26,7 @@ def pagina_caixa(
     current_user: models.User = Depends(auth_utils.require_user),
 ):
     """Tela principal do caixa: caixa aberto e histórico."""
-    dados = ServicoCaixa(db).visao_geral(current_user)
+    dados = ServicoCaixa(db, current_user).visao_geral(current_user)
     return templates.TemplateResponse(
         request, "cash_register/index.html",
         {**dados, "current_user": current_user},
@@ -40,7 +40,7 @@ def pagina_caixas_abertos(
     current_user: models.User = Depends(auth_utils.require_user),
 ):
     """Lista todos os caixas abertos no momento e quem os abriu."""
-    dados = ServicoCaixa(db).caixas_abertos(current_user)
+    dados = ServicoCaixa(db, current_user).caixas_abertos(current_user)
     return templates.TemplateResponse(
         request, "cash_register/abertos.html",
         {**dados, "current_user": current_user},
@@ -55,7 +55,7 @@ async def abrir_caixa(
 ):
     """Abre o caixa com saldo inicial."""
     form = await request.form()
-    ServicoCaixa(db).abrir(form, current_user)
+    ServicoCaixa(db, current_user).abrir(form, current_user)
     return RedirectResponse("/pdv", status_code=302)
 
 
@@ -67,7 +67,7 @@ async def fechar_caixa(
 ):
     """Fecha o caixa com saldo final."""
     form = await request.form()
-    caixa = ServicoCaixa(db).fechar(form, current_user)
+    caixa = ServicoCaixa(db, current_user).fechar(form, current_user)
     return RedirectResponse(f"/caixa/{caixa.id}", status_code=302)
 
 
@@ -80,11 +80,11 @@ def detalhe_caixa(
     current_user: models.User = Depends(auth_utils.require_user),
 ):
     """Detalhes de um caixa: vendas, movimentações e totais."""
-    dados = ServicoCaixa(db).detalhe(register_id)
+    dados = ServicoCaixa(db, current_user).detalhe(register_id)
     recibo_movimento = None
     if recibo:
         recibo_movimento = next((m for m in dados["register"].cash_movements if m.id == recibo), None)
-    empresa = get_or_create_company(db)
+    empresa = get_or_create_company(db, current_user.company_id)
     return templates.TemplateResponse(
         request, "cash_register/detail.html",
         {**dados, "current_user": current_user, "recibo_movimento": recibo_movimento, "nome_empresa": empresa.trade_name},
@@ -100,7 +100,7 @@ async def movimentacao_caixa(
 ):
     """Registra uma movimentação no caixa (sangria, suprimento, despesa ou vale funcionário)."""
     form = await request.form()
-    movimentacao = ServicoCaixa(db).movimentacao(register_id, form, current_user)
+    movimentacao = ServicoCaixa(db, current_user).movimentacao(register_id, form, current_user)
 
     tipos_com_comprovante = (models.CashMovementType.despesa, models.CashMovementType.vale_funcionario)
     destino = f"/caixa/{register_id}"

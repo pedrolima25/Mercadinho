@@ -14,9 +14,9 @@ from servicos.base import ServicoBase
 class ServicoAtacado(ServicoBase):
     """Regras de negócio para faixas de preço por quantidade (atacado)."""
 
-    def __init__(self, banco: Session):
-        super().__init__(banco)
-        self.repositorio = RepositorioAtacado(banco)
+    def __init__(self, banco: Session, current_user=None):
+        super().__init__(banco, current_user)
+        self.repositorio = RepositorioAtacado(banco, self.empresa_id)
 
     def listar(self) -> List[models.WholesaleTier]:
         """Lista todas as faixas cadastradas."""
@@ -39,7 +39,10 @@ class ServicoAtacado(ServicoBase):
         if wholesale_price <= 0:
             self.erro_requisicao("O preço no atacado deve ser maior que zero")
 
-        produto = self.banco.query(models.Product).filter(models.Product.id == int(product_id)).first()
+        produto = self.banco.query(models.Product).filter(
+            models.Product.id == int(product_id),
+            models.Product.company_id == self.empresa_id,
+        ).first()
         if not produto:
             self.erro_requisicao("Produto não encontrado")
         if wholesale_price >= float(produto.sale_price):

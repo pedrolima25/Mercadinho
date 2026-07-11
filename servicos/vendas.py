@@ -17,9 +17,9 @@ from servicos.produtos import ServicoProdutos
 class ServicoVendas(ServicoBase):
     """Regras de negócio para gestão de vendas."""
 
-    def __init__(self, banco: Session):
-        super().__init__(banco)
-        self.repositorio = RepositorioVendas(banco)
+    def __init__(self, banco: Session, current_user=None):
+        super().__init__(banco, current_user)
+        self.repositorio = RepositorioVendas(banco, self.empresa_id)
 
     def listar(
         self,
@@ -61,7 +61,8 @@ class ServicoVendas(ServicoBase):
         # Devolve o estoque de cada item vendido
         for item in venda.items:
             produto = self.banco.query(models.Product).filter(
-                models.Product.id == item.product_id
+                models.Product.id == item.product_id,
+                models.Product.company_id == self.empresa_id,
             ).first()
             if produto:
                 produto.stock_quantity = float(produto.stock_quantity) + float(item.quantity)
@@ -72,6 +73,7 @@ class ServicoVendas(ServicoBase):
                     quantity=float(item.quantity),
                     reason=f"Cancelamento venda #{venda_id}",
                     user_id=usuario.id,
+                    company_id=self.empresa_id,
                 )
                 self.banco.add(movimentacao)
 
@@ -79,7 +81,8 @@ class ServicoVendas(ServicoBase):
         for pagamento in venda.payments:
             if pagamento.method == models.PaymentMethod.fiado and venda.customer_id:
                 cliente = self.banco.query(models.Customer).filter(
-                    models.Customer.id == venda.customer_id
+                    models.Customer.id == venda.customer_id,
+                    models.Customer.company_id == self.empresa_id,
                 ).first()
                 if cliente:
                     cliente.balance = max(0, float(cliente.balance) - float(pagamento.amount))
@@ -89,6 +92,7 @@ class ServicoVendas(ServicoBase):
                     models.AccountReceivable.customer_id == venda.customer_id,
                     models.AccountReceivable.description == f"Fiado - Venda #{venda.id}",
                     models.AccountReceivable.status == models.AccountStatus.pendente,
+                    models.AccountReceivable.company_id == self.empresa_id,
                 ).first()
                 if conta:
                     conta.status = models.AccountStatus.cancelado
@@ -165,7 +169,8 @@ class ServicoVendas(ServicoBase):
 
             # Repõe o estoque do produto devolvido
             produto = self.banco.query(models.Product).filter(
-                models.Product.id == item.product_id
+                models.Product.id == item.product_id,
+                models.Product.company_id == self.empresa_id,
             ).first()
             if produto:
                 produto.stock_quantity = float(produto.stock_quantity) + quantidade
@@ -178,6 +183,7 @@ class ServicoVendas(ServicoBase):
                     reference_id=devolucao.id,
                     reference_type="return",
                     user_id=usuario.id,
+                    company_id=self.empresa_id,
                 )
                 self.banco.add(movimentacao)
 
@@ -219,8 +225,8 @@ class ServicoPDV(ServicoBase):
     - Gerar contas a receber para fiado
     """
 
-    def __init__(self, banco: Session):
-        super().__init__(banco)
+    def __init__(self, banco: Session, current_user=None):
+        super().__init__(banco, current_user)
 
     def pagina_pdv(self, usuario: models.User) -> dict:
         """Dados para renderizar o PDV."""
@@ -233,7 +239,10 @@ class ServicoPDV(ServicoBase):
         # Clientes ativos (para seleção no PDV)
         clientes = (
             self.banco.query(models.Customer)
-            .filter(models.Customer.is_active == True)
+            .filter(
+                models.Customer.is_active == True,
+                models.Customer.company_id == self.empresa_id,
+            )
             .order_by(models.Customer.name)
             .all()
         )
@@ -244,7 +253,10 @@ class ServicoPDV(ServicoBase):
             ids_abertos = [
                 id_
                 for id_, in self.banco.query(models.CashRegister.id)
-                .filter(models.CashRegister.status == models.CashRegisterStatus.aberto)
+                .filter(
+                    models.CashRegister.status == models.CashRegisterStatus.aberto,
+                    models.CashRegister.company_id == self.empresa_id,
+                )
                 .order_by(models.CashRegister.opened_at.asc(), models.CashRegister.id.asc())
                 .all()
             ]
@@ -302,6 +314,7 @@ class ServicoPDV(ServicoBase):
             cliente = self.banco.query(models.Customer).filter(
                 models.Customer.id == int(cliente_id),
                 models.Customer.is_active == True,
+                models.Customer.company_id == self.empresa_id,
             ).first()
             if not cliente:
                 self.erro_requisicao("Cliente inválido ou inativo")
@@ -331,6 +344,7 @@ class ServicoPDV(ServicoBase):
                 produto = self.banco.query(models.Product).filter(
                     models.Product.id == produto_id,
                     models.Product.is_active == True,
+                    models.Product.company_id == self.empresa_id,
                 ).first()
                 if not produto:
                     self.erro_requisicao("Produto inválido ou inativo")
@@ -401,6 +415,7 @@ class ServicoPDV(ServicoBase):
             total=total,
             status=models.SaleStatus.finalizada,
             finalized_at=datetime.utcnow(),
+            company_id=self.empresa_id,
         )
         self.banco.add(venda)
         self.banco.flush()  # Obtém o ID da venda antes de criar os itens
@@ -429,6 +444,7 @@ class ServicoPDV(ServicoBase):
                 reference_id=venda.id,
                 reference_type="sale",
                 user_id=usuario.id,
+                company_id=self.empresa_id,
             )
             self.banco.add(movimentacao)
 
@@ -445,6 +461,7 @@ class ServicoPDV(ServicoBase):
                     description=f"Fiado - Venda #{venda.id}",
                     amount=valor,
                     due_date=date.today(),
+                    company_id=self.empresa_id,
                 )
                 self.banco.add(conta_receber)
 
@@ -475,6 +492,7 @@ class ServicoPDV(ServicoBase):
         usuario = self.banco.query(models.User).filter(
             models.User.username == username,
             models.User.is_active == True,
+            models.User.company_id == self.empresa_id,
         ).first()
 
         if not usuario or not auth_utils.verify_password(senha, usuario.hashed_password):

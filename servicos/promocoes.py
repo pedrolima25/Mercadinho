@@ -15,9 +15,9 @@ from servicos.base import ServicoBase
 class ServicoPromocoes(ServicoBase):
     """Regras de negócio para promoções."""
 
-    def __init__(self, banco: Session):
-        super().__init__(banco)
-        self.repositorio = RepositorioPromocoes(banco)
+    def __init__(self, banco: Session, current_user=None):
+        super().__init__(banco, current_user)
+        self.repositorio = RepositorioPromocoes(banco, self.empresa_id)
 
     def listar(self) -> List[models.Promotion]:
         """Lista todas as promoções, mais recentes primeiro."""
@@ -36,7 +36,10 @@ class ServicoPromocoes(ServicoBase):
         if promo_price <= 0:
             self.erro_requisicao("O preço promocional deve ser maior que zero")
 
-        produto = self.banco.query(models.Product).filter(models.Product.id == int(product_id)).first()
+        produto = self.banco.query(models.Product).filter(
+            models.Product.id == int(product_id),
+            models.Product.company_id == self.empresa_id,
+        ).first()
         if not produto:
             self.erro_requisicao("Produto não encontrado")
         if promo_price >= float(produto.sale_price):

@@ -25,7 +25,7 @@ def listar_atacado(
     current_user: models.User = Depends(auth_utils.require_permission("atacado")),
 ):
     """Lista todas as faixas de preço por quantidade."""
-    tiers = ServicoAtacado(db).listar()
+    tiers = ServicoAtacado(db, current_user).listar()
     return templates.TemplateResponse(
         request, "wholesale/index.html",
         {"tiers": tiers, "current_user": current_user},
@@ -39,7 +39,7 @@ def novo_tier(
     current_user: models.User = Depends(auth_utils.require_permission("atacado")),
 ):
     """Formulário de nova faixa de preço."""
-    produtos, _ = ServicoProdutos(db).listar(por_pagina=1000)
+    produtos, _ = ServicoProdutos(db, current_user).listar(por_pagina=1000)
     return templates.TemplateResponse(
         request, "wholesale/form.html",
         {"tier": None, "products": produtos, "current_user": current_user},
@@ -54,7 +54,7 @@ async def criar_tier(
 ):
     """Cria uma nova faixa de preço por quantidade."""
     form = await request.form()
-    ServicoAtacado(db).criar(form)
+    ServicoAtacado(db, current_user).criar(form)
     return RedirectResponse("/atacado", status_code=302)
 
 
@@ -66,9 +66,9 @@ def editar_tier(
     current_user: models.User = Depends(auth_utils.require_permission("atacado")),
 ):
     """Formulário de edição de uma faixa de preço."""
-    servico = ServicoAtacado(db)
+    servico = ServicoAtacado(db, current_user)
     tier = servico.obter_ou_erro(tier_id)
-    produtos, _ = ServicoProdutos(db).listar(por_pagina=1000)
+    produtos, _ = ServicoProdutos(db, current_user).listar(por_pagina=1000)
     return templates.TemplateResponse(
         request, "wholesale/form.html",
         {"tier": tier, "products": produtos, "current_user": current_user},
@@ -84,7 +84,7 @@ async def atualizar_tier(
 ):
     """Salva alterações de uma faixa de preço."""
     form = await request.form()
-    ServicoAtacado(db).atualizar(tier_id, form)
+    ServicoAtacado(db, current_user).atualizar(tier_id, form)
     return RedirectResponse("/atacado", status_code=302)
 
 
@@ -95,5 +95,5 @@ def excluir_tier(
     current_user: models.User = Depends(auth_utils.require_permission("atacado")),
 ):
     """Remove uma faixa de preço."""
-    ServicoAtacado(db).excluir(tier_id)
+    ServicoAtacado(db, current_user).excluir(tier_id)
     return RedirectResponse("/atacado", status_code=302)

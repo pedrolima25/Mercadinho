@@ -14,13 +14,13 @@ from repositorios.base import RepositorioBase
 class RepositorioMovimentacoes(RepositorioBase):
     """Queries de movimentações de estoque."""
 
-    def __init__(self, banco: Session):
-        super().__init__(banco, models.StockMovement)
+    def __init__(self, banco: Session, empresa_id: Optional[int] = None):
+        super().__init__(banco, models.StockMovement, empresa_id)
 
     def listar_recentes(self, limite: int = 30) -> List[models.StockMovement]:
         """Últimas movimentações com dados do produto e usuário."""
         return (
-            self.banco.query(self.modelo)
+            self._query()
             .options(
                 joinedload(self.modelo.product),
                 joinedload(self.modelo.user),
@@ -43,7 +43,7 @@ class RepositorioMovimentacoes(RepositorioBase):
         Returns:
             (lista_movimentacoes, total)
         """
-        consulta = self.banco.query(self.modelo).options(
+        consulta = self._query().options(
             joinedload(self.modelo.product),
             joinedload(self.modelo.user),
         )
@@ -66,13 +66,13 @@ class RepositorioMovimentacoes(RepositorioBase):
 class RepositorioLotes(RepositorioBase):
     """Queries de lotes de produtos com validade."""
 
-    def __init__(self, banco: Session):
-        super().__init__(banco, models.ProductBatch)
+    def __init__(self, banco: Session, empresa_id: Optional[int] = None):
+        super().__init__(banco, models.ProductBatch, empresa_id)
 
     def listar_todos(self) -> List[models.ProductBatch]:
         """Todos os lotes ordenados por validade."""
         return (
-            self.banco.query(self.modelo)
+            self._query()
             .options(joinedload(self.modelo.product))
             .order_by(self.modelo.expiry_date)
             .all()
@@ -81,7 +81,7 @@ class RepositorioLotes(RepositorioBase):
     def proximos_a_vencer(self, limite: int = 20) -> List[models.ProductBatch]:
         """Lotes com data de validade próxima."""
         return (
-            self.banco.query(self.modelo)
+            self._query()
             .options(joinedload(self.modelo.product))
             .filter(self.modelo.expiry_date != None)
             .order_by(self.modelo.expiry_date)

@@ -16,13 +16,13 @@ from repositorios.base import RepositorioBase
 class RepositorioCategorias(RepositorioBase):
     """Queries de categorias de produtos."""
 
-    def __init__(self, banco: Session):
-        super().__init__(banco, models.Category)
+    def __init__(self, banco: Session, empresa_id: Optional[int] = None):
+        super().__init__(banco, models.Category, empresa_id)
 
     def listar_ativas(self) -> List[models.Category]:
         """Todas as categorias ativas ordenadas por nome."""
         return (
-            self.banco.query(self.modelo)
+            self._query()
             .filter(self.modelo.is_active == True)
             .order_by(self.modelo.name)
             .all()
@@ -30,7 +30,7 @@ class RepositorioCategorias(RepositorioBase):
 
     def listar_todas(self) -> List[models.Category]:
         """Todas as categorias (ativas e inativas) ordenadas por nome."""
-        return self.banco.query(self.modelo).order_by(self.modelo.name).all()
+        return self._query().order_by(self.modelo.name).all()
 
 
 # ── Marcas ──────────────────────────────────────────────────────────────────
@@ -38,13 +38,13 @@ class RepositorioCategorias(RepositorioBase):
 class RepositorioMarcas(RepositorioBase):
     """Queries de marcas de produtos."""
 
-    def __init__(self, banco: Session):
-        super().__init__(banco, models.Brand)
+    def __init__(self, banco: Session, empresa_id: Optional[int] = None):
+        super().__init__(banco, models.Brand, empresa_id)
 
     def listar_ativas(self) -> List[models.Brand]:
         """Todas as marcas ativas ordenadas por nome."""
         return (
-            self.banco.query(self.modelo)
+            self._query()
             .filter(self.modelo.is_active == True)
             .order_by(self.modelo.name)
             .all()
@@ -52,7 +52,7 @@ class RepositorioMarcas(RepositorioBase):
 
     def listar_todas(self) -> List[models.Brand]:
         """Todas as marcas ordenadas por nome."""
-        return self.banco.query(self.modelo).order_by(self.modelo.name).all()
+        return self._query().order_by(self.modelo.name).all()
 
 
 # ── Fornecedores ─────────────────────────────────────────────────────────────
@@ -60,13 +60,13 @@ class RepositorioMarcas(RepositorioBase):
 class RepositorioFornecedores(RepositorioBase):
     """Queries de fornecedores."""
 
-    def __init__(self, banco: Session):
-        super().__init__(banco, models.Supplier)
+    def __init__(self, banco: Session, empresa_id: Optional[int] = None):
+        super().__init__(banco, models.Supplier, empresa_id)
 
     def listar_ativos(self) -> List[models.Supplier]:
         """Fornecedores ativos ordenados por nome."""
         return (
-            self.banco.query(self.modelo)
+            self._query()
             .filter(self.modelo.is_active == True)
             .order_by(self.modelo.name)
             .all()
@@ -74,7 +74,7 @@ class RepositorioFornecedores(RepositorioBase):
 
     def listar_todos(self) -> List[models.Supplier]:
         """Todos os fornecedores ordenados por nome."""
-        return self.banco.query(self.modelo).order_by(self.modelo.name).all()
+        return self._query().order_by(self.modelo.name).all()
 
 
 # ── Clientes ──────────────────────────────────────────────────────────────────
@@ -82,13 +82,13 @@ class RepositorioFornecedores(RepositorioBase):
 class RepositorioClientes(RepositorioBase):
     """Queries de clientes."""
 
-    def __init__(self, banco: Session):
-        super().__init__(banco, models.Customer)
+    def __init__(self, banco: Session, empresa_id: Optional[int] = None):
+        super().__init__(banco, models.Customer, empresa_id)
 
     def listar_ativos(self) -> List[models.Customer]:
         """Clientes ativos ordenados por nome."""
         return (
-            self.banco.query(self.modelo)
+            self._query()
             .filter(self.modelo.is_active == True)
             .order_by(self.modelo.name)
             .all()
@@ -96,7 +96,7 @@ class RepositorioClientes(RepositorioBase):
 
     def listar_todos(self) -> List[models.Customer]:
         """Todos os clientes ordenados por nome."""
-        return self.banco.query(self.modelo).order_by(self.modelo.name).all()
+        return self._query().order_by(self.modelo.name).all()
 
 
 # ── Funcionários ──────────────────────────────────────────────────────────────
@@ -104,13 +104,13 @@ class RepositorioClientes(RepositorioBase):
 class RepositorioFuncionarios(RepositorioBase):
     """Queries de funcionários."""
 
-    def __init__(self, banco: Session):
-        super().__init__(banco, models.Employee)
+    def __init__(self, banco: Session, empresa_id: Optional[int] = None):
+        super().__init__(banco, models.Employee, empresa_id)
 
     def listar_ativos(self) -> List[models.Employee]:
         """Funcionários ativos ordenados por nome."""
         return (
-            self.banco.query(self.modelo)
+            self._query()
             .filter(self.modelo.is_active == True)
             .order_by(self.modelo.name)
             .all()
@@ -118,4 +118,4 @@ class RepositorioFuncionarios(RepositorioBase):
 
     def listar_todos(self) -> List[models.Employee]:
         """Todos os funcionários ordenados por nome."""
-        return self.banco.query(self.modelo).order_by(self.modelo.name).all()
+        return self._query().order_by(self.modelo.name).all()

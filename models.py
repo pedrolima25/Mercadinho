@@ -24,6 +24,7 @@ class Empresa(Base):
     __tablename__ = "empresas"
     id = Column(Integer, primary_key=True, index=True)
     nome = Column(String(200), nullable=False)
+    slug = Column(String(220), unique=True, nullable=True, index=True)
     cnpj = Column(String(18), nullable=True)
     email_responsavel = Column(String(120), nullable=True)
     telefone_responsavel = Column(String(30), nullable=True)
@@ -156,6 +157,7 @@ class Employee(Base):
     hire_date = Column(Date, nullable=True)
     is_active = Column(Boolean, default=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    company_id = Column(Integer, ForeignKey("empresas.id"), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User")
@@ -170,6 +172,7 @@ class Category(Base):
     description = Column(Text, nullable=True)
     parent_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
     is_active = Column(Boolean, default=True)
+    company_id = Column(Integer, ForeignKey("empresas.id"), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     parent = relationship("Category", remote_side=[id], back_populates="children")
@@ -183,6 +186,7 @@ class Brand(Base):
     name = Column(String(100), nullable=False)
     description = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True)
+    company_id = Column(Integer, ForeignKey("empresas.id"), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     products = relationship("Product", back_populates="brand")
@@ -198,6 +202,7 @@ class Supplier(Base):
     address = Column(Text, nullable=True)
     contact_name = Column(String(100), nullable=True)
     is_active = Column(Boolean, default=True)
+    company_id = Column(Integer, ForeignKey("empresas.id"), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     products = relationship("Product", back_populates="supplier")
@@ -225,6 +230,7 @@ class Customer(Base):
     first_purchase_date = Column(Date, nullable=True)
     last_purchase_date = Column(Date, nullable=True)
     is_active = Column(Boolean, default=True)
+    company_id = Column(Integer, ForeignKey("empresas.id"), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     sales = relationship("Sale", back_populates="customer")
@@ -236,6 +242,7 @@ class Customer(Base):
 class CompanyProfile(Base):
     __tablename__ = "company_profile"
     id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer, ForeignKey("empresas.id"), unique=True, nullable=True, index=True)
     legal_name = Column(String(200), nullable=True)
     trade_name = Column(String(200), nullable=False, default="Mercadinho")
     cnpj = Column(String(18), nullable=True)
@@ -306,6 +313,7 @@ class Product(Base):
     reference = Column(String(50), nullable=True)
     stock_location = Column(String(50), nullable=True)
     is_active = Column(Boolean, default=True)
+    company_id = Column(Integer, ForeignKey("empresas.id"), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -352,6 +360,7 @@ class ProductBatch(Base):
     batch_number = Column(String(50), nullable=True)
     quantity = Column(Numeric(10, 3), default=0)
     expiry_date = Column(Date, nullable=True)
+    company_id = Column(Integer, ForeignKey("empresas.id"), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     product = relationship("Product", back_populates="batches")
@@ -366,6 +375,7 @@ class Promotion(Base):
     start_at = Column(DateTime(timezone=True), nullable=False)
     end_at = Column(DateTime(timezone=True), nullable=False)
     is_active = Column(Boolean, default=True)
+    company_id = Column(Integer, ForeignKey("empresas.id"), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     product = relationship("Product", back_populates="promotions")
@@ -379,6 +389,7 @@ class WholesaleTier(Base):
     min_quantity = Column(Numeric(10, 3), nullable=False)
     wholesale_price = Column(Numeric(10, 2), nullable=False)
     is_active = Column(Boolean, default=True)
+    company_id = Column(Integer, ForeignKey("empresas.id"), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     product = relationship("Product", back_populates="wholesale_tiers")
@@ -393,6 +404,7 @@ class Campaign(Base):
     subtitle = Column(String(200), nullable=True)
     color_primary = Column(String(7), default="#17a8e8")
     is_active = Column(Boolean, default=True)
+    company_id = Column(Integer, ForeignKey("empresas.id"), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     items = relationship("CampaignItem", back_populates="campaign", cascade="all, delete-orphan")
@@ -422,6 +434,7 @@ class StockMovement(Base):
     reference_id = Column(Integer, nullable=True)
     reference_type = Column(String(50), nullable=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    company_id = Column(Integer, ForeignKey("empresas.id"), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     product = relationship("Product", back_populates="stock_movements")
@@ -440,6 +453,7 @@ class CashRegister(Base):
     opened_at = Column(DateTime(timezone=True), server_default=func.now())
     closed_at = Column(DateTime(timezone=True), nullable=True)
     notes = Column(Text, nullable=True)
+    company_id = Column(Integer, ForeignKey("empresas.id"), nullable=True, index=True)
 
     user = relationship("User", back_populates="cash_registers")
     sales = relationship("Sale", back_populates="cash_register")
@@ -486,6 +500,7 @@ class Sale(Base):
     total = Column(Numeric(10, 2), default=0)
     status = Column(Enum(SaleStatus), default=SaleStatus.aberta)
     notes = Column(Text, nullable=True)
+    company_id = Column(Integer, ForeignKey("empresas.id"), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     finalized_at = Column(DateTime(timezone=True), nullable=True)
 
@@ -571,6 +586,7 @@ class FiscalDocument(Base):
     contingency = Column(Boolean, default=False)
     issued_at = Column(DateTime(timezone=True), nullable=True)
     authorized_at = Column(DateTime(timezone=True), nullable=True)
+    company_id = Column(Integer, ForeignKey("empresas.id"), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     sale = relationship("Sale", back_populates="fiscal_documents")
@@ -589,6 +605,7 @@ class Purchase(Base):
     notes = Column(Text, nullable=True)
     expected_date = Column(Date, nullable=True)
     received_date = Column(Date, nullable=True)
+    company_id = Column(Integer, ForeignKey("empresas.id"), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     supplier = relationship("Supplier", back_populates="purchases")
@@ -622,6 +639,7 @@ class AccountPayable(Base):
     paid_amount = Column(Numeric(10, 2), nullable=True)
     status = Column(Enum(AccountStatus), default=AccountStatus.pendente)
     notes = Column(Text, nullable=True)
+    company_id = Column(Integer, ForeignKey("empresas.id"), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     supplier = relationship("Supplier", back_populates="accounts_payable")
@@ -638,6 +656,7 @@ class AccountReceivable(Base):
     paid_amount = Column(Numeric(10, 2), nullable=True)
     status = Column(Enum(AccountStatus), default=AccountStatus.pendente)
     notes = Column(Text, nullable=True)
+    company_id = Column(Integer, ForeignKey("empresas.id"), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     customer = relationship("Customer", back_populates="accounts_receivable")
@@ -652,6 +671,7 @@ class Expense(Base):
     date = Column(Date, nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     notes = Column(Text, nullable=True)
+    company_id = Column(Integer, ForeignKey("empresas.id"), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User")

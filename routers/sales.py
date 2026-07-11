@@ -29,7 +29,7 @@ def listar_vendas(
     current_user: models.User = Depends(auth_utils.require_user),
 ):
     """Lista todas as vendas com filtros de data e status."""
-    vendas, total = ServicoVendas(db).listar(
+    vendas, total = ServicoVendas(db, current_user).listar(
         data_inicio=date_from,
         data_fim=date_to,
         status=status,
@@ -53,7 +53,7 @@ def detalhe_venda(
     current_user: models.User = Depends(auth_utils.require_user),
 ):
     """Detalhes de uma venda: itens, pagamentos e devoluções."""
-    venda = ServicoVendas(db).obter_ou_erro(sale_id)
+    venda = ServicoVendas(db, current_user).obter_ou_erro(sale_id)
     return templates.TemplateResponse(
         request, "sales/detail.html",
         {"sale": venda, "current_user": current_user},
@@ -67,7 +67,7 @@ def cancelar_venda(
     current_user: models.User = Depends(auth_utils.require_permission("vendas")),
 ):
     """Cancela uma venda e devolve o estoque."""
-    ServicoVendas(db).cancelar(sale_id, current_user)
+    ServicoVendas(db, current_user).cancelar(sale_id, current_user)
     return RedirectResponse(f"/vendas/{sale_id}", status_code=302)
 
 
@@ -79,7 +79,7 @@ def formulario_devolucao(
     current_user: models.User = Depends(auth_utils.require_permission("vendas")),
 ):
     """Formulário para registrar devolução de itens."""
-    servico = ServicoVendas(db)
+    servico = ServicoVendas(db, current_user)
     venda = servico.obter_ou_erro(sale_id)
 
     if venda.status != models.SaleStatus.finalizada:
@@ -105,7 +105,7 @@ async def registrar_devolucao(
 ):
     """Registra devolução de itens e repõe estoque."""
     form = await request.form()
-    devolucao = ServicoVendas(db).devolver(sale_id, form, current_user)
+    devolucao = ServicoVendas(db, current_user).devolver(sale_id, form, current_user)
     return RedirectResponse(f"/vendas/{sale_id}?devolucao={devolucao.id}", status_code=302)
 
 
@@ -121,7 +121,7 @@ def pagina_pdv(
     current_user: models.User = Depends(auth_utils.require_user),
 ):
     """Tela do PDV: frente de caixa."""
-    dados = ServicoPDV(db).pagina_pdv(current_user)
+    dados = ServicoPDV(db, current_user).pagina_pdv(current_user)
     return templates.TemplateResponse(
         request, "sales/pdv.html",
         {**dados, "current_user": current_user},
@@ -136,7 +136,7 @@ async def finalizar_venda(
 ):
     """Finaliza uma venda: valida, salva, atualiza estoque e processa pagamentos."""
     dados = await request.json()
-    resultado = ServicoPDV(db).finalizar_venda(dados, current_user)
+    resultado = ServicoPDV(db, current_user).finalizar_venda(dados, current_user)
     return JSONResponse(resultado)
 
 
@@ -148,7 +148,10 @@ def credito_cliente(
     current_user: models.User = Depends(auth_utils.require_user),
 ):
     """Retorna saldo devedor e limite de crédito do cliente para o PDV."""
-    cliente = db.query(models.Customer).filter(models.Customer.id == cliente_id).first()
+    cliente = db.query(models.Customer).filter(
+        models.Customer.id == cliente_id,
+        models.Customer.company_id == current_user.company_id,
+    ).first()
     if not cliente:
         return JSONResponse({"error": "Cliente não encontrado"}, status_code=404)
     limite   = float(cliente.credit_limit or 0)
@@ -171,5 +174,5 @@ async def verificar_supervisor(
 ):
     """Verifica se as credenciais são de um supervisor (para autorizar descontos)."""
     dados = await request.json()
-    resultado = ServicoPDV(db).verificar_supervisor(dados)
+    resultado = ServicoPDV(db, current_user).verificar_supervisor(dados)
     return JSONResponse(resultado)

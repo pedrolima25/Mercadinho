@@ -13,13 +13,13 @@ from repositorios.base import RepositorioBase
 class RepositorioPromocoes(RepositorioBase):
     """Queries de promoções."""
 
-    def __init__(self, banco: Session):
-        super().__init__(banco, models.Promotion)
+    def __init__(self, banco: Session, empresa_id: Optional[int] = None):
+        super().__init__(banco, models.Promotion, empresa_id)
 
     def listar_todas(self) -> List[models.Promotion]:
         """Todas as promoções, mais recentes primeiro, com o produto carregado."""
         return (
-            self.banco.query(self.modelo)
+            self._query()
             .options(joinedload(self.modelo.product))
             .order_by(self.modelo.start_at.desc())
             .all()

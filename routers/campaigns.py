@@ -26,7 +26,7 @@ def listar_campanhas(
     current_user: models.User = Depends(auth_utils.require_permission("campanhas")),
 ):
     """Lista todas as campanhas cadastradas."""
-    campanhas = ServicoCampanhas(db).listar()
+    campanhas = ServicoCampanhas(db, current_user).listar()
     return templates.TemplateResponse(
         request, "campaigns/index.html",
         {"campaigns": campanhas, "current_user": current_user},
@@ -54,7 +54,7 @@ async def criar_campanha(
 ):
     """Cria uma nova campanha."""
     form = await request.form()
-    campanha = ServicoCampanhas(db).criar(form)
+    campanha = ServicoCampanhas(db, current_user).criar(form)
     return RedirectResponse(f"/campanhas/{campanha.id}/editar", status_code=302)
 
 
@@ -66,9 +66,9 @@ def editar_campanha(
     current_user: models.User = Depends(auth_utils.require_permission("campanhas")),
 ):
     """Formulário de edição de campanha, com gestão dos produtos incluídos."""
-    servico = ServicoCampanhas(db)
+    servico = ServicoCampanhas(db, current_user)
     campanha = servico.obter_ou_erro(campanha_id)
-    produtos, _ = ServicoProdutos(db).listar(por_pagina=1000)
+    produtos, _ = ServicoProdutos(db, current_user).listar(por_pagina=1000)
     ja_incluidos = {item.product_id for item in campanha.items}
     produtos_disponiveis = [p for p in produtos if p.id not in ja_incluidos]
     return templates.TemplateResponse(
@@ -90,7 +90,7 @@ async def atualizar_campanha(
 ):
     """Salva alterações de uma campanha."""
     form = await request.form()
-    ServicoCampanhas(db).atualizar(campanha_id, form)
+    ServicoCampanhas(db, current_user).atualizar(campanha_id, form)
     return RedirectResponse(f"/campanhas/{campanha_id}/editar", status_code=302)
 
 
@@ -101,7 +101,7 @@ def excluir_campanha(
     current_user: models.User = Depends(auth_utils.require_permission("campanhas")),
 ):
     """Remove uma campanha."""
-    ServicoCampanhas(db).excluir(campanha_id)
+    ServicoCampanhas(db, current_user).excluir(campanha_id)
     return RedirectResponse("/campanhas", status_code=302)
 
 
@@ -114,7 +114,7 @@ async def adicionar_produto_campanha(
 ):
     """Adiciona um produto à campanha."""
     form = await request.form()
-    ServicoCampanhas(db).adicionar_produto(campanha_id, form)
+    ServicoCampanhas(db, current_user).adicionar_produto(campanha_id, form)
     return RedirectResponse(f"/campanhas/{campanha_id}/editar", status_code=302)
 
 
@@ -126,5 +126,5 @@ def remover_produto_campanha(
     current_user: models.User = Depends(auth_utils.require_permission("campanhas")),
 ):
     """Remove um produto da campanha."""
-    ServicoCampanhas(db).remover_produto(campanha_id, item_id)
+    ServicoCampanhas(db, current_user).remover_produto(campanha_id, item_id)
     return RedirectResponse(f"/campanhas/{campanha_id}/editar", status_code=302)

@@ -16,11 +16,11 @@ from servicos.base import ServicoBase
 class ServicoEstoque(ServicoBase):
     """Regras de negócio para controle de estoque."""
 
-    def __init__(self, banco: Session):
-        super().__init__(banco)
-        self.movimentacoes = RepositorioMovimentacoes(banco)
-        self.lotes = RepositorioLotes(banco)
-        self.produtos = RepositorioProdutos(banco)
+    def __init__(self, banco: Session, current_user=None):
+        super().__init__(banco, current_user)
+        self.movimentacoes = RepositorioMovimentacoes(banco, self.empresa_id)
+        self.lotes = RepositorioLotes(banco, self.empresa_id)
+        self.produtos = RepositorioProdutos(banco, self.empresa_id)
 
     def visao_geral(self) -> dict:
         """
@@ -90,6 +90,7 @@ class ServicoEstoque(ServicoBase):
             quantity=quantidade,
             reason=motivo,
             user_id=usuario.id,
+            company_id=self.empresa_id,
         )
         self.banco.add(movimentacao)
         self.banco.commit()
@@ -120,11 +121,14 @@ class ServicoEstoque(ServicoBase):
 
     def criar_lote(self, dados_form) -> models.ProductBatch:
         """Cria novo lote de produto."""
+        produto_id = int(dados_form.get("product_id"))
+        self.validar_pertence_a_empresa(models.Product, produto_id, "Produto inválido")
         lote = models.ProductBatch(
-            product_id=int(dados_form.get("product_id")),
+            product_id=produto_id,
             batch_number=dados_form.get("batch_number") or None,
             quantity=float(dados_form.get("quantity") or 0),
             expiry_date=dados_form.get("expiry_date") or None,
+            company_id=self.empresa_id,
         )
         self.banco.add(lote)
         self.banco.commit()
@@ -168,6 +172,7 @@ class ServicoEstoque(ServicoBase):
             reference_id=lote.id,
             reference_type="lote",
             user_id=usuario.id,
+            company_id=self.empresa_id,
         )
         self.banco.add(movimentacao)
         self.banco.commit()

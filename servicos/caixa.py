@@ -35,9 +35,9 @@ TIPOS_SAIDA = {
 class ServicoCaixa(ServicoBase):
     """Regras de negócio para o caixa do PDV."""
 
-    def __init__(self, banco: Session):
-        super().__init__(banco)
-        self.repositorio = RepositorioCaixa(banco)
+    def __init__(self, banco: Session, current_user=None):
+        super().__init__(banco, current_user)
+        self.repositorio = RepositorioCaixa(banco, self.empresa_id)
 
     def visao_geral(self, usuario: models.User) -> dict:
         """Dados para a tela principal do caixa."""
@@ -119,6 +119,7 @@ class ServicoCaixa(ServicoBase):
             user_id=usuario.id,
             opening_balance=float(dados_form.get("opening_balance") or 0),
             notes=dados_form.get("notes") or None,
+            company_id=self.empresa_id,
         )
         self.banco.add(caixa)
         self.banco.commit()

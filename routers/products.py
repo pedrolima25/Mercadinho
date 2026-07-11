@@ -32,8 +32,8 @@ def listar_produtos(
     current_user: models.User = Depends(auth_utils.require_permission("produtos")),
 ):
     """Lista produtos com filtros e paginação."""
-    servico = ServicoProdutos(db)
-    servico_catalogos = ServicoCatalogos(db)
+    servico = ServicoProdutos(db, current_user)
+    servico_catalogos = ServicoCatalogos(db, current_user)
 
     # Converte category_id para int somente se for um número válido
     cat_id = int(category_id) if category_id and category_id.isdigit() else None
@@ -76,7 +76,7 @@ def novo_produto(
     current_user: models.User = Depends(auth_utils.require_permission("produtos")),
 ):
     """Exibe formulário de cadastro de novo produto."""
-    servico_catalogos = ServicoCatalogos(db)
+    servico_catalogos = ServicoCatalogos(db, current_user)
     return templates.TemplateResponse(
         request,
         "products/form.html",
@@ -98,7 +98,7 @@ async def criar_produto(
 ):
     """Cria um novo produto. Validações ficam no ServiçoProdutos."""
     form = await request.form()
-    servico = ServicoProdutos(db)
+    servico = ServicoProdutos(db, current_user)
     servico.cadastrar(form, current_user)
     return RedirectResponse("/produtos", status_code=302)
 
@@ -111,8 +111,8 @@ def editar_produto(
     current_user: models.User = Depends(auth_utils.require_permission("produtos")),
 ):
     """Exibe formulário de edição de produto."""
-    servico = ServicoProdutos(db)
-    servico_catalogos = ServicoCatalogos(db)
+    servico = ServicoProdutos(db, current_user)
+    servico_catalogos = ServicoCatalogos(db, current_user)
     produto = servico.obter_ou_erro(product_id)
 
     return templates.TemplateResponse(
@@ -137,7 +137,7 @@ async def atualizar_produto(
 ):
     """Salva alterações de um produto existente."""
     form = await request.form()
-    servico = ServicoProdutos(db)
+    servico = ServicoProdutos(db, current_user)
     servico.atualizar(product_id, form, current_user)
     return RedirectResponse("/produtos", status_code=302)
 
@@ -149,7 +149,7 @@ def excluir_produto(
     current_user: models.User = Depends(auth_utils.require_permission("produtos")),
 ):
     """Desativa um produto (mantém histórico)."""
-    servico = ServicoProdutos(db)
+    servico = ServicoProdutos(db, current_user)
     servico.excluir(product_id, current_user)
     return RedirectResponse("/produtos", status_code=302)
 
@@ -163,7 +163,7 @@ def api_buscar_produtos(
     current_user: models.User = Depends(auth_utils.require_user),
 ):
     """Busca rápida de produtos para o autocomplete do PDV."""
-    servico = ServicoProdutos(db)
+    servico = ServicoProdutos(db, current_user)
     return servico.buscar_rapido(q)
 
 
@@ -173,7 +173,7 @@ def api_todos_produtos(
     current_user: models.User = Depends(auth_utils.require_user),
 ):
     """Retorna todos os produtos ativos para o catálogo do PDV."""
-    servico = ServicoProdutos(db)
+    servico = ServicoProdutos(db, current_user)
     return servico.listar_para_pdv()
 
 
@@ -184,7 +184,7 @@ def api_produto_por_barcode(
     current_user: models.User = Depends(auth_utils.require_user),
 ):
     """Retorna produto pelo código de barras — usado pelo leitor no PDV."""
-    servico = ServicoProdutos(db)
+    servico = ServicoProdutos(db, current_user)
     produto = servico.buscar_por_codigo_barras(barcode)
     return {
         "id": produto.id,
@@ -211,7 +211,7 @@ def api_produto_por_barcode_peso(
     preco_centavos = int(barcode13[6:11])
     preco = round(preco_centavos / 100, 2)
     peso = None
-    servico = ServicoProdutos(db)
+    servico = ServicoProdutos(db, current_user)
     produto = servico.repositorio.buscar_por_codigo_balanca(codigo_5)
     if not produto:
         raise HTTPException(status_code=404, detail="Produto não encontrado para este código de balança")
@@ -254,7 +254,10 @@ async def upload_imagem(
     with open(dest, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
-    produto = db.query(models.Product).filter(models.Product.id == product_id).first()
+    produto = db.query(models.Product).filter(
+        models.Product.id == product_id,
+        models.Product.company_id == current_user.company_id,
+    ).first()
     if not produto:
         return JSONResponse({"error": "Produto não encontrado"}, status_code=404)
 

@@ -92,7 +92,7 @@
 
     <div class="alert alert-info mb-0">
       <i class="bi bi-share me-1"></i> Link público pra divulgar:
-      <a href="/campanhas/{{ campaign.slug }}" target="_blank">{{ request.base_url }}campanhas/{{ campaign.slug }}</a>
+      <a href="/loja/{{ current_user.empresa.slug }}/campanhas/{{ campaign.slug }}" target="_blank">{{ request.base_url }}loja/{{ current_user.empresa.slug }}/campanhas/{{ campaign.slug }}</a>
     </div>
   </div>
   {% endif %}

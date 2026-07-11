@@ -13,13 +13,13 @@ from repositorios.base import RepositorioBase
 class RepositorioCaixa(RepositorioBase):
     """Queries de registros de abertura/fechamento de caixa."""
 
-    def __init__(self, banco: Session):
-        super().__init__(banco, models.CashRegister)
+    def __init__(self, banco: Session, empresa_id: Optional[int] = None):
+        super().__init__(banco, models.CashRegister, empresa_id)
 
     def buscar_aberto_do_usuario(self, usuario_id: int) -> Optional[models.CashRegister]:
         """Retorna o caixa aberto do usuário, se existir."""
         return (
-            self.banco.query(self.modelo)
+            self._query()
             .options(
                 joinedload(self.modelo.user),
                 joinedload(self.modelo.sales).joinedload(models.Sale.payments),
@@ -35,7 +35,7 @@ class RepositorioCaixa(RepositorioBase):
     def historico_do_usuario(self, usuario_id: int, limite: int = 10) -> List[models.CashRegister]:
         """Últimos caixas do usuário ordenados do mais recente."""
         return (
-            self.banco.query(self.modelo)
+            self._query()
             .options(joinedload(self.modelo.user))
             .filter(self.modelo.user_id == usuario_id)
             .order_by(self.modelo.opened_at.desc())
@@ -46,7 +46,7 @@ class RepositorioCaixa(RepositorioBase):
     def listar_abertos(self) -> List[models.CashRegister]:
         """Todos os caixas abertos no momento, do mais antigo para o mais novo."""
         return (
-            self.banco.query(self.modelo)
+            self._query()
             .options(joinedload(self.modelo.user))
             .filter(self.modelo.status == models.CashRegisterStatus.aberto)
             .order_by(self.modelo.opened_at.asc(), self.modelo.id.asc())
@@ -56,7 +56,7 @@ class RepositorioCaixa(RepositorioBase):
     def buscar_com_detalhes(self, caixa_id: int) -> Optional[models.CashRegister]:
         """Retorna caixa com vendas, pagamentos e movimentações carregados."""
         return (
-            self.banco.query(self.modelo)
+            self._query()
             .options(
                 joinedload(self.modelo.user),
                 joinedload(self.modelo.sales).joinedload(models.Sale.payments),

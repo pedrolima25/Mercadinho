@@ -24,10 +24,10 @@ from servicos.base import ServicoBase
 class ServicoProdutos(ServicoBase):
     """Regras de negócio para produtos."""
 
-    def __init__(self, banco: Session):
-        super().__init__(banco)
+    def __init__(self, banco: Session, current_user=None, empresa_id: Optional[int] = None):
+        super().__init__(banco, current_user, empresa_id)
         # Repositório que faz as queries no banco
-        self.repositorio = RepositorioProdutos(banco)
+        self.repositorio = RepositorioProdutos(banco, self.empresa_id)
 
     # ── Consultas ──────────────────────────────────────────────────────────
 
@@ -217,14 +217,21 @@ class ServicoProdutos(ServicoBase):
         if codigo_barras and self.repositorio.codigo_barras_ja_existe(codigo_barras):
             self.erro_requisicao(f"Código de barras '{codigo_barras}' já está em uso")
 
+        category_id = int(dados_form.get("category_id")) if dados_form.get("category_id") else None
+        brand_id = int(dados_form.get("brand_id")) if dados_form.get("brand_id") else None
+        supplier_id = int(dados_form.get("supplier_id")) if dados_form.get("supplier_id") else None
+        self.validar_pertence_a_empresa(models.Category, category_id, "Categoria inválida")
+        self.validar_pertence_a_empresa(models.Brand, brand_id, "Marca inválida")
+        self.validar_pertence_a_empresa(models.Supplier, supplier_id, "Fornecedor inválido")
+
         # Cria o produto
         produto = models.Product(
             barcode=codigo_barras,
             name=nome,
             description=dados_form.get("description") or None,
-            category_id=int(dados_form.get("category_id")) if dados_form.get("category_id") else None,
-            brand_id=int(dados_form.get("brand_id")) if dados_form.get("brand_id") else None,
-            supplier_id=int(dados_form.get("supplier_id")) if dados_form.get("supplier_id") else None,
+            category_id=category_id,
+            brand_id=brand_id,
+            supplier_id=supplier_id,
             cost_price=float(dados_form.get("cost_price") or 0),
             sale_price=preco_venda,
             stock_quantity=float(dados_form.get("stock_quantity") or 0),
@@ -245,6 +252,7 @@ class ServicoProdutos(ServicoBase):
             reference=dados_form.get("reference") or None,
             stock_location=dados_form.get("stock_location") or None,
             is_active=dados_form.get("is_active") == "on",
+            company_id=self.empresa_id,
         )
         self.banco.add(produto)
         self.banco.commit()
@@ -258,6 +266,7 @@ class ServicoProdutos(ServicoBase):
                 quantity=estoque_inicial,
                 reason="Estoque inicial",
                 user_id=usuario.id,
+                company_id=self.empresa_id,
             )
             self.banco.add(movimentacao)
             self.banco.commit()
@@ -283,9 +292,15 @@ class ServicoProdutos(ServicoBase):
         produto.barcode = codigo_barras
         produto.name = dados_form.get("name")
         produto.description = dados_form.get("description") or None
-        produto.category_id = int(dados_form.get("category_id")) if dados_form.get("category_id") else None
-        produto.brand_id = int(dados_form.get("brand_id")) if dados_form.get("brand_id") else None
-        produto.supplier_id = int(dados_form.get("supplier_id")) if dados_form.get("supplier_id") else None
+        category_id = int(dados_form.get("category_id")) if dados_form.get("category_id") else None
+        brand_id = int(dados_form.get("brand_id")) if dados_form.get("brand_id") else None
+        supplier_id = int(dados_form.get("supplier_id")) if dados_form.get("supplier_id") else None
+        self.validar_pertence_a_empresa(models.Category, category_id, "Categoria inválida")
+        self.validar_pertence_a_empresa(models.Brand, brand_id, "Marca inválida")
+        self.validar_pertence_a_empresa(models.Supplier, supplier_id, "Fornecedor inválido")
+        produto.category_id = category_id
+        produto.brand_id = brand_id
+        produto.supplier_id = supplier_id
         produto.cost_price = float(dados_form.get("cost_price") or 0)
         produto.sale_price = float(dados_form.get("sale_price") or 0)
         produto.min_stock = float(dados_form.get("min_stock") or 0)

@@ -26,7 +26,7 @@ def visao_geral(
     current_user: models.User = Depends(auth_utils.require_permission("financeiro")),
 ):
     """Dashboard financeiro: resumo de contas e despesas."""
-    dados = ServicoFinanceiro(db).visao_geral()
+    dados = ServicoFinanceiro(db, current_user).visao_geral()
     return templates.TemplateResponse(request, "financial/index.html", {**dados, "current_user": current_user})
 
 
@@ -40,8 +40,8 @@ def contas_pagar(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth_utils.require_permission("financeiro")),
 ):
-    servico = ServicoFinanceiro(db)
-    fornecedores = ServicoCatalogos(db).listar_fornecedores()
+    servico = ServicoFinanceiro(db, current_user)
+    fornecedores = ServicoCatalogos(db, current_user).listar_fornecedores()
     itens, total = servico.listar_contas_pagar(status=status, pagina=page)
     return templates.TemplateResponse(
         request, "financial/accounts_payable.html",
@@ -61,7 +61,7 @@ async def criar_conta_pagar(
     current_user: models.User = Depends(auth_utils.require_permission("financeiro")),
 ):
     form = await request.form()
-    ServicoFinanceiro(db).criar_conta_pagar(form)
+    ServicoFinanceiro(db, current_user).criar_conta_pagar(form)
     return RedirectResponse("/financeiro/contas-pagar", status_code=302)
 
 
@@ -73,7 +73,7 @@ async def pagar_conta(
     current_user: models.User = Depends(auth_utils.require_permission("financeiro")),
 ):
     form = await request.form()
-    ServicoFinanceiro(db).pagar_conta(item_id, form)
+    ServicoFinanceiro(db, current_user).pagar_conta(item_id, form)
     return RedirectResponse("/financeiro/contas-pagar", status_code=302)
 
 
@@ -83,7 +83,7 @@ def excluir_conta_pagar(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth_utils.require_permission("financeiro")),
 ):
-    ServicoFinanceiro(db).cancelar_conta_pagar(item_id)
+    ServicoFinanceiro(db, current_user).cancelar_conta_pagar(item_id)
     return RedirectResponse("/financeiro/contas-pagar", status_code=302)
 
 
@@ -97,8 +97,8 @@ def contas_receber(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth_utils.require_permission("financeiro")),
 ):
-    servico = ServicoFinanceiro(db)
-    clientes = ServicoCatalogos(db).listar_clientes()
+    servico = ServicoFinanceiro(db, current_user)
+    clientes = ServicoCatalogos(db, current_user).listar_clientes()
     itens, total = servico.listar_contas_receber(status=status, pagina=page)
     return templates.TemplateResponse(
         request, "financial/accounts_receivable.html",
@@ -118,7 +118,7 @@ async def criar_conta_receber(
     current_user: models.User = Depends(auth_utils.require_permission("financeiro")),
 ):
     form = await request.form()
-    ServicoFinanceiro(db).criar_conta_receber(form)
+    ServicoFinanceiro(db, current_user).criar_conta_receber(form)
     return RedirectResponse("/financeiro/contas-receber", status_code=302)
 
 
@@ -130,7 +130,7 @@ async def receber_conta(
     current_user: models.User = Depends(auth_utils.require_permission("financeiro")),
 ):
     form = await request.form()
-    ServicoFinanceiro(db).receber_conta(item_id, form, current_user)
+    ServicoFinanceiro(db, current_user).receber_conta(item_id, form, current_user)
     return RedirectResponse("/financeiro/contas-receber", status_code=302)
 
 
@@ -143,7 +143,7 @@ def despesas(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth_utils.require_permission("financeiro")),
 ):
-    itens, total = ServicoFinanceiro(db).listar_despesas(pagina=page)
+    itens, total = ServicoFinanceiro(db, current_user).listar_despesas(pagina=page)
     return templates.TemplateResponse(
         request, "financial/expenses.html",
         {
@@ -161,7 +161,7 @@ async def criar_despesa(
     current_user: models.User = Depends(auth_utils.require_permission("financeiro")),
 ):
     form = await request.form()
-    ServicoFinanceiro(db).criar_despesa(form, current_user)
+    ServicoFinanceiro(db, current_user).criar_despesa(form, current_user)
     return RedirectResponse("/financeiro/despesas", status_code=302)
 
 
@@ -171,5 +171,5 @@ def excluir_despesa(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth_utils.require_permission("financeiro")),
 ):
-    ServicoFinanceiro(db).excluir_despesa(item_id)
+    ServicoFinanceiro(db, current_user).excluir_despesa(item_id)
     return RedirectResponse("/financeiro/despesas", status_code=302)

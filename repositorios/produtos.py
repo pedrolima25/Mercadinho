@@ -15,8 +15,8 @@ from repositorios.base import RepositorioBase
 class RepositorioProdutos(RepositorioBase):
     """Queries de produtos, categorias e marcas."""
 
-    def __init__(self, banco: Session):
-        super().__init__(banco, models.Product)
+    def __init__(self, banco: Session, empresa_id: Optional[int] = None):
+        super().__init__(banco, models.Product, empresa_id)
 
     def buscar_com_filtros(
         self,
@@ -33,7 +33,7 @@ class RepositorioProdutos(RepositorioBase):
             (lista_de_produtos, total_encontrado)
         """
         # Monta a query base com carregamento antecipado das relações
-        consulta = self.banco.query(self.modelo).options(
+        consulta = self._query().options(
             joinedload(self.modelo.category),
             joinedload(self.modelo.brand),
         )
@@ -75,7 +75,7 @@ class RepositorioProdutos(RepositorioBase):
     def buscar_por_codigo_barras(self, codigo: str) -> Optional[models.Product]:
         """Retorna produto pelo código de barras (EAN, QR Code, etc.)."""
         return (
-            self.banco.query(self.modelo)
+            self._query()
             .options(
                 joinedload(self.modelo.promotions),
                 joinedload(self.modelo.wholesale_tiers),
@@ -97,7 +97,7 @@ class RepositorioProdutos(RepositorioBase):
         ]
         # Tenta match exato do código de 5 dígitos no final do barcode
         produto = (
-            self.banco.query(self.modelo)
+            self._query()
             .options(*opts)
             .filter(
                 self.modelo.barcode.like(f"%{codigo_5}"),
@@ -108,7 +108,7 @@ class RepositorioProdutos(RepositorioBase):
         if not produto:
             # Tenta match pelo próprio código como barcode direto
             produto = (
-                self.banco.query(self.modelo)
+                self._query()
                 .options(*opts)
                 .filter(
                     self.modelo.barcode == codigo_5,
@@ -121,7 +121,7 @@ class RepositorioProdutos(RepositorioBase):
     def com_estoque_baixo(self, limite: int = None) -> List[models.Product]:
         """Produtos com quantidade atual abaixo do mínimo configurado."""
         consulta = (
-            self.banco.query(self.modelo)
+            self._query()
             .filter(
                 self.modelo.is_active == True,
                 self.modelo.stock_quantity <= self.modelo.min_stock,
@@ -135,7 +135,7 @@ class RepositorioProdutos(RepositorioBase):
     def buscar_ativos_ordenados(self) -> List[models.Product]:
         """Todos os produtos ativos ordenados por nome — usado no PDV."""
         return (
-            self.banco.query(self.modelo)
+            self._query()
             .options(
                 joinedload(self.modelo.category),
                 joinedload(self.modelo.promotions),
@@ -151,7 +151,7 @@ class RepositorioProdutos(RepositorioBase):
         """Busca rápida por nome ou código de barras — usada no autocomplete do PDV."""
         termo = f"%{texto}%"
         return (
-            self.banco.query(self.modelo)
+            self._query()
             .options(
                 joinedload(self.modelo.promotions),
                 joinedload(self.modelo.wholesale_tiers),

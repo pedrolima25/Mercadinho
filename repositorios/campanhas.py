@@ -13,13 +13,13 @@ from repositorios.base import RepositorioBase
 class RepositorioCampanhas(RepositorioBase):
     """Queries de campanhas."""
 
-    def __init__(self, banco: Session):
-        super().__init__(banco, models.Campaign)
+    def __init__(self, banco: Session, empresa_id: Optional[int] = None):
+        super().__init__(banco, models.Campaign, empresa_id)
 
     def listar_todas(self) -> List[models.Campaign]:
         """Todas as campanhas, mais recentes primeiro, com os itens carregados."""
         return (
-            self.banco.query(self.modelo)
+            self._query()
             .options(joinedload(self.modelo.items).joinedload(models.CampaignItem.product))
             .order_by(self.modelo.created_at.desc())
             .all()
@@ -28,16 +28,21 @@ class RepositorioCampanhas(RepositorioBase):
     def buscar_por_id_com_itens(self, campanha_id: int) -> Optional[models.Campaign]:
         """Campanha pelo ID, com os itens e produtos carregados."""
         return (
-            self.banco.query(self.modelo)
+            self._query()
             .options(joinedload(self.modelo.items).joinedload(models.CampaignItem.product))
             .filter(self.modelo.id == campanha_id)
             .first()
         )
 
     def buscar_por_slug(self, slug: str) -> Optional[models.Campaign]:
-        """Campanha ativa pelo slug, com os itens e produtos carregados — usada na página pública."""
+        """
+        Campanha ativa pelo slug, com os itens e produtos carregados — usada na
+        página pública. O repositório precisa ter sido instanciado com o
+        empresa_id da empresa resolvida pela URL, para garantir que a
+        campanha encontrada pertence a ela.
+        """
         return (
-            self.banco.query(self.modelo)
+            self._query()
             .options(joinedload(self.modelo.items).joinedload(models.CampaignItem.product))
             .filter(self.modelo.slug == slug, self.modelo.is_active == True)
             .first()
