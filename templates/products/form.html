@@ -17,11 +17,12 @@
             <div class="col-md-4">
               <label class="form-label fw-semibold">Código de Barras</label>
               <div class="input-group">
-                <input type="text" name="barcode" id="barcode-input" class="form-control" value="{{ product.barcode or '' if product else '' }}" placeholder="EAN-13, QR Code...">
+                <input type="text" name="barcode" id="barcode-input" class="form-control" value="{{ product.barcode or '' if product else '' }}" placeholder="EAN-13, QR Code..." onblur="buscarNomeCosmos(this.value)">
                 <button type="button" class="btn btn-outline-secondary" onclick="abrirScannerCodigoBarras()" title="Escanear com a câmera">
                   <i class="bi bi-upc-scan"></i>
                 </button>
               </div>
+              <div id="cosmos-status" class="form-text"></div>
             </div>
             <div class="col-md-8">
               <label class="form-label fw-semibold">Nome do Produto <span class="text-danger">*</span></label>
@@ -265,6 +266,34 @@ function onCodigoLido(codigo) {
   document.getElementById('barcode-input').value = codigo;
   document.getElementById('scanner-status').innerHTML = `<span class="text-success"><i class="bi bi-check-circle me-1"></i>Código lido: ${codigo}</span>`;
   setTimeout(fecharScannerCodigoBarras, 700);
+  buscarNomeCosmos(codigo);
+}
+
+async function buscarNomeCosmos(codigo) {
+  codigo = (codigo || '').trim();
+  const status = document.getElementById('cosmos-status');
+  const nomeInput = document.querySelector('[name=name]');
+  const ncmInput = document.querySelector('[name=ncm]');
+  if (!codigo || codigo.length < 8 || (nomeInput.value || '').trim()) {
+    status.textContent = '';
+    return;
+  }
+  status.innerHTML = '<span class="text-muted"><i class="bi bi-hourglass-split"></i> Buscando na Cosmos...</span>';
+  try {
+    const resp = await fetch(`/produtos/api/cosmos/${encodeURIComponent(codigo)}`);
+    const data = await resp.json();
+    if (data.found) {
+      if (data.name) nomeInput.value = data.name;
+      if (data.ncm && ncmInput && !(ncmInput.value || '').trim()) ncmInput.value = data.ncm;
+      status.innerHTML = '<span class="text-success"><i class="bi bi-check-circle"></i> Preenchido automaticamente pela Cosmos</span>';
+    } else if (data.error) {
+      status.innerHTML = `<span class="text-warning">${data.error}</span>`;
+    } else {
+      status.innerHTML = '<span class="text-muted">Produto não encontrado na Cosmos</span>';
+    }
+  } catch (e) {
+    status.textContent = '';
+  }
 }
 
 function pararScanner() {

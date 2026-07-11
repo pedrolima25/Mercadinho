@@ -7,6 +7,7 @@ Não contém lógica de negócio — apenas parse do request e render da respost
 
 from fastapi import APIRouter, Depends, Request, Query, UploadFile, File
 import os, uuid, shutil
+import httpx
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -14,6 +15,7 @@ from typing import Optional
 from database import get_db
 import models
 import auth as auth_utils
+from config import settings
 from servicos.produtos import ServicoProdutos
 from servicos.catalogos import ServicoCatalogos
 
@@ -152,6 +154,43 @@ def excluir_produto(
     servico = ServicoProdutos(db, current_user)
     servico.excluir(product_id, current_user)
     return RedirectResponse("/produtos", status_code=302)
+
+
+@router.get("/api/cosmos/{barcode}")
+async def api_cosmos_barcode(
+    barcode: str,
+    current_user: models.User = Depends(auth_utils.require_permission("produtos")),
+):
+    """
+    Consulta nome/NCM/marca do produto pelo código de barras na API pública
+    Cosmos (Bluesoft) — usado para preencher automaticamente o cadastro.
+    Requer COSMOS_API_TOKEN configurado (conta gratuita em cosmos.bluesoft.com.br).
+    """
+    if not settings.cosmos_api_token:
+        return {"found": False, "error": "Busca automática não configurada (falta COSMOS_API_TOKEN)"}
+
+    try:
+        async with httpx.AsyncClient(timeout=6) as client:
+            resp = await client.get(
+                f"https://api.cosmos.bluesoft.com.br/gtins/{barcode}.json",
+                headers={"X-Cosmos-Token": settings.cosmos_api_token},
+            )
+        if resp.status_code == 404:
+            return {"found": False}
+        if resp.status_code == 401:
+            return {"found": False, "error": "Token da Cosmos inválido"}
+        resp.raise_for_status()
+        dados = resp.json()
+    except Exception:
+        return {"found": False, "error": "Erro ao consultar a Cosmos"}
+
+    ncm = dados.get("ncm")
+    return {
+        "found": True,
+        "name": dados.get("description") or "",
+        "ncm": (ncm.get("code") if isinstance(ncm, dict) else ncm) or "",
+        "brand": (dados.get("brand") or {}).get("name") or "",
+    }
 
 
 # ── API JSON para o PDV ────────────────────────────────────────────────────

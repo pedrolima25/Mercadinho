@@ -13,5 +13,6 @@ class Settings:
     market_logo_url: str = os.getenv("MARKET_LOGO_URL", "/static/img/logo.svg")
     pix_key: str = os.getenv("PIX_KEY", "")
     pix_city: str = os.getenv("PIX_CITY", "MANAUS")
+    cosmos_api_token: str = os.getenv("COSMOS_API_TOKEN", "")
 
 settings = Settings()
